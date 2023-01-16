@@ -16,6 +16,10 @@
         {
             "type": "schema",
             "name": "schema_houdini_publish"
+        },
+        {
+            "type": "schema",
+            "name": "schema_houdini_render_settings"
         }
     ]
 }

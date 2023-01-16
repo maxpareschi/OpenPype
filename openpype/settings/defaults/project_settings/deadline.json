@@ -35,6 +35,18 @@
             "pluginInfo": {},
             "scene_patches": []
         },
+        "HoudiniSubmitDeadline": {
+            "enabled": true,
+            "optional": true,
+            "active": true,
+            "use_published": true,
+            "priority": 50,
+            "group": "none",
+            "limit": [],
+            "jobInfo": {},
+            "pluginInfo": {},
+            "scene_patches": []
+        },
         "NukeSubmitDeadline": {
             "enabled": true,
             "optional": false,

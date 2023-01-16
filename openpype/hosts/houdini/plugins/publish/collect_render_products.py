@@ -51,6 +51,20 @@ class CollectRenderProducts(pyblish.api.InstancePlugin):
 
     def process(self, instance):
 
+        current_file = instance.context.data["currentFile"]
+
+        # get padding based on last frame to be rendered
+        # or project frame padding, max value.
+        padding = max(
+            len(str(int(
+                hou.node(
+                    instance.data["instance_node"]
+                ).parm("f2").eval()
+            ))),
+            instance.context.data["projectEntity"]["config"]\
+                ["templates"]["defaults"]["frame_padding"]
+        )
+
         node = instance.data.get("output_node")
         if not node:
             rop_path = instance.data["instance_node"].path()
@@ -89,10 +103,33 @@ class CollectRenderProducts(pyblish.api.InstancePlugin):
             # Get Render Product Name
             product = pxr.UsdRender.Product(prim)
 
+            prim_path = str(prim.GetPath())
+
             # We force taking it from any random time sample as opposed to
             # "default" that the USD Api falls back to since that won't return
             # time sampled values if they were set per time sample.
             name = product.GetProductNameAttr().Get(time=0)
+
+            # if name is not set create a name using default data from instance
+            # set the temp render dir in
+            # workdir/renders/houdini/workfile/variant/variant
+            if name == "":
+                name = os.path.join(
+                    os.path.dirname(current_file),
+                    instance.context.data.get('project_settings')\
+                        .get('houdini')\
+                        .get('RenderSettings')\
+                        .get('default_render_image_folder'),
+                    os.path.splitext(
+                        os.path.basename(current_file)
+                    )[0],
+                    instance.data["variant"],
+                    "{0}.{1}.exr".format(
+                        instance.data["variant"],
+                        "#" * padding
+                    )
+                ).replace("\\", "/")
+
             dirname = os.path.dirname(name)
             basename = os.path.basename(name)
 
@@ -126,8 +163,21 @@ class CollectRenderProducts(pyblish.api.InstancePlugin):
 
             filenames.append(filename)
 
-            prim_path = str(prim.GetPath())
             self.log.info("Collected %s name: %s" % (prim_path, filename))
+
+        # Enforce just one render product per instance.
+        # TODO: Investigate a smarter way to not duplicate render
+        # settings for all render products. Sometimes it's desiderable,
+        # sometimes it's just a hassle.
+        # TODO 02: Investigate on how to allow multiple products on
+        # one instance? Probably not worth the effort.
+        if len(filenames) > 1:
+            raise RuntimeError("Only one render product per instance is allowed!")
+        elif len(filenames) == 0:
+            raise RuntimeError(
+                "No render product found, one is needed for "
+                "every render instance"
+            )
 
         # Filenames for Deadline
         instance.data["files"] = filenames
