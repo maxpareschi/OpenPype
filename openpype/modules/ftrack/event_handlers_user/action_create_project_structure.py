@@ -59,6 +59,7 @@ class CreateProjectFolders(BaseAction):
     pattern_array = re.compile(r"\[.*\]")
     pattern_ftrack = re.compile(r".*\[[.]*ftrack[.]*")
     pattern_ent_ftrack = re.compile(r"ftrack\.[^.,\],\s,]*")
+    pattern_template = re.compile(r"\{.*\}")
     project_root_key = "__project_root__"
 
     def discover(self, session, entities, event):
@@ -108,7 +109,8 @@ class CreateProjectFolders(BaseAction):
             ftrack_path_items = []
             is_ftrack = False
             for item in reversed(path_items):
-                if item == self.project_root_key:
+                if item == self.project_root_key or \
+                    re.match(self.pattern_template, item):
                     continue
                 if is_ftrack:
                     ftrack_path_items.append(item)
