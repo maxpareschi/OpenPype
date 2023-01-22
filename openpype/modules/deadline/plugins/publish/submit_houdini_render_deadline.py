@@ -5,7 +5,7 @@ import getpass
 import requests
 import pyblish.api
 
-# import hou  ???
+import hou # noqa
 
 from openpype.pipeline import legacy_io
 
@@ -26,14 +26,19 @@ class HoudiniSubmitRenderDeadline(pyblish.api.InstancePlugin):
     label = "Submit Render to Deadline"
     order = pyblish.api.IntegratorOrder
     hosts = ["houdini"]
-    families = ["usdrender",
-                "redshift_rop"]
+    families = [
+        "redshift_rop"
+        # commented usdrender to make the other one available
+        # "usdrender"
+    ]
     targets = ["local"]
 
     def process(self, instance):
 
         context = instance.context
-        code = context.data["code"]
+        # this line here crashes
+        # code = context.data["code"]
+        code = instance.data["anatomyData"]["project"]["code"]
         filepath = context.data["currentFile"]
         filename = os.path.basename(filepath)
         comment = context.data.get("comment", "")
@@ -142,6 +147,7 @@ class HoudiniSubmitRenderDeadline(pyblish.api.InstancePlugin):
 
     def submit(self, instance, payload):
 
+        # this line needs to read from system prefs!!
         AVALON_DEADLINE = legacy_io.Session.get("AVALON_DEADLINE",
                                           "http://localhost:8082")
         assert AVALON_DEADLINE, "Requires AVALON_DEADLINE"

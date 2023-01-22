@@ -116,12 +116,17 @@ class ProcessSubmittedJobOnFarm(pyblish.api.InstancePlugin):
     deadline_plugin = "OpenPype"
     targets = ["local"]
 
-    hosts = ["fusion", "maya", "nuke", "celaction", "aftereffects", "harmony"]
+    # fix for houdini
+    hosts = ["fusion", "maya", "nuke", "celaction", "aftereffects",
+            "harmony", "houdini"]
 
+    # fix for usdrender
     families = ["render.farm", "prerender.farm",
-                "renderlayer", "imagesequence", "vrayscene"]
+                "renderlayer", "imagesequence", "vrayscene", "usdrender"]
 
+    # fix for houdini, is it needed?
     aov_filter = {"maya": [r".*([Bb]eauty).*"],
+                  # "houdini": [r".*([Bb]eauty).*"],
                   "aftereffects": [r".*"],  # for everything from AE
                   "harmony": [r".*"],  # for everything from AE
                   "celaction": [r".*"]}

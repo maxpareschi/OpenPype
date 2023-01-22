@@ -65,5 +65,11 @@
             "optional": true,
             "active": true
         }
+    },
+    "RenderSettings": {
+        "default_render_image_folder": "renders/houdini",
+        "aov_separator": "underscore",
+        "image_prefix": "$HIPNAME/$OS/$OS.$F",
+        "image_format": "exr"
     }
 }
