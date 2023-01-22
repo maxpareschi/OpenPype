@@ -59,7 +59,7 @@ class IntegrateFtrackInstance(pyblish.api.InstancePlugin):
     additional_metadata_keys = []
 
     def process(self, instance):
-        self.log.debug("instance {}".format(instance))
+        # self.log.debug("instance {}".format(instance))
 
         instance_repres = instance.data.get("representations")
         if not instance_repres:
@@ -348,17 +348,17 @@ class IntegrateFtrackInstance(pyblish.api.InstancePlugin):
             other_item["component_path"] = published_path
             component_list.append(other_item)
 
-        def json_obj_parser(obj):
-            return str(obj)
-
-        self.log.debug("Components list: {}".format(
-            json.dumps(
-                component_list,
-                sort_keys=True,
-                indent=4,
-                default=json_obj_parser
-            )
-        ))
+        if os.environ.get("OPENPYPE_DEBUG") == "1":
+            def json_obj_parser(obj):
+                return str(obj)
+            self.log.debug("Components list: {}".format(
+                json.dumps(
+                    component_list,
+                    sort_keys=True,
+                    indent=4,
+                    default=json_obj_parser
+                )
+            ))
         instance.data["ftrackComponentsList"] = component_list
 
     def _collect_additional_metadata(self, streams):
@@ -450,6 +450,15 @@ class IntegrateFtrackInstance(pyblish.api.InstancePlugin):
             metadata[label] = get_openpype_version()
 
         extension = os.path.splitext(component_path)[-1]
+
+        # TODO: Do not hardcode this
+        DO_NOT_FFPROBE_EXTENSIONS = {
+            ".abc", ".ma", ".mb", ".usd", ".vdb", ".fur", ".comp", ".exr",
+            ".hip", ".fbx", ".ass", ".vrscene"
+        }
+        if extension in DO_NOT_FFPROBE_EXTENSIONS:
+            return metadata
+
         streams = []
         try:
             streams = get_ffprobe_streams(component_path)

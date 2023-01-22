@@ -1,4 +1,5 @@
 {
+    "enabled": true,
     "events": {
         "sync_to_avalon": {
             "statuses_name_change": [
@@ -223,6 +224,9 @@
         }
     },
     "publish": {
+        "CollectFtrackApi": {
+            "enabled": true
+        },
         "CollectFtrackFamily": {
             "enabled": true,
             "profiles": [
@@ -451,6 +455,9 @@
         "IntegrateFtrackComponentOverwrite": {
             "enabled": true
         },
+        "IntegrateFtrackApi": {
+            "enabled": true
+        },
         "IntegrateFtrackInstance": {
             "family_mapping": {
                 "camera": "cam",
@@ -491,6 +498,7 @@
             "additional_metadata_keys": []
         },
         "IntegrateFtrackFarmStatus": {
+            "enabled": true,
             "farm_status_profiles": []
         }
     }

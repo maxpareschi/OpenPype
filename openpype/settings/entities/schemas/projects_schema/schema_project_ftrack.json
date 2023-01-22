@@ -3,8 +3,14 @@
     "key": "ftrack",
     "label": "Ftrack",
     "collapsible": true,
+    "checkbox_key": "enabled",
     "is_file": true,
     "children": [
+        {
+            "type": "boolean",
+            "key": "enabled",
+            "label": "Enabled"
+        },
         {
             "type": "dict",
             "key": "events",
@@ -718,6 +724,25 @@
             "label": "Publish plugins",
             "children": [
                 {
+                    "type": "label",
+                    "label": "TIP: To disable Ftrack in project disable all plug-ins below"
+                },
+                {
+                    "type": "dict",
+                    "collapsible": false,
+                    "checkbox_key": "enabled",
+                    "key": "CollectFtrackApi",
+                    "label": "Collect Ftrack API",
+                    "is_group": false,
+                    "children": [
+                        {
+                            "type": "boolean",
+                            "key": "enabled",
+                            "label": "Enabled"
+                        }
+                    ]
+                },
+                {
                     "type": "dict",
                     "collapsible": true,
                     "checkbox_key": "enabled",
@@ -967,6 +992,21 @@
                 },
                 {
                     "type": "dict",
+                    "collapsible": true,
+                    "checkbox_key": "enabled",
+                    "key": "IntegrateFtrackApi",
+                    "label": "IntegrateFtrackApi",
+                    "is_group": true,
+                    "children": [
+                        {
+                            "type": "boolean",
+                            "key": "enabled",
+                            "label": "Enabled"
+                        }
+                    ]
+                },
+                {
+                    "type": "dict",
                     "key": "IntegrateFtrackInstance",
                     "label": "Integrate Ftrack Instance",
                     "is_group": true,
@@ -1043,8 +1083,14 @@
                 {
                     "type": "dict",
                     "key": "IntegrateFtrackFarmStatus",
+                    "checkbox_key": "enabled",
                     "label": "Integrate Ftrack Farm Status",
                     "children": [
+                        {
+                            "type": "boolean",
+                            "key": "enabled",
+                            "label": "Enabled"
+                        },
                         {
                             "type": "label",
                             "label": "Change status of task when it's subset is submitted to farm"

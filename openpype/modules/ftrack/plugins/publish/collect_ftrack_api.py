@@ -11,10 +11,13 @@ class CollectFtrackApi(pyblish.api.ContextPlugin):
     label = "Collect Ftrack Api"
 
     def process(self, context):
-        ftrack_log = logging.getLogger('ftrack_api')
-        ftrack_log.setLevel(logging.WARNING)
-        ftrack_log = logging.getLogger('ftrack_api_old')
-        ftrack_log.setLevel(logging.WARNING)
+        # Set some loggers to warning level to avoid lots of debug logs
+        # which slow down publishing a lot
+        logging.getLogger('ftrack_api').setLevel(logging.WARNING)
+        logging.getLogger('ftrack_api_old').setLevel(logging.WARNING)
+        # Note: This is actually logging in Integrators, etc. but setting level
+        #       during collecting feels a bit nicer
+        logging.getLogger('urllib3').setLevel(logging.WARNING)
 
         # Collect session
         # NOTE Import python module here to know if import was successful
