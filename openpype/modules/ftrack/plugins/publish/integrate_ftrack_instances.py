@@ -92,6 +92,15 @@ class IntegrateFtrackInstance(pyblish.api.InstancePlugin):
             "Family: {}\nMapping: {}".format(family_low, self.family_mapping)
         )
         status_name = self._get_asset_version_status_name(instance)
+        version_padding = instance.context.data["anatomy"]["templates"]\
+            ["defaults"]["version_padding"]
+        asset_name = "{}_{}_{}".format(
+            instance.data["anatomyData"]["asset"],
+            instance.data["anatomyData"]["task"]["short"],
+            instance.data["version"].zfill(
+                version_padding
+            )
+        )
 
         # Base of component item data
         # - create a copy of this object when want to use it
@@ -100,7 +109,8 @@ class IntegrateFtrackInstance(pyblish.api.InstancePlugin):
                 "short": asset_type,
             },
             "asset_data": {
-                "name": instance.data["subset"],
+                # "name": instance.data["subset"],
+                asset_name
             },
             "assetversion_data": {
                 "version": version_number,
