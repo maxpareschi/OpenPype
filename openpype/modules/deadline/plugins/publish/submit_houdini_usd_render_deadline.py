@@ -119,7 +119,9 @@ class houdiniSubmitUSDRenderDeadline(pyblish.api.InstancePlugin):
         usd_name = os.path.basename(hou_usd_path)
         batchname = "%s - %s" % (
             instance.data["anatomyData"]["project"]["code"],
-            usd_name
+            os.path.splitext(os.path.basename(
+                hou.hipFile.path().replace("\\", "/")
+            ))[0]
         )
         jobname = "%s - %s - %s" % (
             instance.data["anatomyData"]["project"]["code"],
@@ -354,10 +356,16 @@ class houdiniSubmitUSDRenderDeadline(pyblish.api.InstancePlugin):
     # staging_dir/HOU-RENDER-SETTINGS/.
     def create_intermediate_usd(self, instance):
 
+        # Get instance node and upstream LOP node
+        ropnode = hou.node(instance.data.get("instance_node"))
+        loppath = ropnode.parm("loppath").eval()
+
         # get a temp path
         cur_file = hou.hipFile.path().replace("\\", "/")
-        file_name = "{}.{}".format(os.path.splitext(
-            os.path.basename(cur_file))[0], "usd")
+        file_name = "{}_{}.{}".format(os.path.splitext(
+            os.path.basename(cur_file))[0],
+            instance.data["subset"],
+            "usd")
         staging_dir = os.path.join(
             os.path.dirname(cur_file),
             instance.context.data["project_settings"]\
@@ -367,8 +375,6 @@ class houdiniSubmitUSDRenderDeadline(pyblish.api.InstancePlugin):
             file_name).replace("\\", "/")
         
         # create the render intermediate node
-        ropnode = hou.node(instance.data.get("instance_node"))
-        loppath = ropnode.parm("loppath").eval()
         rend = hou.node("/out").createNode("usd",
             node_name="render_intermediate")
         rend.parm("loppath").set(loppath)
