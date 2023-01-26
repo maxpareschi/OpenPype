@@ -97,7 +97,7 @@ class IntegrateFtrackInstance(pyblish.api.InstancePlugin):
         asset_name = "{}_{}_{}".format(
             instance.data["anatomyData"]["asset"],
             instance.data["anatomyData"]["task"]["short"],
-            instance.data["version"].zfill(
+            str(instance.data["version"]).zfill(
                 version_padding
             )
         )
