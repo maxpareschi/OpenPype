@@ -95,10 +95,15 @@ class IntegrateFtrackInstance(pyblish.api.InstancePlugin):
         version_padding = instance.context.data["anatomy"]["templates"]\
             ["defaults"]["version_padding"]
         asset_name = instance.data["subset"]
+        task = instance.data["anatomy_data"].get("task")
+        task_name = task.get(
+            "short",
+            instance.data["subset"]
+        )
         if "review" in instance.data["families"]:
             asset_name = "{}_{}".format(
                 instance.data["anatomyData"]["asset"],
-                instance.data["anatomyData"]["task"]["short"]
+                task_name
             )
 
         # Base of component item data
