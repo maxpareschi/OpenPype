@@ -95,7 +95,7 @@ class IntegrateFtrackInstance(pyblish.api.InstancePlugin):
         version_padding = instance.context.data["anatomy"]["templates"]\
             ["defaults"]["version_padding"]
         asset_name = instance.data["subset"]
-        task = instance.data["anatomy_data"].get("task")
+        task = instance.data["anatomyData"].get("task")
         task_name = task.get(
             "short",
             instance.data["subset"]
