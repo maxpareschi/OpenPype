@@ -420,7 +420,7 @@ class IntegrateFtrackApi(pyblish.api.InstancePlugin):
 
         else:
             new_asset_version_data = {
-                "version": version,
+                "version": str(version),
                 "asset_id": asset_id
             }
             if task_id:
@@ -438,6 +438,7 @@ class IntegrateFtrackApi(pyblish.api.InstancePlugin):
                 session, version, asset_id
             )
 
+ 
         if status_name:
             status_id = status_ids_by_name.get(status_name.lower())
             if not status_id:
