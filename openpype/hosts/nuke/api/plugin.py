@@ -478,21 +478,6 @@ class ExporterReviewMov(ExporterReview):
         self.previous_node = r_node
         self.log.debug("Read...   `{}`".format(self._temp_nodes[subset]))
 
-        # add reformat node
-        if reformat_node_add:
-            # append reformated tag
-            add_tags.append("reformated")
-
-            rf_node = nuke.createNode("Reformat")
-            set_node_knobs_from_settings(rf_node, reformat_node_config)
-
-            # connect
-            rf_node.setInput(0, self.previous_node)
-            self._temp_nodes[subset].append(rf_node)
-            self.previous_node = rf_node
-            self.log.debug(
-                "Reformat...   `{}`".format(self._temp_nodes[subset]))
-
         # only create colorspace baking if toggled on
         if bake_viewer_process:
             if bake_viewer_input_process_node:
@@ -526,6 +511,21 @@ class ExporterReviewMov(ExporterReview):
                 self.previous_node = dag_node
                 self.log.debug("OCIODisplay...   `{}`".format(
                     self._temp_nodes[subset]))
+
+        # add reformat node
+        if reformat_node_add:
+            # append reformated tag
+            add_tags.append("reformated")
+
+            rf_node = nuke.createNode("Reformat")
+            set_node_knobs_from_settings(rf_node, reformat_node_config)
+
+            # connect
+            rf_node.setInput(0, self.previous_node)
+            self._temp_nodes[subset].append(rf_node)
+            self.previous_node = rf_node
+            self.log.debug(
+                "Reformat...   `{}`".format(self._temp_nodes[subset]))
 
         # Write node
         write_node = nuke.createNode("Write")
