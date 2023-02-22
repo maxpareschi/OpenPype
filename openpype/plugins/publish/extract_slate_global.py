@@ -575,12 +575,17 @@ class ExtractSlateGlobal(publish.Extractor):
 
         slate_data = instance.data[self._slate_data_name]
 
+        self.log.debug("Base comment: {}".format(
+            instance.context.data.get("comment")))
+        self.log.debug("Base intent: {}".format(
+            instance.context.data.get("intent")))
+
         # get pyblish comment and intent
         common_data = slate_data["slate_common_data"]
-        common_data["comment"] = "-"
+        common_data["comment"] = ""
         common_data["intent"] = {
-            "label": "-",
-            "value": "-"
+            "label": "",
+            "value": ""
         }
         if instance.context.data.get("comment"):
             common_data["comment"] = instance.context.data["comment"]
@@ -588,6 +593,10 @@ class ExtractSlateGlobal(publish.Extractor):
             common_data["intent"].update(
                 instance.context.data["intent"])
 
+        self.log.debug("Processed comment: {}".format(
+            common_data["comment"]))
+        self.log.debug("Processed intent: {}".format(
+            common_data["intent"]))
 
         # Init SlateCreator Object
         slate = SlateCreator(
