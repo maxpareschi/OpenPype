@@ -609,14 +609,6 @@ protobuf = ">=3.15.0,<5.0.0dev"
 grpc = ["grpcio (>=1.0.0,<2.0.0dev)"]
 
 [[package]]
-name = "html2image"
-version = "2.0.1"
-description = "Package acting as a wrapper around the headless mode of existing web browsers to generate images from URLs and from HTML+CSS strings or files."
-category = "main"
-optional = false
-python-versions = ">=3.6,<4.0"
-
-[[package]]
 name = "httplib2"
 version = "0.20.4"
 description = "A comprehensive HTTP client library."
@@ -1743,7 +1735,7 @@ testing = ["func-timeout", "jaraco.itertools", "pytest (>=6)", "pytest-black (>=
 [metadata]
 lock-version = "1.1"
 python-versions = "3.7.*"
-content-hash = "a23dfa0d39777b46167cdfef72cf60ee2ce4b0377871c0b7b49c56331fe982ca"
+content-hash = "de7422afb6aed02f75e1696afdda9ad6c7bf32da76b5022ee3e8f71a1ac4bae2"
 
 [metadata.files]
 acre = []
@@ -2213,10 +2205,6 @@ google-auth-httplib2 = [
 googleapis-common-protos = [
     {file = "googleapis-common-protos-1.56.4.tar.gz", hash = "sha256:c25873c47279387cfdcbdafa36149887901d36202cb645a0e4f29686bf6e4417"},
     {file = "googleapis_common_protos-1.56.4-py2.py3-none-any.whl", hash = "sha256:8eb2cbc91b69feaf23e32452a7ae60e791e09967d81d4fcc7fc388182d1bd394"},
-]
-html2image = [
-    {file = "html2image-2.0.1-py3-none-any.whl", hash = "sha256:3540fd23d25630d4e374e7de6e4ae711b40d4e672e82300f7e16ad2a9aa88553"},
-    {file = "html2image-2.0.1.tar.gz", hash = "sha256:5ca86cd454c6dc91873cd479edfc5db2b48e7fa580023823896f3e67c65a02b0"},
 ]
 httplib2 = [
     {file = "httplib2-0.20.4-py3-none-any.whl", hash = "sha256:8b6a905cb1c79eefd03f8669fd993c36dc341f7c558f056cb5a33b5c2f458543"},

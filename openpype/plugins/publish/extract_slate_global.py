@@ -6,7 +6,6 @@ import json
 import platform
 
 import opentimelineio as otio
-from html2image import Html2Image
 
 import pyblish.api
 from openpype.pipeline import publish
@@ -89,6 +88,21 @@ class SlateCreator:
         self.log = logger
 
         self.log.debug("Logger: '{}'".format(self.log))
+
+    def get_chrome_path(self):
+        sys = platform.system().lower()
+        chrome_path = os.path.join(
+            os.environ["OPENPYPE_ROOT"],
+            "vendor",
+            "bin",
+            "chrome",
+            sys,
+            "chrome{}".format(
+                ".exe" if sys == "windows" else ""
+            )
+        )
+        self.log.debug("Using Chrome at path: {}".format(chrome_path))
+        return chrome_path
 
     def set_template_paths(self, template_path, resources_path=""):
         """
@@ -382,15 +396,55 @@ class SlateCreator:
 
         self.compute_template() 
 
-        htimg = Html2Image(output_path=self.staging_dir)
+        #htimg = Html2Image(
+        #    output_path=self.staging_dir,
+        #    browser_executable=self.get_chrome_path()
+        #)
+        #
+        #slate_rendered_path = htimg.screenshot(
+        #    html_str=self._template_string_computed,
+        #    save_as=slate_name,
+        #    size=resolution
+        #)
 
-        slate_rendered_path = htimg.screenshot(
-            html_str=self._template_string_computed,
-            save_as=slate_name,
-            size=resolution
+        html_temp_path = os.path.join(
+            os.environ["TEMP"],
+            "{}.html".format(slate_name)
         )
 
-        return slate_rendered_path
+        with open(html_temp_path, "w") as f:
+            f.write(self._template_string_computed)
+
+        slate_full_path = os.path.join(
+            self.staging_dir,
+            slate_path
+        ).replace("\\", "/")
+        
+        cmd = []
+        cmd.append(self.get_chrome_path())
+        cmd.append("--headless")
+        cmd.append("--disable-gpu")
+        cmd.append("--screenshot={}".format(
+            slate_full_path
+        ))
+        cmd.append("--window-size={},{}".format(
+            resolution[0],
+            resolution[1]
+        ))
+        cmd.append(html_temp_path)
+
+        self.log.debug("Chrome Screenshot: cmd> {}".format(" ".join(cmd)))
+        
+        subprocess.run(
+            cmd,
+            shell=False,
+            check=True,
+            capture_output=True
+        )
+
+        os.remove(html_temp_path)
+
+        return slate_full_path
 
     def render_image_oiio(
         self,
@@ -729,9 +783,8 @@ class ExtractSlateGlobal(publish.Extractor):
                 )
             )
 
-
             slate.render_image_oiio(
-                temp_slate[0],
+                temp_slate,
                 slate_final_path,
                 in_args=oiio_profile["oiio_args"]["input"],
                 out_args=oiio_profile["oiio_args"]["output"]
