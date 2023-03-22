@@ -93,6 +93,7 @@ class SlateCreator:
         sys = platform.system().lower()
         chrome_path = os.path.join(
             os.environ["OPENPYPE_ROOT"],
+            "openpype",
             "vendor",
             "bin",
             "chrome",

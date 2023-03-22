@@ -38,6 +38,7 @@ Temporary Items
 /build
 /dist/
 
+/openpype/vendor/bin*
 /vendor/bin/*
 /vendor/python/*
 /.venv
