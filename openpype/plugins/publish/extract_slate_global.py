@@ -424,6 +424,7 @@ class SlateCreator:
         cmd = []
         cmd.append(self.get_chrome_path())
         cmd.append("--headless")
+        cmd.append("--disable-logging")
         cmd.append("--disable-gpu")
         cmd.append("--screenshot={}".format(
             slate_full_path
