@@ -510,6 +510,7 @@ class SlateCreator:
         tc = self.frames_to_timecode(int(tc_frame), self.data["fps"])
         
         self.log.debug("{0}: Starting timecode set at: {1}".format(name, tc))
+        self.log.debug("detected fps: {}".format(self.data["fps"]))
         
         for line in lines:
             if line.lower().find("timecode") > 0:
@@ -521,6 +522,7 @@ class SlateCreator:
                 nums.reverse()
                 tc = ":".join(nums)
                 break
+        tc = tc.replace("\"", "")
         
         self.log.debug("{0}: New starting timecode Found: {1}".format(name, tc))
         tc_frames = self.timecode_to_frames(tc, self.data["fps"])
