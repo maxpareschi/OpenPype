@@ -484,6 +484,44 @@ class SlateCreator:
         )
 
         return res
+    
+    def copy_meta_oiio(
+        self,
+        meta_src,
+        dest,
+        env={},
+        tc="00:00:41:16"
+    ):
+        """
+        copies metadata from one image to another, sets timecode, writes.
+        """
+        
+        name = os.path.basename(dest.replace("\\", "/"))
+        env = self.set_env(env) if env else self.env
+        
+        cmd = []
+        cmd.append("oiiotool{}".format(self.exec_ext))
+        cmd.append(meta_src)
+        cmd.append(dest)
+        cmd.append("-a")
+        cmd.append("--pastemeta")
+        cmd.append("--attrib:type=timecode")
+        cmd.append("smpte:TimeCode")
+        cmd.append(tc)
+        cmd.append("-o")
+        cmd.append(dest)
+
+        self.log.debug("{}: cmd>{}".format(name, " ".join(cmd)))
+        
+        res = subprocess.run(
+            cmd,
+            env=env,
+            shell=True if env else False,
+            check=True,
+            capture_output=True
+        )
+
+        return res
 
     def get_timecode_oiio(self, input, env={}, tc_frame=1001):
         """
@@ -711,6 +749,14 @@ class ExtractSlateGlobal(publish.Extractor):
                         int(common_data["frame_padding"])),
                     ext
                 )
+                meta_source_name = os.path.join(
+                    repre["stagingDir"],
+                    "{}.{}.{}".format(
+                        filename,
+                        str(int(repre["frameStart"])).zfill(
+                            int(common_data["frame_padding"])),
+                        ext)
+                )
                 thumbnail_path = os.path.join(
                     repre["stagingDir"],
                     "{}_slate_thumb.png".format(repre["name"])
@@ -752,8 +798,9 @@ class ExtractSlateGlobal(publish.Extractor):
                     "\"{}\"".format(timecode)
                 ])
 
+
             # Data Layout and preparation in instance
-            slate_repre_data = slate_data["slate_repre_data"][repre["name"]]={
+            slate_repre_data = slate_data["slate_repre_data"][repre["name"]] = {
                 "family_match": repre_match or "",
                 "frameStart": int(repre["frameStart"]),
                 "frameEnd": frame_end,
@@ -787,15 +834,21 @@ class ExtractSlateGlobal(publish.Extractor):
                 )
             )
 
+            # render final sequence slate
             slate.render_image_oiio(
                 temp_slate,
                 slate_final_path,
                 in_args=oiio_profile["oiio_args"]["input"],
                 out_args=oiio_profile["oiio_args"]["output"]
             )
-            
+
             # update repres and instance
             if isSequence:
+                slate.copy_meta_oiio(
+                    meta_source_name,
+                    slate_final_path,
+                    tc=timecode
+                )
                 repre["files"].insert(0, slate.data["slate_file"])
                 repre["frameStart"] = slate.data["real_frameStart"]
                 self.log.debug(
