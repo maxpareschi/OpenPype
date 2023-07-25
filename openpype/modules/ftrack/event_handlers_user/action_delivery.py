@@ -230,9 +230,11 @@ class Delivery(BaseAction):
         for asset_version in asset_versions:
             asset_id = asset_version["asset_id"]
             asset = assets_by_id[asset_id]
-
+            subset_realname = asset_version["custom_attributes"].get("subset")
+            if not subset_realname:
+                subset_realname = asset["name"]
             parent_ids.add(asset["context_id"])
-            subset_names.add(asset["name"])
+            subset_names.add(subset_realname)
             version_nums.add(asset_version["version"])
 
         asset_docs_by_ftrack_id = self._get_asset_docs(
@@ -337,8 +339,10 @@ class Delivery(BaseAction):
             if not subsets_by_name:
                 continue
 
-            subset_name = asset["name"]
-            version_docs_by_version = subsets_by_name.get(subset_name)
+            subset_realname = asset_version["custom_attributes"].get("subset")
+            if not subset_realname:
+                subset_realname = asset["name"]
+            version_docs_by_version = subsets_by_name.get(subset_realname)
             if not version_docs_by_version:
                 continue
 
@@ -385,8 +389,10 @@ class Delivery(BaseAction):
             if not subsets_by_name:
                 continue
 
-            subset_name = asset["name"]
-            subset_doc = subsets_by_name.get(subset_name)
+            subset_realname = asset_version["custom_attributes"].get("subset")
+            if not subset_realname:
+                subset_realname = asset["name"]
+            subset_doc = subsets_by_name.get(subset_realname)
             if subset_doc:
                 filtered_subsets.append(subset_doc)
         return filtered_subsets
