@@ -194,8 +194,8 @@ class DJVViewAction(BaseAction):
         if "values" not in event_data:
             return
 
-        djv_app_name = event_data["djv_app_name"]
-        app = self.applicaion_manager.applications.get(djv_app_name)
+        djv_app_name = event_data["values"]["djv_app_name"]
+        app = self.application_manager.applications.get(djv_app_name)
         executable = None
         if app is not None:
             executable = app.find_executable()
@@ -210,7 +210,7 @@ class DJVViewAction(BaseAction):
 
         cmd = [
             # DJV path
-            executable,
+            str(executable),
             # PATH TO COMPONENT
             filpath
         ]
