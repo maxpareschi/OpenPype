@@ -9,6 +9,16 @@
           "type": "boolean"
         }
     },
+    "assetversion": {
+        "subset": {
+            "label": "Subset Name",
+            "type": "text",
+            "markdown": false,
+            "default": "",
+            "write_security_roles": ["API", "Administrator"],
+            "read_security_roles": ["API", "Administrator"]
+        }
+    },
     "is_hierarchical": {
         "fps": {
             "label": "FPS",

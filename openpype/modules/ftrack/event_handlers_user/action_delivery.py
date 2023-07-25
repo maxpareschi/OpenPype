@@ -230,9 +230,9 @@ class Delivery(BaseAction):
         for asset_version in asset_versions:
             asset_id = asset_version["asset_id"]
             asset = assets_by_id[asset_id]
-
             parent_ids.add(asset["context_id"])
             subset_names.add(asset["name"])
+            # subset_names.add(asset["custom_attributes"]["subset"])
             version_nums.add(asset_version["version"])
 
         asset_docs_by_ftrack_id = self._get_asset_docs(
