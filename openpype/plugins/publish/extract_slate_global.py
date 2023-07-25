@@ -490,7 +490,7 @@ class SlateCreator:
         meta_src,
         dest,
         env={},
-        tc="00:00:41:16"
+        tc="01:00:00:01"
     ):
         """
         copies metadata from one image to another, sets timecode, writes.
@@ -724,6 +724,7 @@ class ExtractSlateGlobal(publish.Extractor):
             isSequence = False
             check_file = repre["files"]
             if isinstance(check_file, list):
+                check_file.sort()
                 check_file = check_file[0]
                 isSequence = True
 
