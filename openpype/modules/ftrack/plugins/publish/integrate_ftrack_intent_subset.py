@@ -59,7 +59,7 @@ class IntegrateFtrackSubsetIntent(pyblish.api.InstancePlugin):
             if asset_version["custom_attributes"]["subset"]:
                 asset_version["custom_attributes"]["subset"] = subset
             if asset_version["custom_attributes"]["intent"]:
-                asset_version["custom_attributes"]["intent"] = intent["value"]
+                asset_version["custom_attributes"]["intent"] = value
 
             try:
                 session.commit()
