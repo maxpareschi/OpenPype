@@ -49,23 +49,22 @@ class IntegrateFtrackSubsetIntent(pyblish.api.InstancePlugin):
             self.log.debug(
                 "Intent label is set to `{}`.".format(intent_label)
             )
-
         else:
             self.log.debug("Intent is not set.")
 
         for asset_version_data in asset_versions_data_by_id.values():
             asset_version = asset_version_data["asset_version"]
 
-            asset_version["custom_attributes"]["subset"] = subset
-            asset_version["custom_attributes"]["intent"] = intent["value"]
-
             try:
+                asset_version["custom_attributes"]["subset"] = subset
+                asset_version["custom_attributes"]["intent"] = intent["value"]
                 session.commit()
                 self.log.debug("subset and intent added to AssetVersion \"{}\"".format(
                     str(asset_version)
                 ))
             except Exception:
+                
                 tp, value, tb = sys.exc_info()
                 session.rollback()
                 session._configure_locations()
-                six.reraise(tp, value, tb)
+                self.log.warning("Error encountered: {}, {}, {}".format(tp, value, tb))
