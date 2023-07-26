@@ -26,7 +26,6 @@ class IntegrateFtrackSubsetIntent(pyblish.api.InstancePlugin):
     optional = True
 
     def process(self, instance):
-        # Check if there are any integrated AssetVersion entities
         asset_versions_key = "ftrackIntegratedAssetVersionsData"
         asset_versions_data_by_id = instance.data.get(asset_versions_key)
         if not asset_versions_data_by_id:
@@ -39,6 +38,8 @@ class IntegrateFtrackSubsetIntent(pyblish.api.InstancePlugin):
         session = context.data["ftrackSession"]
 
         intent = instance.context.data.get("intent")
+
+
         intent_label = None
         if intent:
             value = intent["value"]
@@ -56,14 +57,15 @@ class IntegrateFtrackSubsetIntent(pyblish.api.InstancePlugin):
             asset_version = asset_version_data["asset_version"]
 
             try:
-                asset_version["custom_attributes"]["subset"] = subset
-                asset_version["custom_attributes"]["intent"] = intent["value"]
+                if asset_version["custom_attributes"]["subset"]:
+                    asset_version["custom_attributes"]["subset"] = subset
+                if asset_version["custom_attributes"]["intent"]:
+                    asset_version["custom_attributes"]["intent"] = value
                 session.commit()
                 self.log.debug("subset and intent added to AssetVersion \"{}\"".format(
                     str(asset_version)
                 ))
             except Exception:
-                
                 tp, value, tb = sys.exc_info()
                 session.rollback()
                 session._configure_locations()
