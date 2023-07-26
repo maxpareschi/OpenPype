@@ -30,10 +30,6 @@ class IntegrateFtrackIntentSubset(pyblish.api.InstancePlugin):
             return
 
         intent = instance.context.data.get("intent", "Work in Progress")
-        if intent:
-            value = intent.get("value")
-            if value:
-                intent = intent.get("label") or value
 
         subset = instance.data.get("subset", "renderCompositingMain")
 
@@ -43,15 +39,15 @@ class IntegrateFtrackIntentSubset(pyblish.api.InstancePlugin):
             asset_version = asset_version_data["asset_version"]
 
             asset_version["custom_attributes"]["subset"] = subset
-            asset_version["custom_attributes"]["intent"] = intent
+            asset_version["custom_attributes"]["intent"] = intent["value"]
 
             try:
                 session.commit()
                 self.log.debug("intent {} and Subset {} added to AssetVersion \"{}\"".format(
-                    str(intent, subset, asset_version)
+                    intent, subset, str(asset_version)
                 ))
-            except Exception:
+            except:
                 tp, value, tb = sys.exc_info()
                 session.rollback()
                 session._configure_locations()
-                six.reraise(tp, value, tb)
+                self.log.warning("Errors detected: {}, {}, {}: ".format(tp, value, tb))
