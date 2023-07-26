@@ -14,9 +14,7 @@
             "label": "Subset Name",
             "type": "text",
             "markdown": false,
-            "default": "",
-            "write_security_roles": ["API", "Administrator"],
-            "read_security_roles": ["API", "Administrator"]
+            "default": ""
         }
     },
     "is_hierarchical": {
