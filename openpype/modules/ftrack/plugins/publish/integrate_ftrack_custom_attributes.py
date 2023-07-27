@@ -10,7 +10,6 @@ import sys
 import six
 import pyblish.api
 
-
 class IntegrateFtrackIntentSubset(pyblish.api.InstancePlugin):
     """Add description to AssetVersions in Ftrack."""
 
@@ -29,7 +28,21 @@ class IntegrateFtrackIntentSubset(pyblish.api.InstancePlugin):
             self.log.info("There are any integrated AssetVersions")
             return
 
-        intent = instance.context.data.get("intent", "Work in Progress")
+        settings_intent = instance.context.data["system_settings"]["modules"]["ftrack"]["intent"]
+        default_intent_key = settings_intent.get("default")
+        default_intent_label = settings_intent["items"].get(default_intent_key)
+        intent = instance.context.data.get("intent")
+
+        if not intent:
+            intent = {
+                "value": default_intent_key,
+                "label": default_intent_label
+            }
+
+        self.log.debug(settings_intent)
+
+        self.log.debug(intent)
+
 
         subset = instance.data.get("subset", "renderCompositingMain")
 
