@@ -14,7 +14,7 @@ class PushToLibraryProject(load.SubsetLoaderPlugin):
     representations = ["*"]
     families = ["*"]
 
-    label = "Push to Library project"
+    label = "Push to Project or Library"
     order = 35
     icon = "send"
     color = "#d8d8d8"

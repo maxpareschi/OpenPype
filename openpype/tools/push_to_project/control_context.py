@@ -84,6 +84,8 @@ class TaskItem:
 class EntitiesModel:
     def __init__(self, event_system):
         self._event_system = event_system
+        self._is_src_library_project = False
+        self._src_project_name = ""
         self._project_names = None
         self._project_docs_by_name = {}
         self._assets_by_project = {}
@@ -134,9 +136,13 @@ class EntitiesModel:
             project_names = []
             project_docs_by_name = {}
             for project_doc in get_projects():
-                library_project = project_doc["data"].get("library_project")
-                if not library_project:
-                    continue
+                # library_project = project_doc["data"].get("library_project")
+                if self._is_src_library_project:
+                    if project_doc["name"] == self._src_project_name:
+                        continue
+                else:
+                    if not project_doc["data"].get("library_project"):
+                        continue
                 project_name = project_doc["name"]
                 project_names.append(project_name)
                 project_docs_by_name[project_name] = project_doc
@@ -387,6 +393,7 @@ class PushToContextController:
         event_system.add_callback("asset.changed", self._invalidate)
         event_system.add_callback("variant.changed", self._invalidate)
         event_system.add_callback("new_asset_name.changed", self._invalidate)
+        event_system.add_callback("source.changed", self._on_source_change)
 
         self._submission_enabled = False
         self._process_thread = None
@@ -503,6 +510,12 @@ class PushToContextController:
 
         if subset_doc:
             asset_doc = get_asset_by_id(project_name, subset_doc["parent"])
+        
+        self._src_is_library_project = False
+        for p in get_projects(fields=["name", "data.library_project"]):
+            if p["name"] == self._src_project_name:
+                self._src_is_library_project = p["data"]["library_project"]
+        print("Library Project: {}".format(self._src_is_library_project))
 
         self._src_asset_doc = asset_doc
         self._src_subset_doc = subset_doc
@@ -520,6 +533,7 @@ class PushToContextController:
         self._event_system.emit(
             "source.changed", {
                 "project_name": project_name,
+                "is_library_project": self._src_is_library_project,
                 "version_id": version_id
             },
             "controller"
@@ -528,6 +542,10 @@ class PushToContextController:
     @property
     def src_project_name(self):
         return self._src_project_name
+    
+    @property
+    def src_is_library_project(self):
+        return self._src_is_library_project
 
     @property
     def src_version_id(self):
@@ -590,6 +608,12 @@ class PushToContextController:
         project_name = event["project_name"]
         self.model.refresh_assets(project_name)
         self._invalidate()
+
+    def _on_source_change(self, event):
+        is_library_project = event["is_library_project"]
+        src_project_name = event["project_name"]
+        self.model._is_src_library_project = is_library_project
+        self.model._src_project_name = src_project_name
 
     def _invalidate(self):
         submission_enabled = self._check_submit_validations()
