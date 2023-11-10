@@ -88,9 +88,11 @@ class ExtractReviewSlate(publish.Extractor):
                 os.path.normpath(stagingdir), repre["files"])
             self.log.debug("__ input_path: {}".format(input_path))
 
-            streams = get_ffprobe_streams(
+            video_data = get_ffprobe_data(
                 input_path, self.log
             )
+
+            streams = video_data["streams"]
             # get slate data
             slate_path = self._get_slate_path(input_file, slates_data)
             self.log.info("_ slate_path: {}".format(slate_path))
@@ -104,6 +106,11 @@ class ExtractReviewSlate(publish.Extractor):
                 input_timecode,
                 input_frame_rate
             ) = self._get_video_metadata(streams)
+
+            if not input_timecode or \
+                   input_timecode == "" or \
+                   input_timecode == "00:00:00:00":
+                input_timecode = video_data["format"]["tags"].get("timecode") or ""
 
             # Raise exception of any stream didn't define input resolution
             if input_width is None:
@@ -437,6 +444,7 @@ class ExtractReviewSlate(publish.Extractor):
         input_width = None
         input_height = None
         input_frame_rate = None
+        self.log.debug(streams)
         for stream in streams:
             if stream.get("codec_type") != "video":
                 continue
