@@ -4,6 +4,7 @@ import logging
 import subprocess
 import json
 import platform
+import tempfile
 
 import opentimelineio as otio
 
@@ -426,6 +427,9 @@ class SlateCreator:
         cmd.append("--headless")
         cmd.append("--disable-logging")
         cmd.append("--disable-gpu")
+        cmd.append("--user-data-dir={}/chrome_logs".format(
+            tempfile.gettempdir()
+        ))
         cmd.append("--screenshot={}".format(
             slate_full_path
         ))
@@ -490,7 +494,7 @@ class SlateCreator:
         meta_src,
         dest,
         env={},
-        tc="01:00:00:01"
+        tc="01:00:00:00"
     ):
         """
         copies metadata from one image to another, sets timecode, writes.
@@ -536,31 +540,32 @@ class SlateCreator:
         cmd.append("-v")
         cmd.append(input)
         self.log.debug("{}: cmd>{}".format(name, " ".join(cmd)))
-        res = subprocess.run(
-            cmd,
-            env=env,
-            shell=True if env else False,
-            check=True,
-            capture_output=True
-        )
-
-        lines = res.stdout.decode("utf-8").replace(" ", "").splitlines()
         tc = self.frames_to_timecode(int(tc_frame), self.data["fps"])
-        
         self.log.debug("{0}: Starting timecode set at: {1}".format(name, tc))
         self.log.debug("detected fps: {}".format(self.data["fps"]))
-        
-        for line in lines:
-            if line.lower().find("timecode") > 0:
-                vals = line.split(":")
-                vals.reverse()
-                nums = []
-                for i in range(0, 4):
-                    nums.append(vals[i])
-                nums.reverse()
-                tc = ":".join(nums)
-                break
-        tc = tc.replace("\"", "")
+        try:
+            res = subprocess.run(
+                cmd,
+                env=env,
+                shell=True if env else False,
+                check=True,
+                capture_output=True
+            )
+            lines = res.stdout.decode("utf-8").replace(" ", "").splitlines()
+            for line in lines:
+                if line.lower().find("timecode") > 0:
+                    vals = line.split(":")
+                    vals.reverse()
+                    nums = []
+                    for i in range(0, 4):
+                        nums.append(vals[i])
+                    nums.reverse()
+                    tc = ":".join(nums)
+                    break
+            tc = tc.replace("\"", "")
+        except:
+            self.log.debug("OIIO process failed, switching to default tc...")
+            tc = "01:00:00:00"
         
         self.log.debug("{0}: New starting timecode Found: {1}".format(name, tc))
         tc_frames = self.timecode_to_frames(tc, self.data["fps"])
@@ -590,15 +595,19 @@ class SlateCreator:
             "compact=print_section=0:nokey=1"
         ]
         cmd.append(input)
-        tc = subprocess.run(
-            cmd,
-            env=env,
-            shell=True if env else False,
-            check=True,
-            capture_output=True,
-            text=True
-        ).stdout.strip("\n")
-        self.log.debug("{0}: New starting timecode Found: {1}".format(name, tc))
+        try:
+            tc = subprocess.run(
+                cmd,
+                env=env,
+                shell=True if env else False,
+                check=True,
+                capture_output=True,
+                text=True
+            ).stdout.strip("\n")
+            self.log.debug("{0}: New starting timecode Found: {1}".format(name, tc))
+        except:
+            self.log.debug("FFPROBE process failed, switching to default tc...")
+            tc = "01:00:00:00"
         tc_rational = otio.opentime.from_timecode(tc, self.data["fps"])
         tc_frames = otio.opentime.to_frames(tc_rational, self.data["fps"])
         tc_frames -= 1

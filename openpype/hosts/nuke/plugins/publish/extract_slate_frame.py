@@ -127,6 +127,19 @@ class ExtractSlateFrame(publish.Extractor):
         # rendering path from group write node
         fpath = instance.data["path"]
 
+        # baking mov path if any
+        if output_name:
+            for repre in instance.data["representations"]:
+                if repre["name"] == output_name:
+                    baking_data = repre
+                    break
+            baking_path = os.path.join(baking_data["stagingDir"], baking_data["files"]).replace("\\", "/")
+            baking_colorspace = instance.data["bakePresets"][output_name]["viewer_process_override"]
+            self.log.debug(f"found baking profile named {baking_data['name']}, full path is {baking_path}")
+        
+        if not baking_colorspace:
+            baking_colorspace = "sRGB"
+
         # instance frame range with handles
         first_frame = instance.data["frameStartHandle"]
         last_frame = instance.data["frameEndHandle"]
@@ -163,12 +176,23 @@ class ExtractSlateFrame(publish.Extractor):
         if self._check_frames_exists(instance):
             # Read node
             r_node = nuke.createNode("Read")
-            r_node["file"].setValue(fpath)
-            r_node["first"].setValue(first_frame)
-            r_node["origfirst"].setValue(first_frame)
-            r_node["last"].setValue(last_frame)
-            r_node["origlast"].setValue(last_frame)
-            r_node["colorspace"].setValue(instance.data["colorspace"])
+            if baking_path:
+                r_node["file"].setValue(baking_path)
+                r_node["first"].setValue(int(first_frame)-int(first_frame)+1)
+                r_node["origfirst"].setValue(int(first_frame)-int(first_frame)+1)
+                r_node["last"].setValue(last_frame-int(first_frame)+1)
+                r_node["origlast"].setValue(last_frame-int(first_frame)+1)
+                r_node["frame_mode"].setValue("start at")
+                r_node["frame"].setValue(str(first_frame))
+                r_node["raw"].setValue(True)
+            else:
+                r_node["file"].setValue(fpath)
+                r_node["first"].setValue(first_frame)
+                r_node["origfirst"].setValue(first_frame)
+                r_node["last"].setValue(last_frame)
+                r_node["origlast"].setValue(last_frame)
+                r_node["colorspace"].setValue(instance.data["colorspace"])
+            
             previous_node = r_node
             temporary_nodes = [previous_node]
 
@@ -195,12 +219,15 @@ class ExtractSlateFrame(publish.Extractor):
 
             # add duplicate slate node and connect to previous
             duply_slate_node = duplicate_node(slate_node)
+            for i in range(0, slate_node.maximumInputs()):
+                duply_slate_node.setInput(i, slate_node.input(i))
             duply_slate_node.setInput(0, previous_node)
             previous_node = duply_slate_node
             temporary_nodes.append(duply_slate_node)
 
             # add viewer display transformation node
             dag_node = nuke.createNode("OCIODisplay")
+            dag_node["view"].setValue(baking_colorspace)
             dag_node.setInput(0, previous_node)
             previous_node = dag_node
             temporary_nodes.append(dag_node)
@@ -208,6 +235,8 @@ class ExtractSlateFrame(publish.Extractor):
         else:
             # add duplicate slate node and connect to previous
             duply_slate_node = duplicate_node(slate_node)
+            for i in range(0, slate_node.maximumInputs()):
+                duply_slate_node.setInput(i, slate_node.input(i))
             duply_slate_node.setInput(0, previous_node)
             previous_node = duply_slate_node
             temporary_nodes.append(duply_slate_node)

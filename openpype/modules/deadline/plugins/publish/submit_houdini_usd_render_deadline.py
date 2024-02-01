@@ -74,7 +74,25 @@ class houdiniSubmitUSDRenderDeadline(pyblish.api.InstancePlugin):
             instance.context.data["frameEndHandle"])
         submit_frame_step = int(
             instance.context.data.get("byFrameStep", 1))
-
+        
+        try:
+            rop_frame_start = int(
+                node.parm("f1").eval())
+            rop_frame_end = int(
+                node.parm("f2").eval())
+            rop_frame_step = int(
+                node.parm("f3").eval())
+            if rop_frame_start != submit_frame_start or \
+               rop_frame_end != submit_frame_end or \
+               rop_frame_step != submit_frame_step:
+                instance.data["review"] = False
+                submit_frame_start = rop_frame_start
+                submit_frame_end = rop_frame_end
+                submit_frame_step = rop_frame_step
+                self.log.debug("Frame ranges from houdini are different from ftrack data, no review will be generated!")
+        except:
+            self.log.debug("Couldn't get frame ranges params from Houdini, defaulting to ftrack data for submission...")
+        
         # get output path
         hou_output_dir = os.path.join(
             os.path.dirname(hou.hipFile.path()),
@@ -377,6 +395,10 @@ class houdiniSubmitUSDRenderDeadline(pyblish.api.InstancePlugin):
         # create the render intermediate node
         rend = hou.node("/out").createNode("usd",
             node_name="render_intermediate")
+        rend.parm("trange").set(ropnode.parm("trange").eval())
+        rend.parm("f1").set(ropnode.parm("f1").eval())
+        rend.parm("f2").set(ropnode.parm("f2").eval())
+        rend.parm("f3").set(ropnode.parm("f3").eval())
         rend.parm("loppath").set(loppath)
         rend.parm("lopoutput").set(file_abs_path)
 
