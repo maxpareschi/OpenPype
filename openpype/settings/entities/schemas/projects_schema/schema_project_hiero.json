@@ -294,6 +294,21 @@
                     "type": "dict",
                     "collapsible": true,
                     "checkbox_key": "enabled",
+                    "key": "CollectEffectsByLayers",
+                    "label": "Collect Effects By Layers",
+                    "is_group": true,
+                    "children": [
+                        {
+                            "type": "boolean",
+                            "key": "enabled",
+                            "label": "Enabled"
+                        }
+                    ]
+                },
+                {
+                    "type": "dict",
+                    "collapsible": true,
+                    "checkbox_key": "enabled",
                     "key": "ExtractReviewCutUpVideo",
                     "label": "Extract Review Cut Up Video",
                     "is_group": true,

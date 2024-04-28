@@ -1,5 +1,7 @@
 import re
 import pyblish.api
+import json
+from openpype.settings import get_current_project_settings, get_anatomy_settings
 
 
 class CollectClipEffects(pyblish.api.InstancePlugin):
@@ -10,8 +12,15 @@ class CollectClipEffects(pyblish.api.InstancePlugin):
     families = ["clip"]
 
     def process(self, instance):
+        
+        return self._process(instance)
+
+    def _process(self, instance):
+        collect_by_layers = get_current_project_settings()\
+            ["hiero"]["publish"]["CollectEffectsByLayers"]["enabled"]
         family = "effect"
         effects = {}
+        effect_layers = {}
         review = instance.data.get("review")
         review_track_index = instance.context.data.get("reviewTrackIndex")
         item = instance.data["item"]
@@ -39,6 +48,7 @@ class CollectClipEffects(pyblish.api.InstancePlugin):
 
         # process all effects and divide them to instance
         for _track_index, sub_track_items in tracks_effect_items.items():
+            track_name = None
             # skip if track index is the same as review track index
             if review and review_track_index == _track_index:
                 continue
@@ -52,49 +62,62 @@ class CollectClipEffects(pyblish.api.InstancePlugin):
                 if not (track_index <= _track_index):
                     continue
 
+                if not track_name or track_name != sitem.parentTrack().name():
+                    track_name = sitem.parentTrack().name()
+
                 effect = self.add_effect(_track_index, sitem)
 
                 if effect:
                     effects.update(effect)
+            
+            if collect_by_layers:
+                effect_layers.update({track_name: effects})
+                effects = {}
+        
+        if not collect_by_layers:
+            effect_layers.update({"Main": effects})
 
-        # skip any without effects
-        if not effects:
-            return
+        for track_name, effects in effect_layers.items():
 
-        subset = instance.data.get("subset")
-        effects.update({"assignTo": subset})
+            # skip any without effects
+            if not effects:
+                return
 
-        subset_split = re.findall(r'[A-Z][^A-Z]*', subset)
+            subset = instance.data.get("subset")
+            effects.update({"assignTo": subset})
 
-        if len(subset_split) > 0:
-            root_name = subset.replace(subset_split[0], "")
-            subset_split.insert(0, root_name.capitalize())
+            subset_split = re.findall(r'[A-Z][^A-Z]*', subset)
 
-        subset_split.insert(0, "effect")
+            if len(subset_split) > 0:
+                # root_name = subset.replace(subset_split[1], "")
+                root_name = [track_name.capitalize()]
+                root_name.insert(0, subset.replace(subset_split[0], "").capitalize())
 
-        name = "".join(subset_split)
+            root_name.insert(0, "effect")
 
-        # create new instance and inherit data
-        data = {}
-        for key, value in instance.data.items():
-            if "clipEffectItems" in key:
-                continue
-            data[key] = value
+            name = "".join(root_name)
 
-        # change names
-        data["subset"] = name
-        data["family"] = family
-        data["families"] = [family]
-        data["name"] = data["subset"] + "_" + data["asset"]
-        data["label"] = "{} - {}".format(
-            data['asset'], data["subset"]
-        )
-        data["effects"] = effects
+            # create new instance and inherit data
+            data = {}
+            for key, value in instance.data.items():
+                if "clipEffectItems" in key:
+                    continue
+                data[key] = value
 
-        # create new instance
-        _instance = instance.context.create_instance(**data)
-        self.log.info("Created instance `{}`".format(_instance))
-        self.log.debug("instance.data `{}`".format(_instance.data))
+            # change names
+            data["subset"] = name
+            data["family"] = family
+            data["families"] = [family]
+            data["name"] = data["subset"] + "_" + data["asset"]
+            data["label"] = "{} - {}".format(
+                data['asset'], data["subset"]
+            )
+            data["effects"] = effects
+
+            # create new instance
+            _instance = instance.context.create_instance(**data)
+            self.log.info("Created instance `{}`".format(_instance))
+            self.log.debug("instance.data `{}`".format(json.dumps(_instance.data, indent=4, default=str)))
 
     def test_overlap(self, effect_t_in, effect_t_out):
         covering_exp = bool(
