@@ -330,23 +330,19 @@ class ORVAction(BaseAction):
         if load_previous_version:
             prev_component_paths = self.get_previous_component_paths(
                 session, component_paths, selected_component)
+        else:
+            prev_component_paths = None
         
         paths = self.get_pathlist(
             component_paths, prev_component_paths, no_slate)
-        
-        paths = [ele for ele in paths if ele != []]
 
         args.append(self.orv_path)
 
         for path in paths:
-            if isinstance(path, list):
-                if len(path) > 1:
-                    args.append("[")
-                    for sub in path:
-                        args.extend(sub.split(" "))
-                    args.append("]")
-                else:
-                    args.extend(path[0].split(" "))
+            args.append("[")
+            for sub in path:
+                args.extend(sub.split(" "))
+            args.append("]")
         
         # force session fps
         if fps is not None:
