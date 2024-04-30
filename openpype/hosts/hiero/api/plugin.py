@@ -653,15 +653,19 @@ class PublishClip:
 
     # default templates for non-ui use
     rename_default = False
-    hierarchy_default = "{_folder_}/{_sequence_}/{_track_}"
-    clip_name_default = "shot_{_trackIndex_:0>3}_{_clipIndex_:0>4}"
+    hierarchy_default = "{_folder_}/{_sequence_}"
+    clip_name_default = "{_sequence_}_{_clipIndex_:0>4}"
     subset_name_default = "<track_name>"
     review_track_default = "< none >"
     subset_family_default = "plate"
     count_from_default = 10
     count_steps_default = 10
-    vertical_sync_default = False
-    driving_layer_default = ""
+    vertical_sync_default = True
+    driving_layer_default = "Main"
+    convert_clips_default = True
+    keep_source_clips_default = True
+    subset_source_name_default = "Source"
+    audio_default = False
 
     def __init__(self, cls, track_item, **kwargs):
         # populate input cls attribute onto self.[attr]
@@ -784,7 +788,13 @@ class PublishClip:
         self.review_track = self.ui_inputs.get(
             "reviewTrack", {}).get("value") or self.review_track_default
         self.audio = self.ui_inputs.get(
-            "audio", {}).get("value") or False
+            "audio", {}).get("value") or self.audio_default
+        self.convert_clips = self.ui_inputs.get(
+            "convertClips", {}).get("value") or self.convert_clips_default
+        self.keep_source_clips = self.ui_inputs.get(
+            "keepSourceClips", {}).get("value") or self.keep_source_clips_default
+        self.subset_source_name = self.ui_inputs.get(
+            "subsetSourceName", {}).get("value") or self.subset_source_name_default
 
         # build subset name from layer name
         if self.subset_name == "<track_name>":
@@ -792,6 +802,7 @@ class PublishClip:
 
         # create subset for publishing
         self.subset = self.subset_family + self.subset_name.capitalize()
+        self.source_subset = self.subset + self.subset_source_name.capitalize()
 
     def _replace_hash_to_expression(self, name, text):
         """ Replace hash with number in correct padding. """

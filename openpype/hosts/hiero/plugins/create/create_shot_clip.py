@@ -40,7 +40,7 @@ class CreateShotClip(phiero.Creator):
                     "toolTip": "Renaming selected clips on fly",  # noqa
                     "order": 1},
                 "clipName": {
-                    "value": "{sequence}{shot}",
+                    "value": "{sequence}_{shot}",
                     "type": "QLineEdit",
                     "label": "Clip Name Template",
                     "target": "ui",
@@ -76,14 +76,14 @@ class CreateShotClip(phiero.Creator):
                     "toolTip": "Name of folder used for root of generated shots.\nUsable tokens:\n\t{_clip_}: name of used clip\n\t{_track_}: name of parent track layer\n\t{_sequence_}: name of parent sequence (timeline)",  # noqa
                     "order": 0},
                 "episode": {
-                    "value": "ep01",
+                    "value": "EPISODE",
                     "type": "QLineEdit",
                     "label": "{episode}",
                     "target": "tag",
                     "toolTip": "Name of episode.\nUsable tokens:\n\t{_clip_}: name of used clip\n\t{_track_}: name of parent track layer\n\t{_sequence_}: name of parent sequence (timeline)",  # noqa
                     "order": 1},
                 "sequence": {
-                    "value": "sq01",
+                    "value": "SEQUENCE",
                     "type": "QLineEdit",
                     "label": "{sequence}",
                     "target": "tag",
@@ -97,11 +97,11 @@ class CreateShotClip(phiero.Creator):
                     "toolTip": "Name of sequence of shots.\nUsable tokens:\n\t{_clip_}: name of used clip\n\t{_track_}: name of parent track layer\n\t{_sequence_}: name of parent sequence (timeline)",  # noqa
                     "order": 3},
                 "shot": {
-                    "value": "sh###",
+                    "value": "###",
                     "type": "QLineEdit",
                     "label": "{shot}",
                     "target": "tag",
-                    "toolTip": "Name of shot. `#` is converted to paded number. \nAlso could be used with usable tokens:\n\t{_clip_}: name of used clip\n\t{_track_}: name of parent track layer\n\t{_sequence_}: name of parent sequence (timeline)",  # noqa
+                    "toolTip": "Name of shot. `#` is converted to padded number. \nAlso could be used with usable tokens:\n\t{_clip_}: name of used clip\n\t{_track_}: name of parent track layer\n\t{_sequence_}: name of parent sequence (timeline)",  # noqa
                     "order": 4}
             }
         },
@@ -162,7 +162,7 @@ class CreateShotClip(phiero.Creator):
                     "toolTip": "Process subsets with corresponding audio",  # noqa
                     "order": 3},
                 "sourceResolution": {
-                    "value": False,
+                    "value": True,
                     "type": "QCheckBox",
                     "label": "Source resolution",
                     "target": "tag",
@@ -170,14 +170,46 @@ class CreateShotClip(phiero.Creator):
                     "order": 4},
             }
         },
+        "convertSettings": {
+            "type": "section",
+            "label": "Conversion settings",
+            "target": "ui",
+            "order": 4,
+            "value": {
+                "convertClips": {
+                    "value": True,
+                    "type": "QCheckBox",
+                    "label": "Convert tracks to \"scene_linear\"",
+                    "target": "tag",
+                    "toolTip": "Converts tracks to scene_linear and replaces file list for integration",  # noqa
+                    "order": 0
+                },
+                "keepSourceClips": {
+                    "value": True,
+                    "type": "QCheckBox",
+                    "label": "Publish source clips along",
+                    "target": "tag",
+                    "toolTip": "Publish along source clips with no conversion. These will always be at source resolution.",  # noqa
+                    "order": 1
+                },
+                "subsetSourceName": {
+                    "value": "Source",
+                    "type": "QLineEdit",
+                    "label": "Subset Source Name to append",
+                    "target": "tag",
+                    "toolTip": "Subset name to append to any clip while publishing source. NOTE: this will work only if the option \"Publish source clips\" above is checked.", #noqa
+                    "order": 2
+                }
+            }
+        },
         "frameRangeAttr": {
             "type": "section",
             "label": "Shot Attributes",
             "target": "ui",
-            "order": 4,
+            "order": 5,
             "value": {
                 "workfileFrameStart": {
-                    "value": 1001,
+                    "value": 1009,
                     "type": "QSpinBox",
                     "label": "Workfiles Start Frame",
                     "target": "tag",
@@ -185,7 +217,7 @@ class CreateShotClip(phiero.Creator):
                     "order": 0
                 },
                 "handleStart": {
-                    "value": 0,
+                    "value": 8,
                     "type": "QSpinBox",
                     "label": "Handle Start",
                     "target": "tag",
@@ -193,7 +225,7 @@ class CreateShotClip(phiero.Creator):
                     "order": 1
                 },
                 "handleEnd": {
-                    "value": 0,
+                    "value": 8,
                     "type": "QSpinBox",
                     "label": "Handle End",
                     "target": "tag",

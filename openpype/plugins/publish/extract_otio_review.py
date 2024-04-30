@@ -411,6 +411,10 @@ class ExtractOTIOReview(publish.Extractor):
             command.extend([
                 "-c", "copy"
             ])
+        else:
+            command.extend([
+                "-qscale:v", "2",
+            ])
 
         # add output path at the end
         command.append(output_path)

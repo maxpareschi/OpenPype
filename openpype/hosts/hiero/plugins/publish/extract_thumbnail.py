@@ -9,7 +9,7 @@ class ExtractThumnail(publish.Extractor):
     Extractor for track item's tumnails
     """
 
-    label = "Extract Thumnail"
+    label = "Extract Thumbnail"
     order = pyblish.api.ExtractorOrder
     families = ["plate", "take"]
     hosts = ["hiero"]

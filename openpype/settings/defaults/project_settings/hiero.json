@@ -27,19 +27,22 @@
     "create": {
         "CreateShotClip": {
             "hierarchy": "{folder}/{sequence}",
-            "clipRename": true,
-            "clipName": "{track}{sequence}{shot}",
+            "clipRename": false,
+            "clipName": "{sequence}_{shot}",
             "countFrom": 10,
             "countSteps": 10,
             "folder": "shots",
-            "episode": "ep01",
-            "sequence": "sq01",
+            "episode": "",
+            "sequence": "",
             "track": "{_track_}",
-            "shot": "sh###",
-            "vSyncOn": false,
-            "workfileFrameStart": 1001,
-            "handleStart": 10,
-            "handleEnd": 10
+            "shot": "###",
+            "vSyncOn": true,
+            "convertClips": true,
+            "keepSourceClips": true,
+            "subsetSourceName": "Source",
+            "workfileFrameStart": 1009,
+            "handleStart": 8,
+            "handleEnd": 8
         }
     },
     "load": {

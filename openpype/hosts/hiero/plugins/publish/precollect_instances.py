@@ -1,3 +1,5 @@
+import os
+import shutil
 import pyblish
 from openpype.pipeline.editorial import is_overlapping_otio_ranges
 from openpype.hosts.hiero import api as phiero
@@ -88,6 +90,19 @@ class PrecollectInstances(pyblish.api.ContextPlugin):
             families = [str(f) for f in tag_data["families"]]
             families.insert(0, str(family))
 
+            if "shot" not in families and tag_data["convertClips"]:
+                families.append("transcode")
+            
+            staging_dir = os.path.join(
+                os.path.dirname(context.data["activeProject"].path()),
+                "renders",
+                "hiero",
+                "transcodes"
+            ).replace("\\", "/")
+                
+            shutil.rmtree(staging_dir, ignore_errors=True)
+            os.makedirs(staging_dir, exist_ok=True)
+            
             # form label
             label = asset
             if asset != clip_name:
@@ -110,7 +125,8 @@ class PrecollectInstances(pyblish.api.ContextPlugin):
 
                 # add all additional tags
                 "tags": phiero.get_track_item_tags(track_item),
-                "newAssetPublishing": True
+                "newAssetPublishing": True,
+                "stagingDir": staging_dir
             })
 
             # otio clip data
