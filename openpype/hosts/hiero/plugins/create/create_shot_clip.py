@@ -19,11 +19,26 @@ class CreateShotClip(phiero.Creator):
     gui_name = "Pype publish attributes creator"
     gui_info = "Define sequential rename and fill hierarchy data."
     gui_inputs = {
-        "renameHierarchy": {
+        "farmHierarchy": {
             "type": "section",
-            "label": "Shot Hierarchy And Rename Settings",
+            "label": "<span style=\"color: #77DDFF;\"><b>FARM SETTINGS</b></span>",
             "target": "ui",
             "order": 0,
+            "value": {
+                "submitToDeadline": {
+                    "value": False,
+                    "type": "QCheckBox",
+                    "label": "<span style=\"color: #77DDFF;\">Submit to Deadline</span>",
+                    "target": "ui",
+                    "toolTip": "shot creation on the farm!",  # noqa
+                    "order": 0},
+            }
+        },
+        "renameHierarchy": {
+            "type": "section",
+            "label": "<b>Shot Hierarchy And Rename Settings</b>",
+            "target": "ui",
+            "order": 1,
             "value": {
                 "hierarchy": {
                     "value": "{folder}/{sequence}",
@@ -64,9 +79,9 @@ class CreateShotClip(phiero.Creator):
         },
         "hierarchyData": {
             "type": "dict",
-            "label": "Shot Template Keywords",
+            "label": "<b>Shot Template Keywords</b>",
             "target": "tag",
-            "order": 1,
+            "order": 2,
             "value": {
                 "folder": {
                     "value": "shots",
@@ -107,9 +122,9 @@ class CreateShotClip(phiero.Creator):
         },
         "verticalSync": {
             "type": "section",
-            "label": "Vertical Synchronization Of Attributes",
+            "label": "<b>Vertical Synchronization Of Attributes</b>",
             "target": "ui",
-            "order": 2,
+            "order": 3,
             "value": {
                 "vSyncOn": {
                     "value": True,
@@ -129,9 +144,9 @@ class CreateShotClip(phiero.Creator):
         },
         "publishSettings": {
             "type": "section",
-            "label": "Publish Settings",
+            "label": "<b>Publish Settings</b>",
             "target": "ui",
-            "order": 3,
+            "order": 4,
             "value": {
                 "subsetName": {
                     "value": ["<track_name>", "main", "bg", "fg", "bg",
@@ -172,9 +187,9 @@ class CreateShotClip(phiero.Creator):
         },
         "convertSettings": {
             "type": "section",
-            "label": "Conversion settings",
+            "label": "<b>Conversion settings</b>",
             "target": "ui",
-            "order": 4,
+            "order": 5,
             "value": {
                 "convertClips": {
                     "value": True,
@@ -204,9 +219,9 @@ class CreateShotClip(phiero.Creator):
         },
         "frameRangeAttr": {
             "type": "section",
-            "label": "Shot Attributes",
+            "label": "<b>Shot Attributes</b>",
             "target": "ui",
-            "order": 5,
+            "order": 6,
             "value": {
                 "workfileFrameStart": {
                     "value": 1009,

@@ -129,6 +129,18 @@
                     "is_group": true,
                     "children": [
                         {
+                            "type": "collapsible-wrap",
+                            "label": "FARM SETTINGS",
+                            "collapsible": false,
+                            "children": [
+                              {
+                                  "type": "boolean",
+                                  "key": "submitToDeadline",
+                                  "label": "Submit on Deadline"
+                              }
+                            ]
+                        },
+                        {
                           "type": "collapsible-wrap",
                           "label": "Shot Hierarchy And Rename Settings",
                           "collapsible": false,
