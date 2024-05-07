@@ -2,13 +2,14 @@ import os
 import subprocess
 import re
 import traceback
+from typing import Callable, List
 
 import ftrack_api
 from openpype_modules.ftrack.lib import BaseAction, statics_icon # type: ignore
 
 
 
-def return_pyexec_command(f, *args, **kwargs):
+def return_pyexec_command(f: Callable, *args, **kwargs):
     """Parse a function source code as a string.
     
     f is expected to be a python function.
@@ -84,7 +85,7 @@ def monkey_patch_openrv_gui():
 
     version_dropdown.textActivated.connect(on_item_clicked)
 
-def orvpush_proc(items):
+def orvpush_proc(items: List[List[str]]):
     """Main function to be run inside OpenRV.
     
     This function must be parsed with the 'return_pyexec_command' before
@@ -105,7 +106,7 @@ def orvpush_proc(items):
 
 
 
-    def flatten_input_list(items: list):
+    def flatten_input_list(items: List[List[str]]):
         """Adapt paths so it matches rvpush needs.
         TODO: when rvpush is  approved, refactor the function that
         generates the list of items so that it matches rvpush
