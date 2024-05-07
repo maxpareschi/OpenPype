@@ -79,7 +79,7 @@ def monkey_patch_openrv_gui():
         rvc.setViewNode(text)
 
     try:
-        version_dropdown.currentTextChanged.disconnect()
+        version_dropdown.textActivated.disconnect()
     except Exception as e:
         ...
 
@@ -519,12 +519,12 @@ class ORVAction(BaseAction):
 
         # START OF OPENRVPUSH PROC
         # generate dropdown on the fly
-        src1 = return_pyexec_command(monkey_patch_openrv_gui)
-        # src1 = ""
+        src += "from typing import Callable, List\n"
+        src += return_pyexec_command(monkey_patch_openrv_gui)
 
         # leverage multimedia sources feature as version switcher
-        src2 = return_pyexec_command(orvpush_proc, paths)
-        cmd = [self.orvpush_path, "py-exec", src1 + src2]
+        src += return_pyexec_command(orvpush_proc, paths)
+        cmd = [self.orvpush_path, "py-exec", src]
         self.log.debug(f"Running ORVPUSH: {cmd}")
         rv_push_process = subprocess.Popen(cmd)
         # END OF OPENRVPUSH PROC
