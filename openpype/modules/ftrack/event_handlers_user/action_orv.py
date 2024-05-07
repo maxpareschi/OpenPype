@@ -6,7 +6,7 @@ import traceback
 import copy
 
 import ftrack_api
-from openpype_modules.ftrack.lib import BaseAction, statics_icon
+from openpype_modules.ftrack.lib import BaseAction, statics_icon # type: ignore
 
 
 class ORVAction(BaseAction):
@@ -44,12 +44,13 @@ class ORVAction(BaseAction):
         if not orv_path:
             self.log.warning("ORV path was not found, wrong or " +
                              "missing {} env var!".format(self.RV_ENV_KEY))
-            return {
-                "success": False,
-                "message": "ORV path was not found."
-            }
+            # return {
+            #     "success": False,
+            #     "message": "ORV path was not found."
+            # }
         
         self.orv_path = orv_path
+        self.orvpush_path = re.sub(r"rv(?=$|\.exe)", "rvpush", self.orv_path)
 
     def get_all_assetversions(self, session, entities):
 
@@ -163,12 +164,13 @@ class ORVAction(BaseAction):
         for i, cpath in enumerate(cur_paths):
             path_group = [self.parse_file(cpath, no_slate)]
             if prev_paths is not None:
-                if prev_paths[i] is not None:
+                if len(prev_paths) >= i and prev_paths[i] is not None:
                     path_group.append(
                         self.parse_file(prev_paths[i], no_slate))
             path_list.append(path_group)
         
         return path_list
+
 
     def parse_file(self, component_location, no_slate = False):
 
@@ -336,20 +338,202 @@ class ORVAction(BaseAction):
         paths = self.get_pathlist(
             component_paths, prev_component_paths, no_slate)
 
-        args.append(self.orv_path)
 
-        for path in paths:
-            args.append("[")
-            for sub in path:
-                args.extend(sub.split(" "))
-            args.append("]")
+        def return_pyexec_command(f, *args, **kwargs):
+            """Parse a function source code as a string.
+            
+            f is expected to be a python function.
+            This is a utility function that allows to have syntax highlighting and
+            intelisense while developing code that is going to be sent as a string
+            to be executed somewhere else.
+            """
+            # get source code of function
+            from inspect import getsource
+            src = getsource(f)
+
+            # remove top level indentation in case the funciton is not globally defined
+            tab = re.match("[\t\ ]*(?=def\ )", src).group()
+            if tab:
+                src = "\n".join([l[len(tab):] for l in src.split("\n")])
+            
+            # return the source code as top level function and add execution line
+            parsed_kw = [f"{k}={v}" for k, v in kwargs.items()]
+            signature = f"({', '.join([str(i) for i in [*args, *parsed_kw]])})"
+            return src + f.__name__ + signature + "\n"
+    
+        def monkey_path_openrv_gui():
+            from PySide2.QtWidgets import QComboBox, QApplication # type: ignore
+            from rv import qtutils as rvq, extra_commands as rvec, commands as rvc # type: ignore
+
+            app = QApplication.instance() or QApplication()
+            wids = [w for w in app.allWidgets() if isinstance(w, QComboBox)]
+            gen = (w for w in wids if w.objectName() == "22_version_dropdown")
+            try:
+                version_dropdown = next(gen)
+            except StopIteration as e:
+                version_dropdown = None
+
+
+            if version_dropdown is None:
+                print(f"Monkey patching OpenRV GUI as no version dropdown was found.")
+                bottom_toolbar = rvq.sessionBottomToolBar()
+                version_dropdown = QComboBox()
+                version_dropdown.setObjectName("22_version_dropdown")
+                # version_dropdown.addItems(["v021", "v022", "v023"])
+                bottom_toolbar.addWidget(version_dropdown)
+                def update_combobox (event):
+                    version_dropdown.clear()
+                    version_dropdown.addItems(rvc.nodesOfType("RVSwitchGroup"))
+
+                rvc.bind("default", "global", "new-node", update_combobox, "___doc___"); 
+                rvc.bind("default", "global", "after-node-deleted", update_combobox, "__doc__"); 
+            
+            def on_item_clicked(text):
+                info = rvec.sourceMetaInfoAtFrame(rvc.frame())
+                print(info)
+                src_node = rvc.sourceMediaRepSourceNode(info["node"])
+                print(f"Current source node is {src_node}")
+                switch_node = rvc.sourceMediaRepSwitchNode(src_node)
+                print(f"Current switch node is {switch_node}.")
+                rvc.setViewNode(text)
+
+            try:
+                version_dropdown.currentTextChanged.disconnect()
+            except Exception as e:
+                ...
+
+            version_dropdown.textActivated.connect(on_item_clicked)
+
+        def orvpush_proc(items):
+            """Main function to be run inside OpenRV.
+            
+            This function must be parsed with the 'return_pyexec_command' before
+            being sent over.
+            Because this function is executed in another interpreter, global
+            variables won't be inherited in this scope, which means that
+            all imports must happen in the local scope.
+            """
+
+            from pathlib import Path
+            from re import compile as recomp
+            import rv.commands as rvc # type: ignore
+
+
+
+            # adapt paths so it matches rvpush
+            # TODO: when rvpush is  approved, refactor the function that
+            # generates the list of items so that it matches rvpush
+            # instead of rv so that we dont need the lines down below
+            inputs = list()
+            for group in items:
+                for string in group:
+                    for substring in string.split(" "):
+                        if len(substring) < 5:
+                            print(f"Ignoring substring {substring}")
+                            continue
+                        elif Path(substring.replace(".#.", ".1001.")).exists():
+                            print(f"Adding file {substring}")
+                            inputs.append(Path(substring))
+                        else:
+                            print(f"Ignoring file {substring} as it doesnt exists")
+
+            SHOT_REGEX = recomp(r"(?<=\_)\d{3}\_\d{3}(?=\_)")
+
+            # iterate over the component paths [[], [], []]
+            rvc.addSourceBegin() # halt new sources connections
+
+            for f in inputs:
+                print(f"working on {f}")
+
+                # if already loaded, skip
+                if any(f == p for p in [Path(src[0]) for src in rvc.sources() if src]):
+                    # print(f"File already loaded: {f}")
+                    continue
+
+                tag = f.name
+                shot = SHOT_REGEX.findall(f.stem)[0]
+
+                # iterate over existing sources and look for shot groups
+                for switch_node in rvc.nodesOfType("RVSwitch"):
+                    try:
+                        src_node = rvc.sourceMediaRepSourceNode(switch_node)
+                        src = Path(rvc.sourceMedia(src_node)[0])
+                    except Exception as e:
+                        continue
+                    
+                    sh = SHOT_REGEX.findall(Path(src).stem)[0]
+                    
+                    print(sh, shot)
+                    if sh == shot:
+                        args = [f.as_posix()]
+                        if f.suffix in [".exr", ".jpg", ".jpeg"]:
+                            args += ["+in", "1001"]
+                        try:
+                            rvc.addSourceMediaRep(rvc.sourceMediaRepSourceNode(switch_node), tag, args)
+                        except:
+                            pass
+                        break
+                else:
+                    args = [f.as_posix(), "+mediaRepName", tag]
+                    if f.suffix in [".exr", ".jpg", ".jpeg"]:
+                        args += ["+in", "1001"]
+                    
+            src = rvc.addSourceVerbose(args)
+                    
+ 
+
+
+            # for group in items:
+            #     for i, path in enumerate(group):
+
+            #         # if already loaded, skip
+            #         if any(Path(path) == p for p in all_sources):
+            #             print(f"File already loaded: {path}")
+            #             continue
+
+            #         tag = Path(path).name
+
+ 
+
+
+
+            #         path_arg = [path.split(" ")[-1], *path.split(" ")[:-1]]
+            #         path_arg += ["+mediaRepName", tag]
+            #         path_arg = ["+in" if i == "-in" else i for i in path_arg]
+            #         # print(path_arg)
+
+            #         if i == 0:
+            #             src = rvc.addSourceVerbose(path_arg)
+            #             print(f"Created source {src}")
+            #         else:
+            #             rvc.addSourceMediaRep(src, tag, [path])
+            rvc.addSourceEnd() # start connecting all new sources
+                
+
+        # generate dropdown on the fly
+        src1 = return_pyexec_command(monkey_path_openrv_gui)
+        # src1 = ""
+
+        # leverage multimedia sources feature as version switcher
+        src2 = return_pyexec_command(orvpush_proc, paths)
+        cmd = [self.orvpush_path, "py-exec", src1 + src2]
+        # self.log.info(f"Running ORVPUSH: {cmd}")
+        rv_push_process = subprocess.Popen(cmd)
+
+        # args.append(self.orv_path)
+
+        # for path in paths:
+        #     args.append("[")
+        #     for sub in path:
+        #         args.extend(sub.split(" "))
+        #     args.append("]")
         
-        # force session fps
-        if fps is not None:
-            args.extend(["-fps", str(fps)])
+        # # force session fps
+        # if fps is not None:
+        #     args.extend(["-fps", str(fps)])
         
-        self.log.info("Running ORV: {}".format(args))
-        subprocess.Popen(args)
+        # self.log.info("Running ORV: {}".format(args))
+        # subprocess.Popen(args)
             
         return {"success": True, "message": "ORV Launching!"}
 
