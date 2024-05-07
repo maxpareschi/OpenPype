@@ -35,6 +35,7 @@ def monkey_patch_openrv_gui():
     """Run inside OpenRV session. Adds combobox for RVSwitch nodes."""
     from logging import getLogger, basicConfig, INFO, DEBUG
     from os import environ
+    from functools import partial
     from PySide2.QtWidgets import QComboBox, QApplication # type: ignore
     from rv import qtutils as rvq, extra_commands as rvec, commands as rvc # type: ignore
     # environ["RV_MULTI_MEDIA_REP_DEBUG"] = 1
@@ -61,29 +62,37 @@ def monkey_patch_openrv_gui():
     version_dropdown.setObjectName("22_version_dropdown")
     # version_dropdown.addItems(["v021", "v022", "v023"])
     bottom_toolbar.addWidget(version_dropdown)
-    def update_combobox (event):
-        version_dropdown.clear()
-        version_dropdown.addItems(rvc.nodesOfType("RVSwitchGroup"))
 
-    rvc.bind("default", "global", "new-node", update_combobox, "___doc___")
-    rvc.bind("default", "global", "after-node-deleted", update_combobox, "__doc__")
+    def update_combobox (combobox: QComboBox, event):
+        logger.debug(f"Updating list of items in combobox @ {event} {type(event)}")
+        version_dropdown.clear()
+        nodes = rvc.nodesOfType("RVSwitchGroup")
+        combobox.switches = {rvc.getStringProperty(s + ".ui.name")[0] : s for s in nodes}
+        version_dropdown.addItems(combobox.switches.keys())
+
+    callback = partial(update_combobox, version_dropdown)
+    # rvc.bind("default", "global", "new-node", callback, "___doc___")
+    # rvc.bind("default", "global", "after-node-deleted", callback, "__doc__")
+    # rvc.bind("default", "global", "source-group-complete", callback, "__doc__")
+    rvc.bind("default", "global", "graph-node-inputs-changed", callback, "__doc__")
+    
     logger.debug(f"All done.")
     
-    def on_item_clicked(text):
-        info = rvec.sourceMetaInfoAtFrame(rvc.frame())
+    def on_item_clicked(combobox: QComboBox, text: str):
+        # info = rvec.sourceMetaInfoAtFrame(rvc.frame())
         # logger.debug(info)
-        src_node = rvc.sourceMediaRepSourceNode(info["node"])
+        # src_node = rvc.sourceMediaRepSourceNode(info["node"])
         # logger.debug(f"Current source node is {src_node}")
-        switch_node = rvc.sourceMediaRepSwitchNode(src_node)
+        # switch_node = rvc.sourceMediaRepSwitchNode(src_node)
         # logger.debug(f"Current switch node is {switch_node}.")
-        rvc.setViewNode(text)
+        rvc.setViewNode(combobox.switches[text])
 
     try:
         version_dropdown.textActivated.disconnect()
     except Exception as e:
         ...
 
-    version_dropdown.textActivated.connect(on_item_clicked)
+    version_dropdown.textActivated.connect(partial(on_item_clicked, version_dropdown))
 
 def orvpush_proc(items: List[List[str]]):
     """Main function to be run inside OpenRV.
@@ -182,6 +191,9 @@ def orvpush_proc(items: List[List[str]]):
             if f.suffix in [".exr", ".jpg", ".jpeg"]:
                 args += ["+in", "1001"]
             src = rvc.addSourceVerbose(args)
+            switch_node = rvc.sourceMediaRepSwitchNode(src)
+            switch_node_group = rvc.nodeGroup(switch_node)
+            rvc.setStringProperty(f"{switch_node_group}.ui.name", [shot])
             logger.debug(f"New switch node created {src} @ {shot}:")
 
     rvc.addSourceEnd() # start connecting all new sources
