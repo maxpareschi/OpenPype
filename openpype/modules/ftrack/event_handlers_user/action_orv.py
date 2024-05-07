@@ -519,7 +519,7 @@ class ORVAction(BaseAction):
 
         # START OF OPENRVPUSH PROC
         # generate dropdown on the fly
-        src += "from typing import Callable, List\n"
+        src = "from typing import Callable, List\n"
         src += return_pyexec_command(monkey_patch_openrv_gui)
 
         # leverage multimedia sources feature as version switcher
