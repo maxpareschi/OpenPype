@@ -45,7 +45,7 @@ class ExtractHieroTranscode(publish.Extractor):
                 continue
             
             repre["name"] = repre["name"] + "_" + instance.data["subsetSourceName"].lower()
-            repre["outputName"] = instance.data["subsetSourceName"].lower()
+            repre["outputName"] = repre["name"]
 
             transcode_staging_dir = os.path.join(
                 staging_dir, "{}_transcodes".format(instance.data["name"]))
@@ -53,12 +53,15 @@ class ExtractHieroTranscode(publish.Extractor):
             if not os.path.isdir(transcode_staging_dir):
                 os.mkdir(transcode_staging_dir)
 
-            base_name = os.path.join(transcode_staging_dir, "sourceClip_transcoded")
+            base_name = os.path.join(transcode_staging_dir, "{}_transcoded".format(
+                instance.data["name"]
+            ))
             
             source_path = os.path.join(
                 repre["stagingDir"],instance.data["originalBasename"]) + "#." + repre["ext"]
             
-            transcoded_path = base_name + ".#." + repre["ext"]
+            main_transcoded_path = base_name + "_main.#." + repre["ext"]
+            proxy_transcoded_path = base_name + "_proxy.#.jpg"
             
             cmd = [
                 oiiotool_path.replace("\\", "/"), "-v",
@@ -70,13 +73,10 @@ class ExtractHieroTranscode(publish.Extractor):
                     sequence.format().height()
                 ),
                 "--ch", "R,G,B", "--label", "sc_lin",
-                "-o", transcoded_path.replace("\\", "/"),
+                "-o", main_transcoded_path.replace("\\", "/"),
                 "-i", "sc_lin",
                 "--colorconvert", "scene_linear", "color_picking",
-                "-o", transcoded_path.replace("\\", "/").replace(
-                    repre["ext"],
-                    "jpg"
-                )
+                "-o", proxy_transcoded_path.replace("\\", "/")
             ]
             
             self.log.debug("Running Transcode >>> {}".format(" ".join(cmd)))
@@ -95,17 +95,38 @@ class ExtractHieroTranscode(publish.Extractor):
         self.log.debug("Transcoded Remainders: {}".format(remainders))
 
         for collection in collections:
+            suffix = ""
+            colorspace = "scene_linear"
+            if collection.head.find("main") >= 0:
+                self.log.debug("tagging main representation...")
+                suffix = "_main"
+            elif collection.head.find("proxy") >= 0:
+                self.log.debug("tagging proxy representation...")
+                suffix = "_proxy"
+                colorspace = "color_picking"
+
+            color_data = {
+                "colorspace": colorspace,
+                "config": {
+                    "path": project_ocio
+                }
+            }
+            
             representation_data = {
                 "frameStart": instance.data["sourceStartH"],
                 "frameEnd": instance.data["sourceEndH"],
                 "stagingDir": transcode_staging_dir,
-                "name": collection.tail.replace(".", ""),
+                "name": collection.tail.replace(".", "") + suffix,
+                "outputName": collection.tail.replace(".", "") + suffix,
                 "ext": collection.tail.replace(".", ""),
-                "files": [files for files in collection]
+                "files": [files for files in collection],
+                "data": color_data,
+                "colorspaceData": color_data
             }
-            if representation_data["ext"] == "exr":
-                instance.data["representations"].insert(0, representation_data)
-            else:
-                instance.data["representations"].append(representation_data)
+
+            instance.data["representations"].append(representation_data)
+            self.log.debug("Added representation: {}".format(
+                json.dumps(representation_data, indent=4, default=str)))
         
-        self.log.debug(json.dumps(instance.data, indent=4, default=str))
+        self.log.debug("Final instance data for debug: {}".format(
+            json.dumps(instance.data, indent=4, default=str)))

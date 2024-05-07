@@ -224,7 +224,7 @@
                                 {
                                     "type": "boolean",
                                     "key": "convertClips",
-                                    "label": "Convert tracks to \"scene_linear\""
+                                    "label": "Convert tracks to:\n  - \"scene_linear\" exr main (for comp)\n  - \"color_picking\" jpeg proxy (for cg)"
                                 },
                                 {
                                     "type": "boolean",
