@@ -3,8 +3,11 @@ import subprocess
 import re
 import traceback
 from typing import Callable, List
+from pathlib import Path
 
 import ftrack_api
+from ftrack_api.entity.asset_version import AssetVersion
+from ftrack_api.entity.location import Location
 from openpype_modules.ftrack.lib import BaseAction, statics_icon # type: ignore
 
 
@@ -31,70 +34,7 @@ def return_pyexec_command(f: Callable, *args, **kwargs):
     signature = f"({', '.join([str(i) for i in [*args, *parsed_kw]])})"
     return src + f.__name__ + signature + "\n"
 
-def monkey_patch_openrv_gui():
-    """Run inside OpenRV session. Adds combobox for RVSwitch nodes."""
-    from logging import getLogger, basicConfig, INFO, DEBUG
-    from os import environ
-    from functools import partial
-    from PySide2.QtWidgets import QComboBox, QApplication # type: ignore
-    from rv import qtutils as rvq, extra_commands as rvec, commands as rvc # type: ignore
-    # environ["RV_MULTI_MEDIA_REP_DEBUG"] = 1
-    level=DEBUG if "RV_MULTI_MEDIA_REP_DEBUG" in environ else INFO
-    getLogger().setLevel(DEBUG)
-    logger = getLogger("gui_proc")
-
-    app = QApplication.instance() or QApplication()
-    wids = [w for w in app.allWidgets() if isinstance(w, QComboBox)]
-    gen = (w for w in wids if w.objectName() == "22_version_dropdown")
-    try:
-        version_dropdown = next(gen)
-    except StopIteration as e:
-        version_dropdown = None
-
-
-    if version_dropdown is not None:
-        logger.debug(f"Dropdown found.")
-        return
-
-    logger.debug(f"Monkey patching OpenRV GUI as no version dropdown was found.")
-    bottom_toolbar = rvq.sessionBottomToolBar()
-    version_dropdown = QComboBox()
-    version_dropdown.setObjectName("22_version_dropdown")
-    # version_dropdown.addItems(["v021", "v022", "v023"])
-    bottom_toolbar.addWidget(version_dropdown)
-
-    def update_combobox (combobox: QComboBox, event):
-        logger.debug(f"Updating list of items in combobox @ {event} {type(event)}")
-        version_dropdown.clear()
-        nodes = rvc.nodesOfType("RVSwitchGroup")
-        combobox.switches = {rvc.getStringProperty(s + ".ui.name")[0] : s for s in nodes}
-        version_dropdown.addItems(combobox.switches.keys())
-
-    callback = partial(update_combobox, version_dropdown)
-    # rvc.bind("default", "global", "new-node", callback, "___doc___")
-    # rvc.bind("default", "global", "after-node-deleted", callback, "__doc__")
-    # rvc.bind("default", "global", "source-group-complete", callback, "__doc__")
-    rvc.bind("default", "global", "graph-node-inputs-changed", callback, "__doc__")
-    
-    logger.debug(f"All done.")
-    
-    def on_item_clicked(combobox: QComboBox, text: str):
-        # info = rvec.sourceMetaInfoAtFrame(rvc.frame())
-        # logger.debug(info)
-        # src_node = rvc.sourceMediaRepSourceNode(info["node"])
-        # logger.debug(f"Current source node is {src_node}")
-        # switch_node = rvc.sourceMediaRepSwitchNode(src_node)
-        # logger.debug(f"Current switch node is {switch_node}.")
-        rvc.setViewNode(combobox.switches[text])
-
-    try:
-        version_dropdown.textActivated.disconnect()
-    except Exception as e:
-        ...
-
-    version_dropdown.textActivated.connect(partial(on_item_clicked, version_dropdown))
-
-def orvpush_proc(items: List[List[str]]):
+def orvpush_proc(items: List[str], no_slate: bool = True, fps: float = 24.0):
     """Main function to be run inside OpenRV.
     
     This function must be parsed with the 'return_pyexec_command' before
@@ -112,30 +52,7 @@ def orvpush_proc(items: List[List[str]]):
 
     logger = getLogger("orvpush_proc")
     SHOT_REGEX = recomp(r"(?<=\_)\d{3}\_\d{3}(?=\_)")
-
-
-
-    def flatten_input_list(items: List[List[str]]):
-        """Adapt paths so it matches rvpush needs.
-        TODO: when rvpush is  approved, refactor the function that
-        generates the list of items so that it matches rvpush
-        instead of rv so that we dont need the lines down below
-        """
-        inputs = list()
-        for group in items:
-            for string in group:
-                for substring in string.split(" "):
-                    if len(substring) < 5:
-                        logger.debug(f"Ignoring substring {substring}")
-                        continue
-                    elif Path(substring.replace(".#.", ".1001.")).exists():
-                        logger.debug(f"Adding file {substring}")
-                        inputs.append(Path(substring))
-                    else:
-                        logger.debug(f"Ignoring file {substring} as it doesnt exists")
-        return inputs
-
-    inputs = flatten_input_list(items)
+    FRAME_REGEX = recomp(r"(?<=\.)\d{4}(?=\.)")
 
     def is_source_in_rv_session(f: Path):
         """Checks whether a path file is already imported.
@@ -150,18 +67,25 @@ def orvpush_proc(items: List[List[str]]):
                 return True
         return False
 
-
     rvc.addSourceBegin() # halt new sources connections
 
     # iterate over the component paths [[], [], []]
-    for f in inputs:
-        logger.debug(f"working on {f}")
+    for f in items:
+        f=Path(f)
+        logger.debug(f"Working on source file {f}.")
 
         if is_source_in_rv_session(f):
             continue
                       
-        tag = f.name
         shot = SHOT_REGEX.findall(f.stem)[0]
+        tag = f.name
+
+        args = [f.with_name(FRAME_REGEX.sub("#", f.name)).as_posix()]
+        if f.suffix in [".exr", ".jpg", ".jpeg"]:
+            args += ["+in", "1001"] if no_slate else [] 
+
+        if fps is not None:
+            args.extend(["+fps", str(fps)])
 
         # iterate over existing sources and look for shot groups
         for switch_node in rvc.nodesOfType("RVSwitch"):
@@ -175,9 +99,6 @@ def orvpush_proc(items: List[List[str]]):
             
             logger.debug(f"Match found for incoming file and existing switch node.")
             if sh == shot:
-                args = [f.as_posix()]
-                if f.suffix in [".exr", ".jpg", ".jpeg"]:
-                    args += ["+in", "1001"]
                 try:
                     rvc.addSourceMediaRep(src_node, tag, args)
                     logger.debug(f"Reused switch node {switch_node} @ {shot}:")
@@ -187,9 +108,7 @@ def orvpush_proc(items: List[List[str]]):
                 break
         else:
             logger.debug(f"Creating new switch node.")
-            args = [f.as_posix(), "+mediaRepName", tag]
-            if f.suffix in [".exr", ".jpg", ".jpeg"]:
-                args += ["+in", "1001"]
+            args += ["+mediaRepName", tag]
             src = rvc.addSourceVerbose(args)
             switch_node = rvc.sourceMediaRepSwitchNode(src)
             switch_node_group = rvc.nodeGroup(switch_node)
@@ -197,7 +116,6 @@ def orvpush_proc(items: List[List[str]]):
             logger.debug(f"New switch node created {src} @ {shot}:")
 
     rvc.addSourceEnd() # start connecting all new sources
-    logger.debug('ERROR: This message will not be color coded.')
 
 class ORVAction(BaseAction):
     """ Launch ORV action """
@@ -349,43 +267,11 @@ class ORVAction(BaseAction):
         
         return prev_component_paths
 
-    def get_pathlist(self, cur_paths, prev_paths = None, no_slate = False):
-        path_list = []
-        for i, cpath in enumerate(cur_paths):
-            path_group = [self.parse_file(cpath, no_slate)]
-            if prev_paths is not None:
-                if len(prev_paths) >= i and prev_paths[i] is not None:
-                    path_group.append(
-                        self.parse_file(prev_paths[i], no_slate))
-            path_list.append(path_group)
-        
-        return path_list
-
-    def parse_file(self, component_location, no_slate = False):
-
-        path = os.path.abspath(
-            component_location["resource_identifier"]
-        ).replace("\\", "/")
-
-        head, ext = os.path.splitext(path)
-
-        try:
-            match = re.findall(r'\d+$', head)[0]
-            head = head.replace(match, "")
-
-            if no_slate:
-                frame_in = "-in {} ".format(int(match) + 1)
-            else:
-                frame_in = ""
-            path = "{}{}#{}".format(
-                frame_in,
-                head,
-                ext
-            )
-        except:
-            pass
-
-        return path
+    def get_pathlist_2(self, cur_paths, prev_paths = None):
+        for i, cpath in enumerate(cur_paths + (prev_paths or [])):
+            path = Path(cpath.get("resource_identifier"))
+            if path is not None:
+                yield path.as_posix()
 
     def get_interface(self, available_components, is_manual_selection = False):
         """ Returns correctly formed interface elements """
@@ -395,7 +281,7 @@ class ORVAction(BaseAction):
                 "label": component,
                 "value": component
             })
-        enum_data = sorted(enum_data, key = lambda d: d["value"], reverse = True)
+        enum_data = sorted(enum_data, key = lambda d: not "exr"==d["label"])
         if not enum_data:
             raise IndexError("Failed to fetch any components")
         items = []
@@ -500,6 +386,8 @@ class ORVAction(BaseAction):
         """ Launch application loops through all components
             and assembles the subprocess command """
         
+        # user values is a dict like:
+        # {'selected_component': 'exr', 'load_previous_version': False, 'no_slate': True}
         user_values = event["data"].get("values", None)
 
         if user_values is None:
@@ -507,56 +395,39 @@ class ORVAction(BaseAction):
         
         self.log.info("Sumbitted choices: {}".format(user_values))
 
-        # Get custom attributes and interface values
-        fps = entities[0].get("custom_attributes", {}).get("fps", 24.0)
-        selected_component = user_values.get("selected_component", None)
-        load_previous_version = user_values.get("load_previous_version", False)
-        no_slate = user_values.get("no_slate", False)
-        only_latest = user_values.get("only_latest", False)
-
-        args = []
+        # Get custom attributes and interface 
+        selected_component: str = user_values.get("selected_component", None) # exr, mov...
+        load_previous_version: bool = user_values.get("load_previous_version", False)
+        no_slate: bool = user_values.get("no_slate", False)
+        fps: float = entities[0].get("custom_attributes", {}).get("fps") or 24.0
+        
+        # TODO: this key seem to be missing in the GUI
+        only_latest: bool = user_values.get("only_latest", False)
     
-        assetversions = self.get_all_assetversions(session, entities)
+        assetversions: List[AssetVersion] = self.get_all_assetversions(session, entities)
+
         component_paths = self.get_all_component_paths(
             session, assetversions, selected_component, only_latest)
 
+        prev_component_paths = None
         if load_previous_version:
             prev_component_paths = self.get_previous_component_paths(
                 session, component_paths, selected_component)
-        else:
-            prev_component_paths = None
+
         
-        paths = self.get_pathlist(
-            component_paths, prev_component_paths, no_slate)
+        # NOTE: get_path_list2 is a generator, it needs to be turned into a list
+        paths: List[str] = list(self.get_pathlist_2( component_paths, prev_component_paths))
 
         # START OF OPENRVPUSH PROC
-        # generate dropdown on the fly
         src = "from typing import Callable, List\n"
-        src += return_pyexec_command(monkey_patch_openrv_gui)
 
         # leverage multimedia sources feature as version switcher
-        src += return_pyexec_command(orvpush_proc, paths)
+        src += return_pyexec_command(orvpush_proc, paths, no_slate, fps)
         cmd = [self.orvpush_path, "py-exec", src]
         self.log.debug(f"Running ORVPUSH: {cmd}")
         rv_push_process = subprocess.Popen(cmd)
-        # END OF OPENRVPUSH PROC
-
-        # args.append(self.orv_path)
-
-        # for path in paths:
-        #     args.append("[")
-        #     for sub in path:
-        #         args.extend(sub.split(" "))
-        #     args.append("]")
-        
-        # # force session fps
-        # if fps is not None:
-        #     args.extend(["-fps", str(fps)])
-        
-        # self.log.info("Running ORV: {}".format(args))
-        # subprocess.Popen(args)
-            
-        return {"success": True, "message": "ORV Launching!"}
+        msg = f"ORV Launching: {fps} FPS with {'no' if no_slate else ''} slate."
+        return {"success": True, "message": msg}
 
 
 def register(session):
