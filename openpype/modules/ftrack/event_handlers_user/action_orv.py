@@ -6,6 +6,7 @@ from typing import Callable, List, Tuple
 from pathlib import Path
 
 import ftrack_api
+from ftrack_api import Session
 from ftrack_api.entity.asset_version import AssetVersion
 from ftrack_api.entity.location import Location
 from openpype_modules.ftrack.lib import BaseAction, statics_icon # type: ignore
@@ -23,8 +24,8 @@ class ORVAction(BaseAction):
     type = "Application"
 
     allowed_types = ["img", "mov", "exr", "mxf", "dpx",
-                     "jpg", "jpeg", "png", "tif", "tiff",
-                     "tga", "dnxhd", "prores", "dnx"]
+                     "jpg", "jpeg", "png", "tif",
+                     "tga", "prores", "dnx"]
     disallowed_types = [ "%mp4%", "%thumbnail%", "hip", "usd" ]
 
     not_implemented = ["Project", "ReviewSession",
@@ -91,22 +92,39 @@ class ORVAction(BaseAction):
             else:
                 message = "\"{}\" entity type is not implemented yet.".format(entity.entity_type)
                 self.log.error(message)
+                raise NotImplementedError(message)
         
         return result
 
-    def get_all_available_components(self, session, assetversions, include):
+    def get_all_available_components(
+            self, session: Session, assetversions: List[AssetVersion], include: List[str]
+        ):
+        """returns all the components that are available for the selected versions.
+        
+        This allows to have a list of the different component names that exist
+        for the selected asset versions.
+        The main purpose is to fill up a dropdown later on in the ftrack GUI.
+        """
         id_matches = ",".join([av["id"] for av in assetversions])
         name_matches = " or ".join(["name like '%{}%'".format(allow) for allow in include])
         
         query = [
             "select name from Component where version.id in",
-            "({}) and ({})".format(id_matches, name_matches)
+            f"({id_matches}) and ({name_matches})"
         ]
         return list(set([c["name"] for c in session.query(" ".join(query)).all()]))
     
-    def get_all_component_paths(self, session, assetversions, component_name, only_latest = False):
+    def get_all_component_paths(
+            self,
+            session: Session,
+            assetversions: List[AssetVersion],
+            component_name: str,
+            only_latest: bool = False,
+        ):
+    
         assetversion_ids = "','".join([av["id"] for av in assetversions])
         asset_ids = "','".join([av["asset_id"] for av in assetversions])
+        name_match = " or ".join([f"component.name like '%{tag}%'" for tag in self.allowed_types])
         
         query = [
             "select",
@@ -123,8 +141,10 @@ class ORVAction(BaseAction):
             "component.version.asset.parent.name,",
             "component.version.asset.versions,",
             "component.version.asset.latest_version",
-            "from ComponentLocation where",
-            "component.name is {}".format(component_name),
+            "from ComponentLocation",
+            # f" where component.name is {component_name}",
+            f"where (component.name is {component_name} or {name_match})",
+            
         ]
         if only_latest:
             query.extend([
@@ -138,10 +158,10 @@ class ORVAction(BaseAction):
 
         return session.query(" ".join(query)).all()
 
-    def get_previous_component_paths(self, session, component_paths, component_name):
+    def get_previous_component_paths(self, session, comp_locs, component_name):
         prev_assetversions = []
 
-        for cpath in component_paths:
+        for cpath in comp_locs:
             assetversion = cpath["component"]["version"]
             assetversions = cpath["component"]["version"]["asset"]["versions"]
             index = assetversions.index(assetversion)
@@ -152,7 +172,7 @@ class ORVAction(BaseAction):
         
         self.log.debug(prev_assetversions)
         
-        prev_component_paths = self.get_all_component_paths(
+        prev_comp_locs = self.get_all_component_paths(
             session,
             [p for p in prev_assetversions if p is not None],
             component_name
@@ -160,21 +180,20 @@ class ORVAction(BaseAction):
         
         for i, pav in enumerate(prev_assetversions):
             if pav is None:
-                prev_component_paths.insert(i, None)
+                prev_comp_locs.insert(i, None)
         
-        return prev_component_paths
+        return prev_comp_locs
 
-    def get_paths_list(self, cur_paths, prev_paths = None):
-        for i, cpath in enumerate(cur_paths + (prev_paths or [])):
-            self.log.debug(cpath)
-            if cpath is None:
-                self.log.warning(f"Component path is None. Ignoring it.")
-                continue
+    def get_paths_list(self, comp_locations: list):
+        seen = list()
+        for i, cpath in enumerate(comp_locations):
             path = Path(cpath.get("resource_identifier"))
             if path is None or not path.exists():
                 self.log.warning(f"File {path} from {cpath['component']['name']} failed to be found. Ignoring it.")
                 continue
-            yield path.as_posix(), cpath["component"]["version"]["asset"]["parent"]["name"]
+            if cpath['component']["version_id"] not in seen:
+                seen.append(cpath['component']["version_id"])
+                yield path.as_posix(), cpath["component"]["version"]["asset"]["parent"]["name"]
 
     def get_interface(self, available_components, is_manual_selection = False):
         """ Returns correctly formed interface elements """
@@ -196,7 +215,7 @@ class ORVAction(BaseAction):
                 },
                 {
                     "type": "label",
-                    "value": "NOTE: If no selected component is available it will not appended in the viewer."
+                    "value": "NOTE: If no selected component is available it will attempt to fallback to other component."
                 },
                 {
                     "label": "<b>Component</b>",
@@ -254,7 +273,7 @@ class ORVAction(BaseAction):
             return True
 
     def interface(self, session, entities, event):
-        """ Preprocess data and fetches interface elements
+        """ Preprosces data and fetches interface elements
             Creates a job to let user know it's processing """
         
         if event["data"].get("values", {}):
@@ -309,17 +328,34 @@ class ORVAction(BaseAction):
     
         assetversions: List[AssetVersion] = self.get_all_assetversions(session, entities)
 
-        component_paths = self.get_all_component_paths(
+        comp_locs = self.get_all_component_paths(
             session, assetversions, selected_component, only_latest)
 
-        prev_component_paths = None
+        prev_comp_locs = None
         if load_previous_version:
-            prev_component_paths = self.get_previous_component_paths(
-                session, component_paths, selected_component)
+            prev_comp_locs = self.get_previous_component_paths(
+                session, comp_locs, selected_component)
 
-        
         # NOTE: get_path_list2 is a generator, it needs to be turned into a list
-        paths: List[Tuple[str]] = list(self.get_paths_list( component_paths, prev_component_paths))
+        comp_locations = [c for c in comp_locs + (prev_comp_locs or []) if c is not None]
+
+        def order_lambda(comp_loc):
+            # from difflib import SequenceMatcher
+            # order the list of all components so the selected one goes first
+            # and then by order of preference
+            comp_names_priorities = ["exr", "dnxhd_exr", "dnxhd_mov", "mov", "jpeg"]
+            name = comp_loc["component"]["name"]
+            # return 1.0 - SequenceMatcher(None, name, selected_component).ratio()
+            if name == selected_component:
+                return 0
+            elif name in comp_names_priorities:
+                return comp_names_priorities.index(name) + 1
+            else:
+                return 100
+            
+        comp_locations.sort(key = order_lambda)
+
+        paths: List[Tuple[str]] = list(self.get_paths_list( comp_locations))
         if not paths:
             return {"success": True, "message": "No valid components where found in the server."}
 
