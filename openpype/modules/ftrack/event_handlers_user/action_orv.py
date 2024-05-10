@@ -340,18 +340,18 @@ class ORVAction(BaseAction):
         comp_locations = [c for c in comp_locs + (prev_comp_locs or []) if c is not None]
 
         def order_lambda(comp_loc):
-            # from difflib import SequenceMatcher
+            from difflib import SequenceMatcher
             # order the list of all components so the selected one goes first
             # and then by order of preference
-            comp_names_priorities = ["exr", "dnxhd_exr", "dnxhd_mov", "mov", "jpeg"]
+            comp_names_priorities = ["exr", "exr_main", "exr_source", "dnxhd_exr", "dnxhd_mov", "mov", "jpeg"]
             name = comp_loc["component"]["name"]
-            # return 1.0 - SequenceMatcher(None, name, selected_component).ratio()
+            
             if name == selected_component:
                 return 0
             elif name in comp_names_priorities:
                 return comp_names_priorities.index(name) + 1
             else:
-                return 100
+                return 1.0 - SequenceMatcher(None, name, selected_component).ratio()
             
         comp_locations.sort(key = order_lambda)
 
