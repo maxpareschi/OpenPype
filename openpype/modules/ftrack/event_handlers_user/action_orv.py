@@ -22,9 +22,9 @@ class ORVAction(BaseAction):
 
     type = "Application"
 
-    # allowed_types = ["img", "mov", "exr", "mxf", "dpx",
-    #                  "jpg", "jpeg", "png", "tif", "tiff",
-    #                  "tga", "dnxhd", "prores", "dnx"]
+    allowed_types = ["img", "mov", "exr", "mxf", "dpx",
+                     "jpg", "jpeg", "png", "tif", "tiff",
+                     "tga", "dnxhd", "prores", "dnx"]
     disallowed_types = [ "%mp4%", "%thumbnail%", "hip", "usd" ]
 
     not_implemented = ["Project", "ReviewSession",
@@ -94,9 +94,9 @@ class ORVAction(BaseAction):
         
         return result
 
-    def get_all_available_components(self, session, assetversions, exclude):
+    def get_all_available_components(self, session, assetversions, include):
         id_matches = ",".join([av["id"] for av in assetversions])
-        name_matches = " and ".join(["name not_like '%{}'".format(allow) for allow in exclude])
+        name_matches = " or ".join(["name like '%{}%'".format(allow) for allow in include])
         
         query = [
             "select name from Component where version.id in",
@@ -168,9 +168,10 @@ class ORVAction(BaseAction):
         for i, cpath in enumerate(cur_paths + (prev_paths or [])):
             self.log.debug(cpath)
             if cpath is None:
+                self.log.warning(f"Component path is None. Ignoring it.")
                 continue
             path = Path(cpath.get("resource_identifier"))
-            if path is not None and path.exists():
+            if path is None or not path.exists():
                 self.log.warning(f"File {path} from {cpath['component']['name']} failed to be found. Ignoring it.")
                 continue
             yield path.as_posix(), cpath["component"]["version"]["asset"]["parent"]["name"]
@@ -271,7 +272,7 @@ class ORVAction(BaseAction):
             # retrieve all available components
             assetversions = self.get_all_assetversions(session, entities)
             available_components = self.get_all_available_components(
-                session, assetversions, self.disallowed_types)
+                session, assetversions, self.allowed_types)
             items = self.get_interface(
                 available_components, is_manual_selection)
             return {
