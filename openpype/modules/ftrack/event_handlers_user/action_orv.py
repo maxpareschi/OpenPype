@@ -172,7 +172,8 @@ class ORVAction(BaseAction):
             path = Path(cpath.get("resource_identifier"))
             if path is not None and path.exists():
                 self.log.warning(f"File {path} from {cpath['component']['name']} failed to be found. Ignoring it.")
-                yield path.as_posix(), cpath["component"]["version"]["asset"]["parent"]["name"]
+                continue
+            yield path.as_posix(), cpath["component"]["version"]["asset"]["parent"]["name"]
 
     def get_interface(self, available_components, is_manual_selection = False):
         """ Returns correctly formed interface elements """
