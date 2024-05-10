@@ -2,7 +2,7 @@ import os
 import subprocess
 import re
 import traceback
-from typing import Callable, List
+from typing import Callable, List, Tuple
 from pathlib import Path
 
 import ftrack_api
@@ -11,111 +11,6 @@ from ftrack_api.entity.location import Location
 from openpype_modules.ftrack.lib import BaseAction, statics_icon # type: ignore
 
 
-
-def return_pyexec_command(f: Callable, *args, **kwargs):
-    """Parse a function source code as a string.
-    
-    f is expected to be a python function.
-    This is a utility function that allows to have syntax highlighting and
-    intelisense while developing code that is going to be sent as a string
-    to be executed somewhere else.
-    """
-    # get source code of function
-    from inspect import getsource
-    src = getsource(f)
-
-    # remove top level indentation in case the funciton is not globally defined
-    tab = re.match("[\t\ ]*(?=def\ )", src).group()
-    if tab:
-        src = "\n".join([l[len(tab):] for l in src.split("\n")])
-    
-    # return the source code as top level function and add execution line
-    parsed_kw = [f"{k}={v}" for k, v in kwargs.items()]
-    signature = f"({', '.join([str(i) for i in [*args, *parsed_kw]])})"
-    return src + f.__name__ + signature + "\n"
-
-def orvpush_proc(items: List[str], no_slate: bool = True, fps: float = 24.0):
-    """Main function to be run inside OpenRV.
-    
-    This function must be parsed with the 'return_pyexec_command' before
-    being sent over.
-    Because this function is executed in another interpreter, global
-    variables won't be inherited in this scope, which means that
-    all imports must happen in the local scope.
-    """
-
-    from logging import getLogger
-    from pathlib import Path
-    from re import compile as recomp
-
-    import rv.commands as rvc # type: ignore
-
-    logger = getLogger("orvpush_proc")
-    SHOT_REGEX = recomp(r"(?<=\_)\d{3}\_\d{3}(?=\_)")
-    FRAME_REGEX = recomp(r"(?<=\.)\d{4}(?=\.)")
-
-    def is_source_in_rv_session(f: Path):
-        """Checks whether a path file is already imported.
-        TODO: if file was imported outside of pipeline, it will return true,
-        but the file won't appear in any switch node.
-        """
-        for src in rvc.sources():
-            if src is None:
-                continue
-            p = Path(src[0])
-            if p.parent == f.parent and p.suffix == f.suffix:
-                return True
-        return False
-
-    rvc.addSourceBegin() # halt new sources connections
-
-    # iterate over the component paths [[], [], []]
-    for f in items:
-        f=Path(f)
-        logger.debug(f"Working on source file {f}.")
-
-        if is_source_in_rv_session(f):
-            continue
-                      
-        shot = SHOT_REGEX.findall(f.stem)[0]
-        tag = f.name
-
-        args = [f.with_name(FRAME_REGEX.sub("#", f.name)).as_posix()]
-        if f.suffix in [".exr", ".jpg", ".jpeg"]:
-            args += ["+in", "1001"] if no_slate else [] 
-
-        if fps is not None:
-            args.extend(["+fps", str(fps)])
-
-        # iterate over existing sources and look for shot groups
-        for switch_node in rvc.nodesOfType("RVSwitch"):
-            try:
-                src_node = rvc.sourceMediaRepSourceNode(switch_node)
-                src = Path(rvc.sourceMedia(src_node)[0])
-            except Exception as e:
-                continue
-            
-            sh = SHOT_REGEX.findall(Path(src).stem)[0]
-            
-            logger.debug(f"Match found for incoming file and existing switch node.")
-            if sh == shot:
-                try:
-                    rvc.addSourceMediaRep(src_node, tag, args)
-                    logger.debug(f"Reused switch node {switch_node} @ {shot}:")
-                except Exception as e:
-                    logger.warning(f"Error {e} found... Check with dev team.")
-                    pass
-                break
-        else:
-            logger.debug(f"Creating new switch node.")
-            args += ["+mediaRepName", tag]
-            src = rvc.addSourceVerbose(args)
-            switch_node = rvc.sourceMediaRepSwitchNode(src)
-            switch_node_group = rvc.nodeGroup(switch_node)
-            rvc.setStringProperty(f"{switch_node_group}.ui.name", [shot])
-            logger.debug(f"New switch node created {src} @ {shot}:")
-
-    rvc.addSourceEnd() # start connecting all new sources
 
 class ORVAction(BaseAction):
     """ Launch ORV action """
@@ -127,9 +22,10 @@ class ORVAction(BaseAction):
 
     type = "Application"
 
-    allowed_types = ["img", "mov", "exr", "mxf", "dpx",
-                     "jpg", "jpeg", "png", "tif", "tiff",
-                     "tga", "dnxhd", "prores", "dnx"]
+    # allowed_types = ["img", "mov", "exr", "mxf", "dpx",
+    #                  "jpg", "jpeg", "png", "tif", "tiff",
+    #                  "tga", "dnxhd", "prores", "dnx"]
+    disallowed_types = [ "%mp4%", "%thumbnail%" ]
 
     not_implemented = ["Project", "ReviewSession",
                        "ReviewSessionFolder", "Folder"]
@@ -166,29 +62,29 @@ class ORVAction(BaseAction):
 
         for entity in entities:
             etype = entity.entity_type
-
+            query_str = "select id, asset_id, version, version.asset.parent.name"
             if etype == "FileComponent":
-                query = "select id, asset_id, version from AssetVersion where components any (id='{0}')".format(entity["id"])
+                query = "{0} from AssetVersion where components any (id='{1}')".format(query_str, entity["id"])
                 for assetversion in session.query(query).all():
                     result.append(assetversion)
 
             elif etype == "AssetVersion":
-                query = "select id, asset_id, version from AssetVersion where id is '{0}'".format(entity["id"])
+                query = "{0} from AssetVersion where id is '{1}'".format(query_str, entity["id"])
                 for assetversion in session.query(query).all():
                     result.append(assetversion)
 
             elif etype == "AssetVersionList":
-                query = "select id, asset_id, version from AssetVersion where lists any (id='{0}')".format(entity["id"])
+                query = "{0} from AssetVersion where lists any (id='{1}')".format(query_str, entity["id"])
                 for assetversion in session.query(query).all():
                     result.append(assetversion)
             
             elif etype == "Task":
-                query = "select id, asset_id, version from AssetVersion where task_id is '{0}'".format(entity["id"])
+                query = "{0} from AssetVersion where task_id is '{1}'".format(query_str, entity["id"])
                 for assetversion in session.query(query).all():
                     result.append(assetversion)
 
             elif etype == "Shot":
-                query = "select id, asset_id, version from AssetVersion where asset.parent.id is '{0}'".format(entity["id"])
+                query = "{0} from AssetVersion where asset.parent.id is '{1}'".format(query_str, entity["id"])
                 for assetversion in session.query(query).all():
                     result.append(assetversion)
             
@@ -198,9 +94,9 @@ class ORVAction(BaseAction):
         
         return result
 
-    def get_all_available_components(self, session, assetversions, allow_list):
+    def get_all_available_components(self, session, assetversions, exclude):
         id_matches = ",".join([av["id"] for av in assetversions])
-        name_matches = " or ".join(["name like '%{}'".format(allow) for allow in allow_list])
+        name_matches = " and ".join(["name not_like '%{}'".format(allow) for allow in exclude])
         
         query = [
             "select name from Component where version.id in",
@@ -224,6 +120,7 @@ class ORVAction(BaseAction):
             "component.version.asset,",
             "component.version.asset_id,",
             "component.version.asset.name,",
+            "component.version.asset.parent.name,",
             "component.version.asset.versions,",
             "component.version.asset.latest_version",
             "from ComponentLocation where",
@@ -267,11 +164,15 @@ class ORVAction(BaseAction):
         
         return prev_component_paths
 
-    def get_pathlist_2(self, cur_paths, prev_paths = None):
+    def get_paths_list(self, cur_paths, prev_paths = None):
         for i, cpath in enumerate(cur_paths + (prev_paths or [])):
+            self.log.debug(cpath)
+            if cpath is None:
+                continue
             path = Path(cpath.get("resource_identifier"))
-            if path is not None:
-                yield path.as_posix()
+            if path is not None and path.exists():
+                self.log.warning(f"File {path} from {cpath['component']['name']} failed to be found. Ignoring it.")
+                yield path.as_posix(), cpath["component"]["version"]["asset"]["parent"]["name"]
 
     def get_interface(self, available_components, is_manual_selection = False):
         """ Returns correctly formed interface elements """
@@ -369,7 +270,7 @@ class ORVAction(BaseAction):
             # retrieve all available components
             assetversions = self.get_all_assetversions(session, entities)
             available_components = self.get_all_available_components(
-                session, assetversions, self.allowed_types)
+                session, assetversions, self.disallowed_types)
             items = self.get_interface(
                 available_components, is_manual_selection)
             return {
@@ -416,13 +317,15 @@ class ORVAction(BaseAction):
 
         
         # NOTE: get_path_list2 is a generator, it needs to be turned into a list
-        paths: List[str] = list(self.get_pathlist_2( component_paths, prev_component_paths))
+        paths: List[Tuple[str]] = list(self.get_paths_list( component_paths, prev_component_paths))
+        if not paths:
+            return {"success": True, "message": "No valid components where found in the server."}
 
         # START OF OPENRVPUSH PROC
-        src = "from typing import Callable, List\n"
+        src = "from openrv_tools_22dogs import orvpush_inputs_callback\n"
+        signature = f"({', '.join([str(i) for i in [paths, no_slate, fps]])})"
+        src += "orvpush_inputs_callback" + signature
 
-        # leverage multimedia sources feature as version switcher
-        src += return_pyexec_command(orvpush_proc, paths, no_slate, fps)
         cmd = [self.orvpush_path, "py-exec", src]
         self.log.debug(f"Running ORVPUSH: {cmd}")
         rv_push_process = subprocess.Popen(cmd)
