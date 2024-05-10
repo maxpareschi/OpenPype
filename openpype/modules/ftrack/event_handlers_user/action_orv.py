@@ -25,7 +25,7 @@ class ORVAction(BaseAction):
     # allowed_types = ["img", "mov", "exr", "mxf", "dpx",
     #                  "jpg", "jpeg", "png", "tif", "tiff",
     #                  "tga", "dnxhd", "prores", "dnx"]
-    disallowed_types = [ "%mp4%", "%thumbnail%" ]
+    disallowed_types = [ "%mp4%", "%thumbnail%", "hip", "usd" ]
 
     not_implemented = ["Project", "ReviewSession",
                        "ReviewSessionFolder", "Folder"]
