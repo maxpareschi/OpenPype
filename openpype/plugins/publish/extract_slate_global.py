@@ -91,16 +91,16 @@ class SlateCreator:
         self.log.debug("Logger: '{}'".format(self.log))
 
     def get_chrome_path(self):
-        sys = platform.system().lower()
+        system = platform.system().lower()
         chrome_path = os.path.join(
             os.environ["OPENPYPE_REPOS_ROOT"],
             "openpype",
             "vendor",
             "bin",
             "chrome",
-            sys,
+            system,
             "chrome{}".format(
-                ".exe" if sys == "windows" else ""
+                ".exe" if system == "windows" else ""
             )
         )
         self.log.debug("Using Chrome at path: {}".format(chrome_path))
@@ -193,7 +193,7 @@ class SlateCreator:
             "New Resolution set up: '{}x{}'".format(width, height)
         )
 
-    def set_env(self, env={}):
+    def set_env(self, env=dict()):
         """
         Sets custom environment for oiio if needed.
         """
@@ -364,7 +364,7 @@ class SlateCreator:
         self,
         slate_path="",
         slate_specifier="",
-        resolution=()
+        resolution=tuple()
     ):
         """
         Renders out the slate. Templates are rendered using
@@ -397,17 +397,6 @@ class SlateCreator:
             self.data["resolution_height"] = resolution[1]
 
         self.compute_template() 
-
-        #htimg = Html2Image(
-        #    output_path=self.staging_dir,
-        #    browser_executable=self.get_chrome_path()
-        #)
-        #
-        #slate_rendered_path = htimg.screenshot(
-        #    html_str=self._template_string_computed,
-        #    save_as=slate_name,
-        #    size=resolution
-        #)
 
         html_temp_path = os.path.join(
             os.environ["TEMP"],
@@ -456,9 +445,9 @@ class SlateCreator:
         self,
         input,
         output,
-        env={},
-        in_args=[],
-        out_args=[]
+        env=dict(),
+        in_args=list(),
+        out_args=list()
     ):
         """
         renders any image using a subprocess command. args is a list of strings
@@ -617,7 +606,7 @@ class SlateCreator:
         self.data["timecode"] = tc
         return tc
 
-    def get_resolution_ffprobe(self, input, env={}):
+    def get_resolution_ffprobe(self, input, env=dict()):
         """
         Find input resolution using ffprobe.
         """
@@ -682,18 +671,10 @@ class ExtractSlateGlobal(publish.Extractor):
         "maya",
         "shell",
         "houdini"
-        # "hiero",
-        # "premiere",
-        # "harmony",
-        # "traypublisher",
-        # "standalonepublisher",
-        # "fusion",
-        # "tvpaint",
-        # "resolve",
-        # "webpublisher",
-        # "aftereffects",
-        # "flame",
-        # "unreal"
+        "hiero",
+        "traypublisher",
+        "standalonepublisher",
+        "webpublisher"
     ]
 
     _slate_data_name = "slateGlobal"
@@ -713,6 +694,8 @@ class ExtractSlateGlobal(publish.Extractor):
             "thumbnail",
             "passing"
         ]
+
+        self.log.debug(json.dumps(instance.data["representations"], indent=4, default=str))
 
         slate_data = instance.data[self._slate_data_name]
 
@@ -772,6 +755,7 @@ class ExtractSlateGlobal(publish.Extractor):
                 check_file.sort()
                 check_file = check_file[0]
                 isSequence = True
+                self.log.debug("Representation is a sequence.")
 
             file_path = os.path.normpath(
                 os.path.join(
@@ -787,6 +771,10 @@ class ExtractSlateGlobal(publish.Extractor):
             # else sequence find matching tags and transfer
             # also constructs final slate name and metadata
             if isSequence:
+                is_linear = False
+                if ext.find("exr") >= 0:
+                    is_linear = True
+
                 frame_start = int(repre["frameStart"]) - 1
                 frame_end = len(repre["files"]) + frame_start
                 output_name = "{}.{}.{}".format(
@@ -807,14 +795,22 @@ class ExtractSlateGlobal(publish.Extractor):
                     repre["stagingDir"],
                     "{}_slate_thumb.png".format(repre["name"])
                 ).replace("\\", "/")
+
+                thumb_out_args = []
+                if is_linear:
+                    thumb_out_args=["--colorconvert", "linear", "Rec709"]
+                
                 slate.render_image_oiio(
                     file_path.replace("\\", "/"),
-                    thumbnail_path
+                    thumbnail_path,
+                    out_args=thumb_out_args
                 )
+                instance.context.data["cleanupFullPaths"].append(thumbnail_path)
+
                 repre_match = instance.data["family"]
             else:
-                frame_start = int(repre["frameStart"])
-                frame_end = int(repre["frameEnd"])
+                frame_start = int(instance.data.get("frameStartHandle", instance.data["frameStart"] - instance.data["handleStart"])) - 1
+                frame_end = int(instance.data.get("frameEndHandle", instance.data["frameEnd"] + instance.data["handleEnd"]))
                 output_name = "{}_slate_temp.png".format(repre["name"])
                 for tag in repre["tags"]:
                     for profile in slate_data["slate_profiles"]:
@@ -876,6 +872,7 @@ class ExtractSlateGlobal(publish.Extractor):
             temp_slate = slate.render_slate(
                 slate_path="{}_slate.png".format(repre["name"])
             )
+            instance.context.data["cleanupFullPaths"].append(temp_slate)
 
             slate_final_path = os.path.normpath(
                 os.path.join(
@@ -891,6 +888,7 @@ class ExtractSlateGlobal(publish.Extractor):
                 in_args=oiio_profile["oiio_args"]["input"],
                 out_args=oiio_profile["oiio_args"]["output"]
             )
+            instance.context.data["cleanupFullPaths"].append(slate_final_path)
 
             # update repres and instance
             if isSequence:

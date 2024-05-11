@@ -211,7 +211,8 @@ class ORVAction(BaseAction):
 
     allowed_types = ["img", "mov", "exr", "mxf", "dpx",
                      "jpg", "jpeg", "png", "tif", "tiff",
-                     "tga", "dnxhd", "prores", "dnx"]
+                     "tga", "dnxhd", "prores", "dnx",
+                     "exr_source", "exr_main", "jpeg_proxy"]
 
     not_implemented = ["Project", "ReviewSession",
                        "ReviewSessionFolder", "Folder"]

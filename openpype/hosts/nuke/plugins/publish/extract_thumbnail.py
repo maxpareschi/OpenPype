@@ -48,8 +48,8 @@ class ExtractThumbnail(publish.Extractor):
                     self.render_thumbnail(instance, o_name, **o_data)
             else:
                 viewer_process_swithes = {
-                    "bake_viewer_process": True,
-                    "bake_viewer_input_process": True
+                    "bake_viewer_process": self.bake_viewer_process,
+                    "bake_viewer_input_process": self.bake_viewer_input_process
                 }
                 self.render_thumbnail(instance, None, **viewer_process_swithes)
 
@@ -127,18 +127,17 @@ class ExtractThumbnail(publish.Extractor):
             temporary_nodes.append(rnode)
             previous_node = rnode
 
-        reformat_node = nuke.createNode("Reformat")
-        ref_node = self.nodes.get("Reformat", None)
-        if ref_node:
-            for k, v in ref_node:
-                self.log.debug("k, v: {0}:{1}".format(k, v))
-                if isinstance(v, unicode):
-                    v = str(v)
-                reformat_node[k].setValue(v)
+        # create custom nodes from list
 
-        reformat_node.setInput(0, previous_node)
-        previous_node = reformat_node
-        temporary_nodes.append(reformat_node)
+        for node in self.nodes["nodes"]:
+            cnode = nuke.createNode(node["class"])
+            for k, v in node.items():
+                if k == "class":
+                    continue
+                cnode[k].setValue(v)
+            cnode.setInput(0, previous_node)
+            temporary_nodes.append(cnode)
+            previous_node = cnode
 
         # only create colorspace baking if toggled on
         if bake_viewer_process:
@@ -183,6 +182,8 @@ class ExtractThumbnail(publish.Extractor):
 
         self.log.debug(
             "representations: {}".format(instance.data["representations"]))
+        
+        instance.context.data["cleanupFullPaths"].append(file)
 
         # Clean up
         for node in temporary_nodes:
