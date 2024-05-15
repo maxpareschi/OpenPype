@@ -361,27 +361,20 @@
             "bake_viewer_process": true,
             "bake_viewer_input_process": true,
             "nodes": {
-                "Reformat": [
-                    [
-                        "type",
-                        "to format"
-                    ],
-                    [
-                        "format",
-                        "HD_1080"
-                    ],
-                    [
-                        "filter",
-                        "Lanczos6"
-                    ],
-                    [
-                        "black_outside",
-                        true
-                    ],
-                    [
-                        "pbb",
-                        false
-                    ]
+                "nodes": [
+                    {
+                        "class": "OCIOColorSPace",
+                        "in_colorspace": "scene_linear",
+                        "out_colorspace": "color_picking"
+                    },
+                    {
+                        "class": "Reformat",
+                        "type": "to format",
+                        "format": "HD_1080",
+                        "filter": "Lanczos6",
+                        "black_outside": true,
+                        "pbb": false
+                    }
                 ]
             }
         },

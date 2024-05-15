@@ -50,6 +50,7 @@ class IntegrateFtrackApi(pyblish.api.InstancePlugin):
         session._configure_locations()
 
         try:
+            source = None
             if instance.data["family"] == "delivery":
                 
                 root = session.query("Folder where name is '{}'".format(

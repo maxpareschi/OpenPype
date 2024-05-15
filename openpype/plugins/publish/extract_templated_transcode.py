@@ -86,12 +86,12 @@ class ExtractTemplatedTranscode(publish.Extractor):
                 repre_name_override = profile_def["representation_name_override"].strip()
 
                 if review_enabled_in_profiles:
-                    if "review" in new_repre["tags"]:
+                    if "review" in new_repre.get("tags", []):
                         new_repre["tags"].remove("review")
                 
                 # remove slate from tags, lets the slate plugin process it in the collect phase
                 # and overrides it with values in the tags here
-                if "slate" in new_repre["tags"]:
+                if "slate" in new_repre.get("tags", []):
                     new_repre["tags"].remove("slate")
 
                 if profile_name == "passthrough":
@@ -248,7 +248,7 @@ class ExtractTemplatedTranscode(publish.Extractor):
                 if new_repre.get("tags") is None:
                     new_repre["tags"] = []
                 for tag in profile_def["tags"]:
-                    if tag not in new_repre["tags"]:
+                    if tag not in new_repre.get("tags", []):
                         new_repre["tags"].append(tag)
 
                 new_repre["files"] = sorted(new_repre["files"])
