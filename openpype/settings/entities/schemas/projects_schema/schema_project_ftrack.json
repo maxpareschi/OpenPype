@@ -1002,6 +1002,11 @@
                             "type": "boolean",
                             "key": "enabled",
                             "label": "Enabled"
+                        },
+                        {
+                            "key": "delivery_root",
+                            "label": "Root folder name for Delivery/Gather",
+                            "type": "text"
                         }
                     ]
                 },

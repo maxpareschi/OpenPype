@@ -19,9 +19,10 @@ class ExtractThumbnail(pyblish.api.InstancePlugin):
     order = pyblish.api.ExtractorOrder
     families = [
         "imagesequence", "render", "render2d", "prerender",
-        "source", "clip", "take", "online"
+        "source", "clip", "take", "online", "delivery"
     ]
-    hosts = ["shell", "fusion", "resolve", "traypublisher"]
+    hosts = ["shell", "fusion", "resolve", "traypublisher",
+             "webpublisher", "standalonepublisher"]
     enabled = False
 
     # presetable attribute
@@ -133,6 +134,7 @@ class ExtractThumbnail(pyblish.api.InstancePlugin):
                 "Adding thumbnail representation: {}".format(new_repre)
             )
             instance.data["representations"].append(new_repre)
+            instance.context.data["cleanupFullPaths"].append(jpeg_file)
             # There is no need to create more then one thumbnail
             break
 

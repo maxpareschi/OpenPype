@@ -30,7 +30,7 @@
         },
         "ValidateEditorialAssetName": {
             "enabled": true,
-            "optional": false
+            "optional": true
         },
         "ValidateVersion": {
             "enabled": true,
@@ -50,8 +50,91 @@
                 "output": []
             }
         },
+        "ExtractTemplatedTranscode": {
+            "enabled": true,
+            "profiles": [
+                {
+                    "families": [],
+                    "hosts": [
+                        "hiero"
+                    ],
+                    "task_types": [],
+                    "task_names": [],
+                    "subsets": [],
+                    "delete_original": true,
+                    "outputs": {
+                        "proxy": {
+                            "extension": "jpg",
+                            "transcoding_type": "color_conversion",
+                            "template_path": {
+                                "template": ""
+                            },
+                            "subset_chain": [],
+                            "color_conversion": {
+                                "input_colorspace": "",
+                                "output_colorspace": "color_picking"
+                            },
+                            "tags": [],
+                            "representation_name_override": "proxy",
+                            "custom_tags": [],
+                            "reformat_options": {
+                                "enabled": false,
+                                "reformat_width": 0,
+                                "reformat_height": 0,
+                                "reformat_type": "width"
+                            },
+                            "override_thumbnail": false
+                        },
+                        "passthrough": {
+                            "extension": "",
+                            "transcoding_type": "color_conversion",
+                            "template_path": {
+                                "template": ""
+                            },
+                            "subset_chain": [],
+                            "color_conversion": {
+                                "input_colorspace": "",
+                                "output_colorspace": ""
+                            },
+                            "tags": [],
+                            "representation_name_override": "source",
+                            "custom_tags": [],
+                            "reformat_options": {
+                                "enabled": false,
+                                "reformat_width": 0,
+                                "reformat_height": 0,
+                                "reformat_type": "width"
+                            },
+                            "override_thumbnail": false
+                        },
+                        "main": {
+                            "extension": "exr",
+                            "transcoding_type": "color_conversion",
+                            "template_path": {
+                                "template": ""
+                            },
+                            "subset_chain": [],
+                            "color_conversion": {
+                                "input_colorspace": "",
+                                "output_colorspace": "scene_linear"
+                            },
+                            "tags": [],
+                            "representation_name_override": "",
+                            "custom_tags": [],
+                            "reformat_options": {
+                                "enabled": false,
+                                "reformat_width": 0,
+                                "reformat_height": 0,
+                                "reformat_type": "width"
+                            },
+                            "override_thumbnail": false
+                        }
+                    }
+                }
+            ]
+        },
         "ExtractSlateGlobal": {
-            "enabled": false,
+            "enabled": true,
             "optional": true,
             "slate_template_path": "",
             "slate_template_res_path": "",
@@ -93,62 +176,6 @@
                     "families": [],
                     "hosts": [],
                     "outputs": {
-                        "png": {
-                            "ext": "png",
-                            "tags": [
-                                "ftrackreview"
-                            ],
-                            "burnins": [],
-                            "ffmpeg_args": {
-                                "video_filters": [],
-                                "audio_filters": [],
-                                "input": [],
-                                "output": []
-                            },
-                            "filter": {
-                                "families": [
-                                    "render",
-                                    "review",
-                                    "ftrack"
-                                ],
-                                "subsets": [],
-                                "custom_tags": [],
-                                "single_frame_filter": "single_frame"
-                            },
-                            "overscan_crop": "",
-                            "overscan_color": [
-                                0,
-                                0,
-                                0,
-                                255
-                            ],
-                            "width": 1920,
-                            "height": 1080,
-                            "scale_pixel_aspect": true,
-                            "bg_color": [
-                                0,
-                                0,
-                                0,
-                                0
-                            ],
-                            "letter_box": {
-                                "enabled": false,
-                                "ratio": 0.0,
-                                "fill_color": [
-                                    0,
-                                    0,
-                                    0,
-                                    255
-                                ],
-                                "line_thickness": 0,
-                                "line_color": [
-                                    255,
-                                    0,
-                                    0,
-                                    255
-                                ]
-                            }
-                        },
                         "h264": {
                             "ext": "mp4",
                             "tags": [
@@ -187,6 +214,69 @@
                             ],
                             "width": 0,
                             "height": 0,
+                            "scale_pixel_aspect": true,
+                            "bg_color": [
+                                0,
+                                0,
+                                0,
+                                0
+                            ],
+                            "letter_box": {
+                                "enabled": false,
+                                "ratio": 0.0,
+                                "fill_color": [
+                                    0,
+                                    0,
+                                    0,
+                                    255
+                                ],
+                                "line_thickness": 0,
+                                "line_color": [
+                                    255,
+                                    0,
+                                    0,
+                                    255
+                                ]
+                            }
+                        },
+                        "dnxhd": {
+                            "ext": "mov",
+                            "tags": [
+                                "burnin"
+                            ],
+                            "burnins": [],
+                            "ffmpeg_args": {
+                                "video_filters": [],
+                                "audio_filters": [],
+                                "input": [
+                                    "-apply_trc gamma22"
+                                ],
+                                "output": [
+                                    "-c:v dnxhd",
+                                    "-b:v 36M",
+                                    "-pix_fmt yuv422p"
+                                ]
+                            },
+                            "filter": {
+                                "families": [
+                                    "render",
+                                    "delivery",
+                                    "review",
+                                    "ftrack"
+                                ],
+                                "subsets": [],
+                                "custom_tags": [],
+                                "single_frame_filter": "single_frame"
+                            },
+                            "overscan_crop": "",
+                            "overscan_color": [
+                                0,
+                                0,
+                                0,
+                                255
+                            ],
+                            "width": 1920,
+                            "height": 1080,
                             "scale_pixel_aspect": true,
                             "bg_color": [
                                 0,

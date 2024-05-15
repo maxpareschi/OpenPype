@@ -31,6 +31,8 @@ class ExtractHieroTranscode(publish.Extractor):
     families = ["transcode"]
 
     def process(self, instance):
+        self.log.debug("DEACTIVATED IN FAVOR OF EXTRACT TEMPLATED TRANSCODES")
+        return
         oiiotool_path = get_oiio_tools_path()
         staging_dir = self.staging_dir(instance)
         sequence = instance.context.data["activeTimeline"]

@@ -54,7 +54,15 @@ class ExtractThumnail(publish.Extractor):
             'stagingDir': staging_dir,
             'name': "thumbnail",
             'thumbnail': True,
-            'ext': "png"
+            'ext': "png",
+            "tags": [
+                "thumbnail"
+            ]
         }
         instance.data["representations"].append(
             thumb_representation)
+        
+        # cleanup temporary transcoded files
+        instance.context.data["cleanupFullPaths"].append(
+            thumb_file)
+

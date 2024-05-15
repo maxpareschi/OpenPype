@@ -17,6 +17,7 @@
              {"backgroundComp": "backgroundComp"},
              {"backgroundLayout": "backgroundLayout"},
              {"camera": "camera"},
+             {"delivery": "delivery"},
              {"editorial": "editorial"},
              {"gizmo": "gizmo"},
              {"image": "image"},

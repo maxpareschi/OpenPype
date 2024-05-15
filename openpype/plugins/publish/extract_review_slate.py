@@ -35,8 +35,8 @@ class ExtractReviewSlate(publish.Extractor):
         # "hiero",
         # "premiere",
         # "harmony",
-        # "traypublisher",
-        # "standalonepublisher",
+        "traypublisher",
+        "standalonepublisher",
         # "fusion",
         # "tvpaint",
         # "resolve",
@@ -107,9 +107,12 @@ class ExtractReviewSlate(publish.Extractor):
                 input_frame_rate
             ) = self._get_video_metadata(streams)
 
+            if instance.data.get("timecode"):
+                input_timecode = instance.data["timecode"]
+
             if not input_timecode or \
                    input_timecode == "" or \
-                   input_timecode == "00:00:00:00":
+                   input_timecode == "00:00:41:07":
                 input_timecode = video_data["format"]["tags"].get("timecode") or ""
 
             # Raise exception of any stream didn't define input resolution

@@ -16,7 +16,8 @@ class CollectSlateGlobal(pyblish.api.InstancePlugin):
     order = pyblish.api.CollectorOrder + 0.499
     families = [
         "review",
-        "render"
+        # "render",
+        "delivery"
     ]
 
     _slate_settings_name = "ExtractSlateGlobal"
@@ -33,12 +34,12 @@ class CollectSlateGlobal(pyblish.api.InstancePlugin):
             settings = publ_settings[self._slate_settings_name]
 
             if not settings["enabled"]:
-                self.log.warning("ExtractSlateGlobal is not active. Skipping...")
+                self.log.info("ExtractSlateGlobal is not active. Skipping...")
                 return
             
             if instance.context.data.get("host") == "nuke" and (
                 "render.farm" in instance.data.get("families")):
-                self.log.warning("Skipping Slate Global Collect "
+                self.log.info("Skipping Slate Global Collect "
                     "in nuke context, defer to deadline...")
                 return
 
@@ -82,6 +83,10 @@ class CollectSlateGlobal(pyblish.api.InstancePlugin):
             slate_data["comment"] = ""
             slate_data["scope"] = ""
 
+            task = instance.data["anatomyData"].get("task",{}).get("type", None)
+            if not task:
+                task = None
+
             if "customData" in instance.data:
                 slate_data.update(instance.data["customData"])
 
@@ -94,13 +99,12 @@ class CollectSlateGlobal(pyblish.api.InstancePlugin):
             if "families" not in instance.data["versionData"]:
                 instance.data["versionData"]["families"] = list()
 
-            if instance.data["anatomyData"]["task"]["type"] in \
-                settings["integrate_task_types"]:
+            if task in settings["integrate_task_types"] or not task:
 
                 self.log.debug("Task: {} is enabled for Extract "
                     "Slate Global workflow, tagging for slate "
                     "extraction on review families...".format(
-                        instance.data["anatomyData"]["task"]["type"]
+                        task
                 ))
 
                 instance.data["slate"] = True
@@ -120,5 +124,5 @@ class CollectSlateGlobal(pyblish.api.InstancePlugin):
                 self.log.debug("Task: {} is disabled for Extract "
                     "Slate Global workflow, skipping slate "
                     "extraction on review families...".format(
-                        instance.data["anatomyData"]["task"]["type"]
+                        task
                 ))

@@ -368,13 +368,14 @@ class ExtractReview(pyblish.api.InstancePlugin):
                     return
                 raise NotImplementedError
 
-            # create or update outputName
-            output_name = new_repre.get("outputName", "")
             output_ext = new_repre["ext"]
             self.log.debug("NEW EXT: {}".format(output_ext))
-            if output_name:
-                output_name += "_"
-            output_name += output_def["filename_suffix"]
+            # create or update outputName
+            # output_name = new_repre.get("outputName", "")
+            # if output_name:
+            #     output_name += "_"
+            # output_name += output_def["filename_suffix"]
+            output_name = output_def["filename_suffix"]
             if temp_data["without_handles"]:
                 output_name += "_noHandles"
 
