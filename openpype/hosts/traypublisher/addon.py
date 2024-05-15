@@ -10,7 +10,7 @@ TRAYPUBLISH_ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
 
 
 class TrayPublishAddon(OpenPypeModule, IHostAddon, ITrayAction):
-    label = "New Publish (beta)"
+    label = "New Publish"
     name = "traypublisher"
     host_name = "traypublisher"
 
@@ -51,7 +51,6 @@ class TrayPublishAddon(OpenPypeModule, IHostAddon, ITrayAction):
     def cli(self, click_group):
         click_group.add_command(cli_main)
 
-
 @click.group(TrayPublishAddon.name, help="TrayPublisher related commands.")
 def cli_main():
     pass
@@ -60,7 +59,12 @@ def cli_main():
 @cli_main.command()
 def launch():
     """Launch TrayPublish tool UI."""
-
     from openpype.tools import traypublisher
-
     traypublisher.main()
+
+
+@cli_main.command()
+def delivery(data):
+    from openpype.tools import traypublisher
+    traypublisher.init_host()
+    traypublisher.show_window()

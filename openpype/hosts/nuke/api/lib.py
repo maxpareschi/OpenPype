@@ -32,6 +32,7 @@ from openpype.settings import (
     get_project_settings,
     get_anatomy_settings,
     get_current_project_settings,
+    get_system_settings
 )
 from openpype.modules import ModulesManager
 from openpype.pipeline.template_data import get_template_data_with_names
@@ -1919,7 +1920,19 @@ class WorkfileSettings(object):
 
             resolved_path = None
             for ocio_p in ocio_paths:
-                resolved_path = str(ocio_p).format(**os.environ)
+                import json
+                template_data = get_template_data_with_names(
+                    os.environ["AVALON_PROJECT"],
+                    os.environ["AVALON_ASSET"],
+                    os.environ["AVALON_TASK"],
+                    os.environ["AVALON_APP"],
+                    get_system_settings()
+                )
+                template_data.update(os.environ)
+                template_data.update({
+                    "root": Anatomy(os.environ["AVALON_PROJECT"]).roots
+                })
+                resolved_path = str(ocio_p).format(**template_data)
                 if not os.path.exists(resolved_path):
                     continue
 

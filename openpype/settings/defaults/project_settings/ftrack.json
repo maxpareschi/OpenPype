@@ -438,12 +438,12 @@
             "create_task_status_profiles": []
         },
         "IntegrateFtrackNote": {
-            "enabled": true,
+            "enabled": false,
             "note_template": "{intent}: {comment}",
             "note_labels": []
         },
         "IntegrateFtrackDescription": {
-            "enabled": false,
+            "enabled": true,
             "optional": true,
             "active": true,
             "description_template": "{comment}"
@@ -456,7 +456,8 @@
             "enabled": true
         },
         "IntegrateFtrackApi": {
-            "enabled": true
+            "enabled": true,
+            "delivery_root": "to_client"
         },
         "IntegrateFtrackInstance": {
             "family_mapping": {
@@ -491,7 +492,9 @@
                 "unrealStaticMesh": "geo",
                 "vrayproxy": "cache",
                 "redshiftproxy": "cache",
-                "usd": "usd"
+                "usd": "usd",
+                "delivery": "delivery",
+                "effect": "luteffect"
             },
             "keep_first_subset_name_for_review": true,
             "asset_versions_status_profiles": [],

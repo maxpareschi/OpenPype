@@ -256,11 +256,6 @@
                                 "label": "Delete Original Representation"
                             },
                             {
-                                "type": "boolean",
-                                "key": "keep_original_review",
-                                "label": "Keep original review representation"
-                            },
-                            {
                                 "type": "splitter"
                             },
                             {

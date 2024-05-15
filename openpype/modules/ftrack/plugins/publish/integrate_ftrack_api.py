@@ -18,6 +18,8 @@ import six
 import pyblish.api
 import clique
 
+from openpype.settings import get_project_settings
+
 
 class IntegrateFtrackApi(pyblish.api.InstancePlugin):
     """ Commit components to server. """
@@ -29,10 +31,7 @@ class IntegrateFtrackApi(pyblish.api.InstancePlugin):
     def process(self, instance):
         component_list = instance.data.get("ftrackComponentsList")
         if not component_list:
-            self.log.info(
-                "Instance don't have components to integrate to Ftrack."
-                " Skipping."
-            )
+            self.log.info("Instance don't have components to integrate to Ftrack. Skipping...")
             return
 
         context = instance.context
@@ -51,12 +50,37 @@ class IntegrateFtrackApi(pyblish.api.InstancePlugin):
         session._configure_locations()
 
         try:
+            if instance.data["family"] == "delivery":
+                
+                root = session.query("Folder where name is '{}'".format(
+                    instance.data["delivery_root_name"])).one()
+                source = session.query("AssetVersion where id is '{}'".format(
+                    instance.data["delivery_ftrack_source_id"])).one()
+                asset_data = {
+                    "name": instance.data["delivery_asset_name"],
+                    "parent_id": root["id"],
+                }
+
+                asset_entity = session.query("Folder where name is '{}' and parent.name is '{}'".format(
+                    asset_data["name"],
+                    root["name"]
+                )).first()
+                if asset_entity is not None:
+                    parent_entity = asset_entity
+                else:
+                    parent_entity = session.create("Folder", asset_data)
+                    session.commit()
+                self.log.info("Created new container Asset with data: {}.".format(asset_data))
+                instance.data["asset"] = asset_data["name"]
+                instance.data["task"] = None
+
             self.integrate_to_ftrack(
                 session,
                 instance,
                 task_entity,
                 parent_entity,
-                component_list
+                component_list,
+                source_version = source
             )
 
         except Exception:
@@ -87,7 +111,8 @@ class IntegrateFtrackApi(pyblish.api.InstancePlugin):
         instance,
         task_entity,
         parent_entity,
-        component_list
+        component_list,
+        source_version = None
     ):
         default_asset_name = None
         if task_entity:
@@ -168,6 +193,23 @@ class IntegrateFtrackApi(pyblish.api.InstancePlugin):
                 used_asset_versions.append(asset_version_entity)
 
         self._create_components(session, asset_versions_data_by_id)
+
+        if instance.data["family"] == "delivery":
+            custom_attr_link_config = session.query(
+                "select id from CustomAttributeLinkConfiguration where key is 'client_version_link'"
+            ).first()
+            if custom_attr_link_config:
+                session.create('CustomAttributeLink', {
+                    "from_id": source_version["id"],
+                    "to_id": asset_version_entity["id"],
+                    "configuration_id": custom_attr_link_config["id"]
+                })
+            session.create('AssetVersionLink', {
+                "from": source_version,
+                "to": asset_version_entity
+            })
+            source_version["custom_attributes"]["client_version_string"] = str(asset_version_entity["version"])
+            session.commit()
 
         instance.data["ftrackIntegratedAssetVersionsData"] = (
             asset_versions_data_by_id

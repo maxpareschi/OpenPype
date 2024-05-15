@@ -516,7 +516,7 @@ class SlateCreator:
 
         return res
 
-    def get_timecode_oiio(self, input, env=dict(), tc_frame=1001):
+    def get_timecode_oiio(self, input, env=dict(), tc_frame=1001, offset=-1):
         """
         Find timecode using oiio, currently working only on
         images with timecode support, not videos.
@@ -554,19 +554,17 @@ class SlateCreator:
             tc = tc.replace("\"", "")
         except:
             self.log.debug("OIIO process failed, switching to default tc...")
-            tc = "01:00:00:00"
+            tc = "00:00:41:17"
         
         self.log.debug("{0}: New starting timecode Found: {1}".format(name, tc))
-        tc_frames = self.timecode_to_frames(tc, self.data["fps"])
-        tc_frames -= 1
-        tc = self.frames_to_timecode(tc_frames, self.data["fps"])
+        tc = self.offset_timecode(tc, offset)
         self.log.debug("{0}: New timecode for slate: {1}".format(name, tc))
 
         self.data["timecode"] = tc
         
         return tc
 
-    def get_timecode_ffprobe(self, input, env=dict(), tc_frame=1001):
+    def get_timecode_ffprobe(self, input, env=dict(), tc_frame=1001, offset=-1):
         """
         Find timecode using ffprobe, currently working only on
         images with timecode support, not videos.
@@ -596,12 +594,8 @@ class SlateCreator:
             self.log.debug("{0}: New starting timecode Found: {1}".format(name, tc))
         except:
             self.log.debug("FFPROBE process failed, switching to default tc...")
-            tc = "01:00:00:00"
-        tc_rational = otio.opentime.from_timecode(tc, self.data["fps"])
-        tc_frames = otio.opentime.to_frames(tc_rational, self.data["fps"])
-        tc_frames -= 1
-        tc_rational = otio.opentime.from_frames(tc_frames, self.data["fps"])
-        tc = otio.opentime.to_timecode(tc_rational, self.data["fps"])
+            tc = "00:00:41:17"
+        tc = self.offset_timecode(tc, offset)
         self.log.debug("{0}: New timecode for slate: {1}".format(name, tc))
         self.data["timecode"] = tc
         return tc
@@ -649,6 +643,12 @@ class SlateCreator:
     def frames_to_seconds(self, frames, framerate):
         rt = otio.opentime.from_frames(frames, framerate)
         return otio.opentime.to_seconds(rt)
+
+    def offset_timecode(self, tc, offset=-1):
+        tc_frames = self.timecode_to_frames(tc, self.data["fps"])
+        tc_frames += offset
+        tc = self.frames_to_timecode(tc_frames, self.data["fps"])
+        return tc
 
 
 class ExtractSlateGlobal(publish.Extractor):
@@ -716,6 +716,12 @@ class ExtractSlateGlobal(publish.Extractor):
         if instance.context.data.get("intent"):
             common_data["intent"].update(
                 instance.context.data["intent"])
+        
+        if instance.data.get("comment"):
+            common_data["comment"] = instance.data["comment"]
+        if instance.data.get("intent"):
+            common_data["intent"].update(
+                instance.data["intent"])
 
         self.log.debug("Processed comment: {}".format(
             common_data["comment"]))
@@ -731,6 +737,47 @@ class ExtractSlateGlobal(publish.Extractor):
             env=slate_data["slate_env"]
         )
 
+        instance_timecode = None
+        slate_timecode = None
+
+        for repre in instance.data["representations"]:
+            self.log.debug("processing repre: {}".format(json.dumps(repre, indent=4, default=str)))
+            if "thumbnail" in repre.get("tags") or repre["name"] == "thumbnail" or "review" in repre.get("tags"):
+                self.log.debug("Skipping repre, not main timecode source...")
+                continue
+            file_path = os.path.join(
+                repre["stagingDir"],
+                repre["files"][0] if isinstance(repre["files"], list) else repre["files"]
+            ).replace("\\", "/")
+            try:
+                instance_timecode = slate.get_timecode_oiio(file_path,
+                    tc_frame=int(repre["frameStart"]),
+                    offset=0)
+                slate_timecode = slate.offset_timecode(instance_timecode, offset=-1)
+            except:
+                self.log.debug("iinfo coudn't process file, probably due to format not being compatible. Proceeding with ffprobe..")
+                instance_timecode  = slate.get_timecode_ffprobe(file_path,
+                    tc_frame=int(repre["frameStart"]),
+                    offset=0)
+                slate_timecode = slate.offset_timecode(instance_timecode, offset=-1)
+            break
+                
+
+        if instance_timecode:
+            instance.data["timecode"] = instance_timecode
+            self.log.debug("instance timecode is set to: {}".format(instance.data["timecode"]))
+        else:
+            instance.data["timecode"] = "00:00:41:07"
+            instance_timecode = "00:00:41:07"
+            self.log.debug("instance timecode was not found, defaulted to: {}".format(instance.data["timecode"]))
+        
+        if slate_timecode:
+            self.log.debug("Slate timecode is set to: {}".format(slate_timecode))
+        else:
+            slate_timecode = "00:00:41:07"
+            self.log.debug("Slate timecode  was not found, defaulted to: {}".format(slate_timecode))
+
+
         # loop through repres
         for repre in instance.data["representations"]:
             if repre["name"] in repre_ignore_list:
@@ -738,6 +785,13 @@ class ExtractSlateGlobal(publish.Extractor):
                     repre["name"]
                 ))
                 continue
+
+            if "slate-frame" not in repre["tags"]:
+                self.log.debug("Skipping representation {} as it's not tagged for slate extraction...".format(repre["name"]))
+                continue
+
+            if "review" not in repre["tags"]:
+                repre["tags"].remove("slate-frame")
 
             # loop through repres for thumbnail
             thumbnail_path = ""
@@ -816,13 +870,17 @@ class ExtractSlateGlobal(publish.Extractor):
                     for profile in slate_data["slate_profiles"]:
                         if tag in profile["families"]:
                             repre_match = tag
-            try:
-                timecode = slate.get_timecode_oiio(file_path,
-                    tc_frame=int(repre["frameStart"]))
-            except:
-                self.log.debug("iinfo coudn't process file, probably due to format not being compatible. Proceeding with ffprobe..")
-                timecode = slate.get_timecode_ffprobe(file_path,
-                    tc_frame=int(repre["frameStart"]))
+            
+            if not instance_timecode:
+                try:
+                    timecode = slate.get_timecode_oiio(file_path,
+                        tc_frame=int(repre["frameStart"]))
+                except:
+                    self.log.debug("iinfo coudn't process file, probably due to format not being compatible. Proceeding with ffprobe..")
+                    timecode = slate.get_timecode_ffprobe(file_path,
+                        tc_frame=int(repre["frameStart"]))
+            else:
+                timecode = instance_timecode
             resolution = slate.get_resolution_ffprobe(file_path)
 
             for profile in slate_data["slate_profiles"]:

@@ -63,7 +63,6 @@ class ExtractTemplatedTranscode(publish.Extractor):
         ))
 
         added_representations = False
-        added_review = False
 
         for idx, repre in enumerate(list(repres)):
 
@@ -73,12 +72,27 @@ class ExtractTemplatedTranscode(publish.Extractor):
             if not self._repre_is_valid(repre, instance):
                 continue
 
+            review_enabled_in_profiles = False
+            for profile_name, profile_def in profile.get("outputs", {}).items():
+                if "review" in profile_def["tags"]:
+                    review_enabled_in_profiles = True
+                    break
+
             for profile_name, profile_def in profile.get("outputs", {}).items():
                 self.log.debug("Processing profile '{}'".format(profile_name))
 
                 new_repre = copy.deepcopy(repre)
 
                 repre_name_override = profile_def["representation_name_override"].strip()
+
+                if review_enabled_in_profiles:
+                    if "review" in new_repre["tags"]:
+                        new_repre["tags"].remove("review")
+                
+                # remove slate from tags, lets the slate plugin process it in the collect phase
+                # and overrides it with values in the tags here
+                if "slate" in new_repre["tags"]:
+                    new_repre["tags"].remove("slate")
 
                 if profile_name == "passthrough":
                     if repre_name_override:
@@ -153,6 +167,16 @@ class ExtractTemplatedTranscode(publish.Extractor):
                     "{}nk".format(repre_out[1])
                 ).replace("\\", "/")
 
+                try:
+                    frame_start = repre_in[4][0]
+                except:
+                    frame_start = instance.data["frameStart"]-instance.data["handleStart"]
+                
+                try:
+                    frame_end = repre_in[4][-1]
+                except:
+                    frame_end = instance.data["frameEnd"]+instance.data["handleEnd"]
+
                 self.log.debug(json.dumps(profile_def, indent=4, default=str))
 
                 processed_data = {
@@ -160,8 +184,8 @@ class ExtractTemplatedTranscode(publish.Extractor):
                     "input_path": repre_in[0],
                     "output_path": repre_out[0],
                     "save_path": nuke_script_save_path,
-                    "frameStart": instance.data["frameStart"]-instance.data["handleStart"],
-                    "frameEnd": instance.data["frameEnd"]+instance.data["handleEnd"],
+                    "frameStart": frame_start,
+                    "frameEnd": frame_end,
                     "fps": instance.data["fps"],
                     "project": instance.data["anatomyData"]["project"],
                     "asset": instance.data["asset"],
@@ -206,16 +230,6 @@ class ExtractTemplatedTranscode(publish.Extractor):
                     ))
 
                 nuke_process = self.run_transcode_script(processed_data)
-                
-                # baking_data = {
-                #     "bakeRenderPath": new_repre["stagingDir"],
-                #     "bakeScriptPath": nuke_script_save_path,
-                #     "bakeWriteNodeName": "WRITE_TRANSCODE"
-                # }
-                #  
-                # if not instance.data.get("bakingNukeScripts", False):
-                #     instance.data["bakingNukeScripts"] = []
-                # instance.data["bakingNukeScripts"].append(baking_data)
 
                 if int(nuke_process) != 0:
                     self.log.debug("Transcode process returned a non zero code, skipping...")
@@ -237,20 +251,16 @@ class ExtractTemplatedTranscode(publish.Extractor):
                     if tag not in new_repre["tags"]:
                         new_repre["tags"].append(tag)
 
-                    if tag == "review":
-                        added_review = True
+                new_repre["files"] = sorted(new_repre["files"])
 
                 # If there is only 1 file outputted then convert list to
                 # string, cause that'll indicate that its not a sequence.
+                # else set frameStart property which traypublished does not
+                # fill for some reason
                 if len(new_repre["files"]) == 1:
                     new_repre["files"] = new_repre["files"][0]
-
-                # If the source representation has "review" tag, but its not
-                # part of the output defintion tags, then both the
-                # representations will be transcoded in ExtractReview and
-                # their outputs will clash in integration.
-                if "review" in repre.get("tags", []):
-                    added_review = True
+                else:
+                    new_repre["frameStart"] = repre_out[4][0]
 
                 self.log.debug("Adding new representation: {}".format(
                     json.dumps(new_repre, indent=4, default=str)))
@@ -286,8 +296,7 @@ class ExtractTemplatedTranscode(publish.Extractor):
                         json.dumps(thumb_repre, indent=4, default=str)))
 
             if added_representations:
-                self._mark_original_repre_for_deletion(repre, profile,
-                                                       added_review) 
+                self._mark_original_repre_for_deletion(repre, profile) 
 
         for repre in tuple(instance.data["representations"]):
             tags = repre.get("tags") or []
@@ -376,9 +385,9 @@ class ExtractTemplatedTranscode(publish.Extractor):
             ).format(repre["name"], repre.get("ext")))
             return False
 
-        if "review" in repre.get("tags", []):
+        if "review" in repre.get("tags", []) and repre["name"].find("otio") >= 0:
             self.log.debug((
-                "Representation '{}' is already processed as review item, skipping"
+                "Representation '{}' is already processed as review item and comes from hiero as an otio extracted sequence, skipping"
             ).format(repre["name"], repre.get("ext")))
             return False
 
@@ -493,20 +502,19 @@ class ExtractTemplatedTranscode(publish.Extractor):
 
         return_code = process.wait()
 
+        with open(os.path.splitext(data["save_path"])[0] + ".log", "r") as log:
+            self.log.debug(log.read())
+
         self.log.debug("TRANSCODE >>> END (return code: {})\n".format(return_code))
 
         return return_code
 
-    def _mark_original_repre_for_deletion(self, repre, profile, added_review):
+    def _mark_original_repre_for_deletion(self, repre, profile):
         """If new transcoded representation created, delete old."""
         if not repre.get("tags"):
             repre["tags"] = []
 
         delete_original = profile["delete_original"]
-        keep_original_review = profile["keep_original_review"]
 
         if delete_original:
             repre["tags"].append("delete_original")
-
-        if added_review and "review" in repre["tags"] and not keep_original_review:
-            repre["tags"].remove("review")

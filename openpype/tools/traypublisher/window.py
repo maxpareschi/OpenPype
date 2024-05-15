@@ -259,10 +259,13 @@ class TrayPublishWindow(PublisherWindow):
         print("NOT YET IMPLEMENTED")
 
 
-def main():
+def init_host():
     host = TrayPublisherHost()
     install_host(host)
+    return host
 
+
+def show_window():
     app_instance = QtWidgets.QApplication.instance()
     if app_instance is None:
         app_instance = QtWidgets.QApplication([])
@@ -276,3 +279,13 @@ def main():
     window = TrayPublishWindow()
     window.show()
     app_instance.exec_()
+
+
+def main():
+    init_host()
+    show_window()
+
+    
+
+
+

@@ -68,8 +68,7 @@ def load_node(loader_name, subset_name, repre_name, project, asset):
         loader = all_loaders[loader_name]
     else:
         loader = loaders_from_representation(all_loaders.values(), repre_doc)[0]
-    subset_node = load_with_repre_context(loader, repre_context)
-    return subset_node
+    return load_with_repre_context(loader, repre_context)
 
 
 def transcode_template(data):
@@ -183,37 +182,34 @@ def transcode_subsetchain(data):
     read["raw"].setValue(True)
     read["file"].setValue(data["input_path"])
 
-    last_node = read
+    node_list = [
+        read
+    ]
+    print("'{}' is the last tagged node.".format(node_list[-1]["name"].getValue()))
 
     for subset in data["subset_chain"]:
-        loader_name = subset.get("loader")
+        loader_name = subset["loader"]
         subset_name = subset["subset"]
         repre_name = subset["representation"]
-
+        
         subset_node = load_node(loader_name,
                                 subset_name,
                                 repre_name,
                                 data["project"],
                                 data["asset"])
-
-        subset_node.setInput(0, last_node)
-
-        last_node = subset_node
-
-    write = nuke.nodes.Write(file = data["output_path"])
-    write["name"].setValue("WRITE_TRANSCODE")
-    write["create_directories"].setValue(True)
-    write["use_limit"].setValue(True)
-    write["first"].setValue(data["frameStart"])
-    write["last"].setValue(data["frameEnd"])
-    write["raw"].setValue(True)
-    write["file_type"].setValue(
-        os.path.splitext(data["output_path"])[1].replace(".", "")
-    )
-    try:
-        write["metadata"].setValue("all metadata")
-    except:
-        print("\nNo metadata type to be set.")
+        
+        print("Created subset chain node: {}".format(subset_node["name"].getValue()))
+        print("Connecting input 0 of node '{}' to last known node: '{}'.".format(
+                subset_node["name"].getValue(),
+                node_list[-1]["name"].getValue()
+            )
+        )
+        print(nuke.toNode(node_list[-1]["name"].getValue())["name"].getValue())
+        subset_node.setInput(0, nuke.toNode(node_list[-1]["name"].getValue()))
+        print("input 0 was set to node {}".format(subset_node.input(0)["name"].getValue()))
+        node_list.append(subset_node)
+        print("'{}' is the last tagged node.".format(node_list[-1]["name"].getValue()))
+        print("Node list until now: {}".format(node_list))
 
     if data["reformat"]:
         reformat = nuke.nodes.Reformat()
@@ -225,13 +221,53 @@ def transcode_subsetchain(data):
         reformat["filter"].setValue("Lanczos6")
         reformat["clamp"].setValue(True)
         reformat["center"].setValue(True)
-        reformat.setInput(0, last_node)
-        last_node = reformat
+        print("Connecting input 0 of node '{}' to last known node: '{}'.".format(
+                reformat["name"].getValue(),
+                node_list[-1]["name"].getValue()
+            )
+        )
+        reformat.setInput(0, node_list[-1])
+        print("input 0 was set to node {}".format(reformat.input(0)["name"].getValue()))
+        node_list.append(reformat)
+        print("'{}' is the last tagged node.".format(node_list[-1]["name"].getValue()))
+        print("Node list until now: {}".format(node_list))
 
-    write.setInput(0, last_node)
+    write = nuke.nodes.Write(file = data["output_path"])
+    write["name"].setValue("WRITE_TRANSCODE")
+    write["create_directories"].setValue(True)
+    write["use_limit"].setValue(True)
+    write["first"].setValue(data["frameStart"])
+    write["last"].setValue(data["frameEnd"])
+    write["raw"].setValue(True)
+    write["file_type"].setValue(
+        os.path.splitext(data["output_path"])[1].replace(".", "")
+    )
+    print("Connecting input 0 of node '{}' to last known node: '{}'.".format(
+            write["name"].getValue(),
+            node_list[-1]["name"].getValue()
+        )
+    )
+    try:
+        write["metadata"].setValue("all metadata")
+    except:
+        print("\nNo metadata type to be set.")
+    write.setInput(0, node_list[-1])
+    print("input 0 was set to node {}".format(write.input(0)["name"].getValue()))
+    node_list.append(write)
+    print("'{}' is the last tagged node.".format(node_list[-1]["name"].getValue()))
+    print("Node list until now: {}".format(node_list))
+    
+
+    print("Created nodes layout:\n NAME | CLASS | DEPENDECIES")
+    for n in nuke.allNodes():
+        print("{} | {} | {}".format(
+                n["name"].getValue(),
+                n.Class(),
+                n.dependent(nuke.INPUTS)
+            )
+        )
 
     saved = nuke.scriptSave(data["save_path"])
-
     if not saved:
         raise OSError("Could not save script file!")
 
@@ -251,21 +287,6 @@ def transcode_color_conversion(data):
     read["file"].setValue(data["input_path"])
     last_node = read
 
-    write = nuke.nodes.Write(file = data["output_path"])
-    write["name"].setValue("WRITE_TRANSCODE")
-    write["create_directories"].setValue(True)
-    write["use_limit"].setValue(True)
-    write["first"].setValue(data["frameStart"])
-    write["last"].setValue(data["frameEnd"])
-    write["colorspace"].setValue(data["output_colorspace"])
-    write["file_type"].setValue(
-        os.path.splitext(data["output_path"])[1].replace(".", "")
-    )
-    try:
-        write["metadata"].setValue("all metadata")
-    except:
-        print("\nNo metadata type to be set.")
-    
     if data["reformat"]:
         reformat = nuke.nodes.Reformat()
         reformat["type"].setValue("to box")
@@ -279,10 +300,23 @@ def transcode_color_conversion(data):
         reformat.setInput(0, read)
         last_node = reformat
 
+    write = nuke.nodes.Write(file = data["output_path"])
+    write["name"].setValue("WRITE_TRANSCODE")
+    write["create_directories"].setValue(True)
+    write["use_limit"].setValue(True)
+    write["first"].setValue(data["frameStart"])
+    write["last"].setValue(data["frameEnd"])
+    write["colorspace"].setValue(data["output_colorspace"])
+    write["file_type"].setValue(
+        os.path.splitext(data["output_path"])[1].replace(".", "")
+    )
+    try:
+        write["metadata"].setValue("all metadata")
+    except:
+        print("\nTranscode: No metadata type to be set.")
     write.setInput(0, last_node)
 
     saved = nuke.scriptSave(data["save_path"])
-
     if not saved:
         raise OSError("Could not save script file!")
 
@@ -350,7 +384,7 @@ def process_thumb(node, data):
     try:
         thumb_write["metadata"].setValue("all metadata")
     except:
-        print("\nNo metadata type to be set.")
+        print("\nThumbnail: No metadata type to be set.")
     thumb_write.setInput(0, node)
     
     if thumb_write:
@@ -365,6 +399,10 @@ if __name__ == "__main__":
 
     with open(json_path,"r") as data_json:
         data = json.loads(data_json.read())
+
+    log = open(os.path.splitext(data["save_path"])[0] + ".log", "w")
+    old_stdout = sys.stdout
+    sys.stdout = log
     
     install_all()
     main_write_node = process_all(data)
@@ -372,5 +410,8 @@ if __name__ == "__main__":
         process_thumb(main_write_node, data)
 
     nuke.scriptExit()
+
+    sys.stdout = old_stdout
+    log.close()
     
     quit()
