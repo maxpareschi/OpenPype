@@ -146,21 +146,44 @@ class ExtractTemplatedTranscode(publish.Extractor):
 
                 orig_file_list = list(set(copy.deepcopy(new_repre["files"])))
 
-                renamed_files = []
-                for file_name in orig_file_list:
-                    head, _ = os.path.splitext(file_name)
-                    frame = re.findall(r'\d+$', head)[0]
-                    frame_index = head.find(frame) -1
-                    new_head = head[:frame_index]
-                    if new_repre.get("outputName"):
-                        new_head = new_head + '_{}'.format(new_repre["outputName"])
-                    new_head = new_head + head[frame_index:]
-                    new_file_name = "{}.{}".format(new_head, new_repre["ext"])
-                    renamed_files.append(new_file_name)
-                new_repre["files"] = renamed_files
+                frame_start = instance.data["frameStart"]-instance.data["handleStart"]
+                frame_end = instance.data["frameEnd"]+instance.data["handleEnd"]
+
+                input_is_sequence = True
+
+                if isinstance(new_repre["files"], list):
+                    renamed_files = []
+                    for file_name in orig_file_list:
+                        head, _ = os.path.splitext(file_name)
+                        frame = re.findall(r'\d+$', head)[0]
+                        frame_index = head.find(frame) -1
+                        new_head = head[:frame_index]
+                        if new_repre.get("outputName"):
+                            new_head = new_head + '_{}'.format(new_repre["outputName"])
+                        new_head = new_head + head[frame_index:]
+                        new_file_name = "{}.{}".format(new_head, new_repre["ext"])
+                        renamed_files.append(new_file_name)
+                    new_repre["files"] = renamed_files
+                else:
+                    expected_files = []
+                    source_head, source_tail = os.path.splitext(new_repre["files"])
+                    for f in range(frame_start, frame_end):
+                        new_head = source_head
+                        if new_repre.get("outputName"):
+                            new_head + '_{}'.format(new_repre["outputName"])
+                        expected_files.append("{}.{}.{}".format(
+                            source_head,
+                            f,
+                            new_repre["ext"]
+                        ))
+                    new_repre["files"] = expected_files
+                    input_is_sequence = False
 
                 repre_in = self._translate_to_sequence(repre)
                 repre_out = self._translate_to_sequence(new_repre)
+
+                self.log.debug(repre_in)
+                self.log.debug(repre_out)
 
                 nuke_script_save_path = os.path.join(
                     new_repre["stagingDir"],
@@ -169,13 +192,15 @@ class ExtractTemplatedTranscode(publish.Extractor):
 
                 try:
                     frame_start = repre_in[4][0]
+                    self.log.debug("Start frame detected: ({}) updated, script data...".format(frame_start))
                 except:
-                    frame_start = instance.data["frameStart"]-instance.data["handleStart"]
+                    self.log.debug("Using frame start data ({}) from generated Instance...".format(frame_start))
                 
                 try:
                     frame_end = repre_in[4][-1]
+                    self.log.debug("End frame detected: ({}) updated, script data...".format(frame_end))
                 except:
-                    frame_end = instance.data["frameEnd"]+instance.data["handleEnd"]
+                    self.log.debug("Using frame end data ({}) from generated Instance...".format(frame_end))
 
                 self.log.debug(json.dumps(profile_def, indent=4, default=str))
 
@@ -184,6 +209,7 @@ class ExtractTemplatedTranscode(publish.Extractor):
                     "input_path": repre_in[0],
                     "output_path": repre_out[0],
                     "save_path": nuke_script_save_path,
+                    "input_is_sequence": input_is_sequence,
                     "frameStart": frame_start,
                     "frameEnd": frame_end,
                     "fps": instance.data["fps"],
@@ -338,6 +364,11 @@ class ExtractTemplatedTranscode(publish.Extractor):
                     collection.tail
                 )
             ).replace("\\", "/")
+        else:
+            self.log.debug("Repre is not a sequence, single name output: '{}'".format(repre["files"]))
+            head, tail = os.path.splitext(repre["files"])
+            return os.path.join(
+                repre["stagingDir"], repre["files"]).replace("\\", "/"), head, "", tail, None
 
         return file_name, collection.head, frame_str, collection.tail, frames
 
@@ -468,7 +499,9 @@ class ExtractTemplatedTranscode(publish.Extractor):
         ).replace("\\", "/")        
         
         env = copy.deepcopy(os.environ)
-        env["PYTHONPATH"]= os.pathsep.join(sorted(list(set(env["PYTHONPATH"].split(";")))))
+        env["PYTHONPATH"] = os.pathsep.join(sorted(list(set(env["PYTHONPATH"].split(";")))))
+        env["PYTHONPATH"] = env["PYTHONPATH"] + os.pathsep + os.path.dirname(str(nuke_app.find_executable())).replace("\\", "/") + "/plugins"
+        env["PATH"] = env["PATH"] + os.pathsep + os.path.dirname(str(nuke_app.find_executable())).replace("\\", "/") + "/plugins"
         env.update({
             "project_name": data["project"]["name"],
             "asset_name": data["asset"],
