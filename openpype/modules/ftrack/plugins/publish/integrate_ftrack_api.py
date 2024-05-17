@@ -209,7 +209,7 @@ class IntegrateFtrackApi(pyblish.api.InstancePlugin):
                 "from": source_version,
                 "to": asset_version_entity
             })
-            source_version["custom_attributes"]["client_version_string"] = str(asset_version_entity["version"])
+            source_version["custom_attributes"]["client_version_string"] = str(asset_version_entity["version"]).zfill(3)
             session.commit()
 
         instance.data["ftrackIntegratedAssetVersionsData"] = (
