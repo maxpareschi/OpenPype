@@ -138,6 +138,9 @@
             "optional": true,
             "slate_template_path": "",
             "slate_template_res_path": "",
+            "missing_task_type": [
+                "Roundtrip"
+            ],
             "integrate_task_types": [
                 "Paint",
                 "Compositing"

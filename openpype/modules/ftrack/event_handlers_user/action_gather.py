@@ -16,7 +16,7 @@ from qtpy import QtWidgets, QtCore
 import openpype.modules
 from openpype.pipeline import install_host
 from openpype.modules.ftrack import FTRACK_MODULE_DIR
-from openpype.modules.ftrack.lib import statics_icon, BaseAction
+from openpype.modules.ftrack.lib import BaseAction, statics_icon
 
 from openpype.client import (
     get_asset_by_name,
@@ -251,8 +251,8 @@ class GatherAction(BaseAction):
         computed_asset = repre_doc["context"]["asset"]
         computed_task = repre_doc["context"]["task"]["name"]
         computed_variant = repre_doc["context"]["subset"].replace(repre_doc["context"]["family"], "")
-        computed_subset = "delivery{}".format(computed_variant)
-        computed_name = "{}_{}".format(computed_asset, computed_subset)
+        computed_subset = "{}_delivery{}".format(computed_asset, computed_variant)
+        # computed_name = "{}_{}".format(computed_asset, computed_subset)
 
         self.log.debug("Computed asset Name for subset '{}' is '{}'".format(computed_subset, computed_asset))
 
@@ -275,8 +275,8 @@ class GatherAction(BaseAction):
             "variant": computed_variant,
             "asset": repre_doc["context"]["asset"],
             "task": computed_task,
-            "name": computed_name,
-            "label": computed_name,
+            "name": computed_subset,
+            "label": computed_subset,
             "delivery_root_name": get_project_settings(project_name)["ftrack"]["publish"]["IntegrateFtrackApi"]["delivery_root"],
             "delivery_representation_name": repre_doc["name"],
             "delivery_representation_files": repre_files,

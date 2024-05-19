@@ -94,12 +94,24 @@ class ExtractTemplatedTranscode(publish.Extractor):
                 if "slate" in new_repre.get("tags", []):
                     new_repre["tags"].remove("slate")
 
+                custom_tags = profile_def.get("custom_tags")
+                if custom_tags:
+                    if new_repre.get("custom_tags") is None:
+                        new_repre["custom_tags"] = []
+                    new_repre["custom_tags"].extend(custom_tags)
+
+                if new_repre.get("tags") is None:
+                    new_repre["tags"] = []
+                for tag in profile_def["tags"]:
+                    if tag not in new_repre.get("tags", []):
+                        new_repre["tags"].append(tag)
+
                 if profile_name == "passthrough":
                     if repre_name_override:
                         new_repre["name"] = repre["name"] + "_" + repre_name_override
                         new_repre["outputName"] = repre_name_override
                     instance.data["representations"].append(new_repre)
-                    self.log.debug("profile is in passthrough mode, skipping transcode and adding as representation: {}".format(
+                    self.log.debug("profile is in passthrough mode, skipping transcode, adding tags and and pushing as representation: {}".format(
                         json.dumps(new_repre, indent=4, default=str)))
                     continue
 
@@ -265,18 +277,6 @@ class ExtractTemplatedTranscode(publish.Extractor):
                 instance.context.data["cleanupFullPaths"].append(
                     new_staging_dir)
 
-                custom_tags = profile_def.get("custom_tags")
-                if custom_tags:
-                    if new_repre.get("custom_tags") is None:
-                        new_repre["custom_tags"] = []
-                    new_repre["custom_tags"].extend(custom_tags)
-
-                if new_repre.get("tags") is None:
-                    new_repre["tags"] = []
-                for tag in profile_def["tags"]:
-                    if tag not in new_repre.get("tags", []):
-                        new_repre["tags"].append(tag)
-
                 new_repre["files"] = sorted(new_repre["files"])
 
                 # If there is only 1 file outputted then convert list to
@@ -332,7 +332,7 @@ class ExtractTemplatedTranscode(publish.Extractor):
         instance.data["representations"].extend(new_representations)
         self.log.debug("Final Representations list: \n{}\nFull Representations dump: {}\n".format(
             "\n".join([
-                "name: '{}'\t| ext: '{}'\t| tags: '{}'\t| outputName: '{}'\t| colorspace: '{}'".format(
+                "name: '{}' | ext: '{}' | tags: '{}' | outputName: '{}' | colorspace: '{}'".format(
                     repre["name"], repre["ext"], repre.get("tags", None),
                     repre.get("outputName", None), repre.get("colorspaceData",{}).get("colorspace", None)
                 ) for repre in instance.data["representations"]

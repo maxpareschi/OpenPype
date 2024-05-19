@@ -101,6 +101,16 @@ class CollectSlateGlobal(pyblish.api.InstancePlugin):
 
             if task in settings["integrate_task_types"] or not task:
 
+                if not task:
+                    default_task = {
+                        "name": settings["missing_task_type"][0].lower(),
+                        "type": settings["missing_task_type"][0],
+                        "short": instance.context.data["projectEntity"]["config"]\
+                            ["tasks"][settings["missing_task_type"][0]]["short_name"]
+                    }
+                    instance.data["anatomyData"]["task"] = default_task
+                    slate_data["task"] = default_task
+
                 self.log.debug("Task: {} is enabled for Extract "
                     "Slate Global workflow, tagging for slate "
                     "extraction on review families...".format(

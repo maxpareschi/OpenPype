@@ -62,14 +62,14 @@ class IntegrateFtrackApi(pyblish.api.InstancePlugin):
                     "parent_id": root["id"],
                 }
 
-                asset_entity = session.query("Folder where name is '{}' and parent.name is '{}'".format(
+                asset_entity = session.query("Shot where name is '{}' and parent.name is '{}'".format(
                     asset_data["name"],
                     root["name"]
                 )).first()
                 if asset_entity is not None:
                     parent_entity = asset_entity
                 else:
-                    parent_entity = session.create("Folder", asset_data)
+                    parent_entity = session.create("Shot", asset_data)
                     session.commit()
                 self.log.info("Created new container Asset with data: {}.".format(asset_data))
                 instance.data["asset"] = asset_data["name"]
@@ -200,15 +200,27 @@ class IntegrateFtrackApi(pyblish.api.InstancePlugin):
                 "select id from CustomAttributeLinkConfiguration where key is 'client_version_link'"
             ).first()
             if custom_attr_link_config:
-                session.create('CustomAttributeLink', {
+                session.create("CustomAttributeLink", {
                     "from_id": source_version["id"],
                     "to_id": asset_version_entity["id"],
                     "configuration_id": custom_attr_link_config["id"]
                 })
-            session.create('AssetVersionLink', {
+            session.create("AssetVersionLink", {
                 "from": source_version,
                 "to": asset_version_entity
             })
+
+            # shot_link = session.query("TypedContextLink where to_id is '{}' and from_id is '{}'".format(
+            #     asset_version_entity["asset"]["parent"]["id"],
+            #     source_version["asset"]["parent"]["id"])
+            # ).one()
+            # 
+            # if not shot_link:
+            #     session.create("TypedContextLink", {
+            #         "from": source_version["asset"]["parent"],
+            #         "to": asset_version_entity["asset"]["parent"]
+            #     })
+            
             source_version["custom_attributes"]["client_version_string"] = str(asset_version_entity["version"]).zfill(3)
             session.commit()
 

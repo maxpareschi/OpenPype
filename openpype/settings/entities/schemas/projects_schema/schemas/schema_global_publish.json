@@ -436,6 +436,14 @@
                     "type": "splitter"
                 },
                 {
+                    "type": "task-types-enum",
+                    "key": "missing_task_type",
+                    "label": "Override task type if main task is not found (delivery)"
+                },
+                {
+                    "type": "splitter"
+                },
+                {
                     "key": "integrate_task_types",
                     "label": "Slate Main Integration only in Task",
                     "type": "task-types-enum"

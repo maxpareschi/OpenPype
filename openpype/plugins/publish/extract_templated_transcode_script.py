@@ -91,7 +91,7 @@ def transcode_template(data):
             output_node = n
 
     if not output_node:
-        raise ValueError("FATAL: Output Node detected in template!")
+        raise ValueError("FATAL: Output Node not detected in template!")
 
     for p in placeholders:
         if p["plugin_identifier"].getValue() == "nuke.create":
@@ -182,6 +182,8 @@ def transcode_subsetchain(data):
     if os.path.isfile(data["save_path"]):
         os.remove(data["save_path"])
 
+    node_list = []
+
     read = nuke.nodes.Read()
     if data["input_is_sequence"]:
         read["first"].setValue(data["frameStart"])
@@ -197,35 +199,20 @@ def transcode_subsetchain(data):
     read["frame"].setValue(str(data["frameStart"]))
     read["raw"].setValue(True)
     read["file"].setValue(data["input_path"])
-
-    node_list = [
-        read
-    ]
-    print("'{}' is the last tagged node.".format(node_list[-1]["name"].getValue()))
+    node_list.append(read)
+    print("'{}' node created.".format(node_list[-1].name()))
 
     for subset in data["subset_chain"]:
         loader_name = subset["loader"]
         subset_name = subset["subset"]
         repre_name = subset["representation"]
-        
         subset_node = load_node(loader_name,
                                 subset_name,
                                 repre_name,
                                 data["project"],
                                 data["asset"])
-        
-        print("Created subset chain node: {}".format(subset_node["name"].getValue()))
-        print("Connecting input 0 of node '{}' to last known node: '{}'.".format(
-                subset_node["name"].getValue(),
-                node_list[-1]["name"].getValue()
-            )
-        )
-        print(nuke.toNode(node_list[-1]["name"].getValue())["name"].getValue())
-        subset_node.setInput(0, nuke.toNode(node_list[-1]["name"].getValue()))
-        print("input 0 was set to node {}".format(subset_node.input(0)["name"].getValue()))
         node_list.append(subset_node)
-        print("'{}' is the last tagged node.".format(node_list[-1]["name"].getValue()))
-        print("Node list until now: {}".format(node_list))
+        print("'{}' node created.".format(node_list[-1].name()))
 
     if data["reformat"]:
         reformat = nuke.nodes.Reformat()
@@ -237,17 +224,9 @@ def transcode_subsetchain(data):
         reformat["filter"].setValue("Lanczos6")
         reformat["clamp"].setValue(True)
         reformat["center"].setValue(True)
-        print("Connecting input 0 of node '{}' to last known node: '{}'.".format(
-                reformat["name"].getValue(),
-                node_list[-1]["name"].getValue()
-            )
-        )
-        reformat.setInput(0, node_list[-1])
-        print("input 0 was set to node {}".format(reformat.input(0)["name"].getValue()))
         node_list.append(reformat)
-        print("'{}' is the last tagged node.".format(node_list[-1]["name"].getValue()))
-        print("Node list until now: {}".format(node_list))
-
+        print("'{}' node created.".format(node_list[-1].name()))
+    
     write = nuke.nodes.Write(file = data["output_path"])
     write["name"].setValue("WRITE_TRANSCODE")
     write["create_directories"].setValue(True)
@@ -258,30 +237,21 @@ def transcode_subsetchain(data):
     write["file_type"].setValue(
         os.path.splitext(data["output_path"])[1].replace(".", "")
     )
-    print("Connecting input 0 of node '{}' to last known node: '{}'.".format(
-            write["name"].getValue(),
-            node_list[-1]["name"].getValue()
-        )
-    )
     try:
         write["metadata"].setValue("all metadata")
     except:
         print("\nNo metadata type to be set.")
-    write.setInput(0, node_list[-1])
-    print("input 0 was set to node {}".format(write.input(0)["name"].getValue()))
     node_list.append(write)
-    print("'{}' is the last tagged node.".format(node_list[-1]["name"].getValue()))
-    print("Node list until now: {}".format(node_list))
-    
+    print("'{}' node created.".format(node_list[-1].name()))
 
-    print("Created nodes layout:\n NAME | CLASS | DEPENDECIES")
-    for n in nuke.allNodes():
-        print("{} | {} | {}".format(
-                n["name"].getValue(),
-                n.Class(),
-                n.dependent(nuke.INPUTS)
-            )
-        )
+    for node_id, node in enumerate(node_list):
+        if node_id == 0:
+            continue
+        else:
+            node.setInput(0, node_list[node_id-1])
+            print("'{}' node input connected to '{}' node.".format(
+                node.name(), node_list[node_id-1].name()
+            ))
 
     saved = nuke.scriptSave(data["save_path"])
     if not saved:
@@ -293,6 +263,8 @@ def transcode_subsetchain(data):
 def transcode_color_conversion(data):
     if os.path.isfile(data["save_path"]):
         os.remove(data["save_path"])
+
+    node_list = []
 
     read = nuke.nodes.Read()
     if data["input_is_sequence"]:
@@ -309,7 +281,8 @@ def transcode_color_conversion(data):
     read["frame"].setValue(str(data["frameStart"]))
     read["colorspace"].setValue(data["input_colorspace"])
     read["file"].setValue(data["input_path"])
-    last_node = read
+    node_list.append(read)
+    print("'{}' node created.".format(node_list[-1].name()))
 
     if data["reformat"]:
         reformat = nuke.nodes.Reformat()
@@ -321,8 +294,8 @@ def transcode_color_conversion(data):
         reformat["filter"].setValue("Lanczos6")
         reformat["clamp"].setValue(True)
         reformat["center"].setValue(True)
-        reformat.setInput(0, read)
-        last_node = reformat
+        node_list.append(reformat)
+        print("'{}' node created.".format(node_list[-1].name()))
 
     write = nuke.nodes.Write(file = data["output_path"])
     write["name"].setValue("WRITE_TRANSCODE")
@@ -338,7 +311,17 @@ def transcode_color_conversion(data):
         write["metadata"].setValue("all metadata")
     except:
         print("\nTranscode: No metadata type to be set.")
-    write.setInput(0, last_node)
+    node_list.append(write)
+    print("'{}' node created.".format(node_list[-1].name()))
+
+    for node_id, node in enumerate(node_list):
+        if node_id == 0:
+            continue
+        else:
+            node.setInput(0, node_list[node_id-1])
+            print("'{}' node input connected to '{}' node.".format(
+                node.name(), node_list[node_id-1].name()
+            ))
 
     saved = nuke.scriptSave(data["save_path"])
     if not saved:
