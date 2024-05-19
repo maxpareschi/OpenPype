@@ -1,10 +1,8 @@
 import json
 import os
 import re
-import sys
-import subprocess
-import copy
 import platform
+import traceback
 
 import openpype.lib
 import pyblish.api
@@ -18,7 +16,7 @@ from qtpy import QtWidgets, QtCore
 import openpype.modules
 from openpype.pipeline import install_host
 from openpype.modules.ftrack import FTRACK_MODULE_DIR
-from openpype.modules.ftrack.lib import BaseAction, statics_icon
+from openpype.modules.ftrack.lib import statics_icon, BaseAction
 
 from openpype.client import (
     get_asset_by_name,
@@ -49,8 +47,26 @@ class GatherAction(BaseAction):
 
     type = "Application"
 
+    exclude_component_list = [ "review", "thumbnail" ]
+
     def __init__(self, *args, **kwargs):
+        self.assetversions = list()
+        self.project_name = None
         super().__init__(*args, **kwargs)
+
+    def get_all_available_components_for_assetversion(self, session, assetversion):
+        component_list = []
+        components = session.query("select name from Component where version_id is '{}'".format(assetversion["id"])).all()
+        for comp in components:
+            valid = True
+            for excl in self.exclude_component_list:
+                if comp["name"].find(excl) >= 0:
+                    valid = False
+                    break
+            if valid:
+                component_list.append(comp["name"])
+            
+        return list(set(component_list))
 
     def discover(self, session, entities, event):
         etype = entities[0].entity_type
@@ -60,17 +76,77 @@ class GatherAction(BaseAction):
         else:
             return False
 
+    def interface(self, session, entities, event):
+        if event['data'].get('values', {}):
+            return
+        
+        self.assetversions = self.get_all_assetversions(session, entities)
+        self.project_name = self.assetversions[0]["project"]["full_name"]
+
+        items = [{
+            "type": "label",
+            "value": "<h1><b>Select Representations to Gather:</b></h1>"
+        }]
+
+        try:
+            for assetversion in self.assetversions:
+                enum_data = []
+                components = self.get_all_available_components_for_assetversion(session, assetversion)
+                for comp in components:
+                    enum_data.append({
+                        "label": comp,
+                        "value": comp
+                    })
+                enum_data = sorted(enum_data, key = lambda d: not "exr"==d["label"])
+                if not enum_data:
+                    raise IndexError("Failed to fetch any components")
+                item_name = "{} - {} v{}".format(
+                    assetversion["asset"]["parent"]["name"],
+                    assetversion["asset"]["name"],
+                    str(assetversion["version"]).zfill(3)
+                )
+                items.extend(
+                    [
+                        {
+                            "type": "label",
+                            "value": "<b>{}</b>".format(item_name)
+                        },
+                        {
+                            "label": "<span style=\"font-size: 7pt;\">Representation</span>",
+                            "type": "enumerator",
+                            "name": assetversion["id"],
+                            "data": enum_data,
+                            "value": enum_data[0]["value"]
+                        }
+                    ]
+                )
+            
+            return {
+                "type": "form",
+                "title": "Gather Action",
+                "items": items,
+                "submit_button_label": "Gather",
+                "width": 500,
+                "height": 600
+            }
+    
+        except:
+            self.log.error(traceback.format_exc())
+            return {"success": False, "message": traceback.format_exc().splitlines()[-1]}
+
     def launch(self, session, entities, event):
 
-        assetversions = self.get_all_assetversions(session, entities)
+        user_values = event["data"].get("values", None)
+
+        if user_values is None:
+            return
         
-        project_name = assetversions[0]["project"]["full_name"]
+        self.log.info("Sumbitted choices: {}".format(user_values))
 
         host = openpype.hosts.traypublisher.api.TrayPublisherHost()
-        host.set_project_name(project_name)
+        host.set_project_name(self.project_name)
         install_host(host)
-        
-        self.log.debug(json.dumps(host.get_context_data(), indent=4, default=str))
+
         create_context = openpype.pipeline.create.CreateContext(host,
                                                                 headless=True,
                                                                 discover_publish_plugins=True,
@@ -82,9 +158,9 @@ class GatherAction(BaseAction):
             )
             create_plugin.remove_instances([instance])
 
-        for version in assetversions:
+        for version in self.assetversions:
             self.target_asset_name = "{}_delivery".format(version["asset"]["name"])
-            self.publisher_start(version, session, create_context)
+            self.publisher_start(session, create_context, version, user_values)
 
         app_instance = QtWidgets.QApplication.instance()
         if app_instance is None:
@@ -96,8 +172,8 @@ class GatherAction(BaseAction):
             )
         
         window = openpype.tools.traypublisher.window.TrayPublishWindow()
-        window._overlay_widget._set_project(project_name)
-        # window.set_context_label("{} - GATHER DELIVERIES".format(project_name))
+        window._overlay_widget._set_project(self.project_name)
+        window.set_context_label("{} - GATHER DELIVERIES".format(self.project_name))
         window.show()
         app_instance.exec_()
 
@@ -122,17 +198,17 @@ class GatherAction(BaseAction):
             etype = entity.entity_type
 
             if etype == "FileComponent":
-                query = "select id, asset_id, version from AssetVersion where components any (id='{0}')".format(entity["id"])
+                query = "select id, asset_id, task_id, version, asset.name, asset.parent.name from AssetVersion where components any (id='{0}')".format(entity["id"])
                 for assetversion in session.query(query).all():
                     result.append(assetversion)
 
             elif etype == "AssetVersion":
-                query = "select id, asset_id, version from AssetVersion where id is '{0}'".format(entity["id"])
+                query = "select id, asset_id, task_id, version, asset.name, asset.parent.name from AssetVersion where id is '{0}'".format(entity["id"])
                 for assetversion in session.query(query).all():
                     result.append(assetversion)
 
             elif etype == "AssetVersionList":
-                query = "select id, asset_id, version from AssetVersion where lists any (id='{0}')".format(entity["id"])
+                query = "select id, asset_id, task_id, version, asset.name, asset.parent.name from AssetVersion where lists any (id='{0}')".format(entity["id"])
                 for assetversion in session.query(query).all():
                     result.append(assetversion)
             
@@ -142,16 +218,14 @@ class GatherAction(BaseAction):
         
         return result
 
-    def publisher_start(self, entity, session, create_context):
+    def publisher_start(self, session, create_context, version, user_values):
 
-        project_name = entity["project"]["full_name"]
-        subset_name = entity["asset"]["name"]
-        asset_name = entity["asset"]["parent"]["name"]
-        repre_name = "exr"
-        for component in entity["components"]:
-            if component["name"].find(repre_name) >= 0:
-                repre_name = component["name"]
-                break
+        project_name = self.project_name
+        subset_name = version["asset"]["name"]
+        asset_name = version["asset"]["parent"]["name"]
+        repre_name = user_values[version["id"]]
+
+        self.log.debug("Asset Name for subset '{}' is '{}'".format(subset_name, asset_name))
 
         asset_doc = get_asset_by_name(
             project_name,
@@ -180,6 +254,19 @@ class GatherAction(BaseAction):
         computed_subset = "delivery{}".format(computed_variant)
         computed_name = "{}_{}".format(computed_asset, computed_subset)
 
+        self.log.debug("Computed asset Name for subset '{}' is '{}'".format(computed_subset, computed_asset))
+
+        asset_tasks = session.query("select id, name, type.name, type_id from Task where parent.name is {}".format(asset_name)).all()
+        ftrack_task_names = [at["name"] for at in asset_tasks]
+        ftrack_task_types = [at["type"]["name"] for at in asset_tasks]
+
+        self.log.debug("Searching for task '{}' into ftrack asset tasks...".format(computed_task))
+        if (computed_task not in ftrack_task_names) and (computed_task not in ftrack_task_types):
+            self.log.debug("Task {} not found in task names: {} and task types: {}".format(
+                computed_task, ftrack_task_names, ftrack_task_types
+            ))
+            computed_task = ""
+
         delivery_instance = {
             "project": project_name,
             "family": "delivery",
@@ -194,11 +281,11 @@ class GatherAction(BaseAction):
             "delivery_representation_name": repre_doc["name"],
             "delivery_representation_files": repre_files,
             "delivery_asset_name": "{}_delivery".format(asset_name),
-            "delivery_task_id": entity["task_id"],
-            "delivery_ftrack_source_id": entity["id"]
+            "delivery_task_id": str(version["task_id"]) if str(version["task_id"]) != "NOT_SET" else None,
+            "delivery_ftrack_source_id": version["id"]
         }
 
-        note = self.get_comment_from_notes(session, entity)
+        note = self.get_comment_from_notes(session, version)
         if note:
             delivery_instance.update(note)
 
