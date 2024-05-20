@@ -63,7 +63,7 @@ class Delivery(BaseAction):
                 "message": (
                     "Didn't found project \"{}\" in avalon."
                 ).format(project_name)
-            }
+            } 
 
         repre_names = self._get_repre_names(project_name, session, entities)
 
