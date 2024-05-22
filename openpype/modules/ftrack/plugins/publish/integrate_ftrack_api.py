@@ -53,8 +53,10 @@ class IntegrateFtrackApi(pyblish.api.InstancePlugin):
             source = None
             if instance.data["family"] == "delivery":
                 
-                root = session.query("Folder where name is '{}'".format(
-                    instance.data["delivery_root_name"])).one()
+                root = session.query("Folder where name is '{}' and project_id is '{}'".format(
+                    instance.data["delivery_root_name"],
+                    instance.data["delivery_project_id"])
+                    ).one()
                 source = session.query("AssetVersion where id is '{}'".format(
                     instance.data["delivery_ftrack_source_id"])).one()
                 asset_data = {

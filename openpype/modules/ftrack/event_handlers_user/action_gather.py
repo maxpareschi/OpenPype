@@ -224,6 +224,7 @@ class GatherAction(BaseAction):
     def publisher_start(self, session, create_context, version, user_values):
 
         project_name = self.project_name
+        project_id = version["project_id"]
         subset_name = version["asset"]["name"]
         asset_name = version["asset"]["parent"]["name"]
         repre_name = user_values[version["id"]]
@@ -281,6 +282,8 @@ class GatherAction(BaseAction):
             "name": computed_subset,
             "label": computed_subset,
             "delivery_root_name": get_project_settings(project_name)["ftrack"]["publish"]["IntegrateFtrackApi"]["delivery_root"],
+            "delivery_project_name": project_name,
+            "delivery_project_id": project_id,
             "delivery_representation_name": repre_doc["name"],
             "delivery_representation_files": repre_files,
             "delivery_asset_name": "{}_delivery".format(asset_name),
