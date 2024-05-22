@@ -97,7 +97,9 @@ class PrecollectInstances(pyblish.api.ContextPlugin):
                 os.path.dirname(context.data["activeProject"].path()),
                 "renders",
                 "hiero",
-                "transcodes"
+                "transcodes",
+                clip_name,
+                subset  
             ).replace("\\", "/")
                 
             shutil.rmtree(staging_dir, ignore_errors=True)

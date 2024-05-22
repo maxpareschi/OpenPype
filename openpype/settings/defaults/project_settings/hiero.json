@@ -26,7 +26,6 @@
     },
     "create": {
         "CreateShotClip": {
-            "submitToDeadline": false,
             "hierarchy": "{folder}/{sequence}",
             "clipRename": false,
             "clipName": "{sequence}_{shot}",
@@ -38,9 +37,6 @@
             "track": "{_track_}",
             "shot": "###",
             "vSyncOn": true,
-            "convertClips": true,
-            "keepSourceClips": true,
-            "subsetSourceName": "source",
             "workfileFrameStart": 1009,
             "handleStart": 8,
             "handleEnd": 8

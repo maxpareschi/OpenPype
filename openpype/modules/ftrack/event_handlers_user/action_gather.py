@@ -143,9 +143,12 @@ class GatherAction(BaseAction):
         
         self.log.info("Sumbitted choices: {}".format(user_values))
 
+        self.project_name = self.assetversions[0]["project"]["full_name"]
+
         host = openpype.hosts.traypublisher.api.TrayPublisherHost()
-        host.set_project_name(self.project_name)
         install_host(host)
+        host.set_project_name(self.project_name)
+        self.log.info("Project Name: was set: '{}'".format(self.project_name))
 
         create_context = openpype.pipeline.create.CreateContext(host,
                                                                 headless=True,
@@ -173,7 +176,7 @@ class GatherAction(BaseAction):
         
         window = openpype.tools.traypublisher.window.TrayPublishWindow()
         window._overlay_widget._set_project(self.project_name)
-        window.set_context_label("{} - GATHER DELIVERIES".format(self.project_name))
+        # window.set_context_label("{} - GATHER DELIVERIES".format(self.project_name))
         window.show()
         app_instance.exec_()
 

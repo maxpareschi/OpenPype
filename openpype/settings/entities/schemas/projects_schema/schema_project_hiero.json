@@ -129,18 +129,6 @@
                     "is_group": true,
                     "children": [
                         {
-                            "type": "collapsible-wrap",
-                            "label": "FARM SETTINGS",
-                            "collapsible": false,
-                            "children": [
-                              {
-                                  "type": "boolean",
-                                  "key": "submitToDeadline",
-                                  "label": "Submit on Deadline"
-                              }
-                            ]
-                        },
-                        {
                           "type": "collapsible-wrap",
                           "label": "Shot Hierarchy And Rename Settings",
                           "collapsible": false,
@@ -215,28 +203,6 @@
                                 "label": "Enable Vertical Sync"
                             }
                           ]
-                        },
-                        {
-                            "type": "collapsible-wrap",
-                            "label": "Conversion Settings",
-                            "collapsible": false,
-                            "children": [
-                                {
-                                    "type": "boolean",
-                                    "key": "convertClips",
-                                    "label": "Convert tracks to:\n  - \"scene_linear\" exr main (for comp)\n  - \"color_picking\" jpeg proxy (for cg)"
-                                },
-                                {
-                                    "type": "boolean",
-                                    "key": "keepSourceClips",
-                                    "label": "Publish source clips along"
-                                },
-                                {
-                                    "type": "text",
-                                    "key": "subsetSourceName",
-                                    "label": "Subset Source Name to append"
-                                }
-                            ]
                         },
                         {
                           "type": "collapsible-wrap",

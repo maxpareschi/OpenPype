@@ -651,8 +651,6 @@ class PublishClip:
     # parents search pattern
     parents_search_pattern = r"\{([a-z]*?)\}"
 
-    # default templates for non-ui use
-    submit_to_deadline_default = False
     rename_default = False
     hierarchy_default = "{_folder_}/{_sequence_}"
     clip_name_default = "{_sequence_}_{_clipIndex_:0>4}"
@@ -663,9 +661,6 @@ class PublishClip:
     count_steps_default = 10
     vertical_sync_default = True
     driving_layer_default = "Main"
-    convert_clips_default = True
-    keep_source_clips_default = True
-    subset_source_name_default = "Source"
     audio_default = False
 
     def __init__(self, cls, track_item, **kwargs):
@@ -765,8 +760,6 @@ class PublishClip:
             "____ self.shot_num: {}".format(self.shot_num))
 
         # ui_inputs data or default values if gui was not used
-        self.submit_to_deadline = self.ui_inputs.get(
-            "clipRename", {}).get("value") or self.submit_to_deadline_default
         self.rename = self.ui_inputs.get(
             "clipRename", {}).get("value") or self.rename_default
         self.clip_name = self.ui_inputs.get(
@@ -792,12 +785,6 @@ class PublishClip:
             "reviewTrack", {}).get("value") or self.review_track_default
         self.audio = self.ui_inputs.get(
             "audio", {}).get("value") or self.audio_default
-        self.convert_clips = self.ui_inputs.get(
-            "convertClips", {}).get("value") or self.convert_clips_default
-        self.keep_source_clips = self.ui_inputs.get(
-            "keepSourceClips", {}).get("value") or self.keep_source_clips_default
-        self.subset_source_name = self.ui_inputs.get(
-            "subsetSourceName", {}).get("value") or self.subset_source_name_default
 
         # build subset name from layer name
         if self.subset_name == "<track_name>":

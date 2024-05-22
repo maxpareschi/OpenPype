@@ -19,21 +19,21 @@ class CreateShotClip(phiero.Creator):
     gui_name = "Pype publish attributes creator"
     gui_info = "Define sequential rename and fill hierarchy data."
     gui_inputs = {
-        "farmHierarchy": {
-            "type": "section",
-            "label": "<span style=\"color: #77DDFF;\"><b>FARM SETTINGS</b></span>",
-            "target": "ui",
-            "order": 0,
-            "value": {
-                "submitToDeadline": {
-                    "value": False,
-                    "type": "QCheckBox",
-                    "label": "<span style=\"color: #77DDFF;\">Submit to Deadline</span>",
-                    "target": "ui",
-                    "toolTip": "shot creation on the farm!",  # noqa
-                    "order": 0},
-            }
-        },
+        # "farmHierarchy": {
+        #     "type": "section",
+        #     "label": "<span style=\"color: #77DDFF;\"><b>FARM SETTINGS</b></span>",
+        #     "target": "ui",
+        #     "order": 0,
+        #     "value": {
+        #         "submitToDeadline": {
+        #             "value": False,
+        #             "type": "QCheckBox",
+        #             "label": "<span style=\"color: #77DDFF;\">Submit to Deadline</span>",
+        #             "target": "ui",
+        #             "toolTip": "shot creation on the farm!",  # noqa
+        #             "order": 0},
+        #     }
+        # },
         "renameHierarchy": {
             "type": "section",
             "label": "<b>Shot Hierarchy And Rename Settings</b>",
@@ -183,38 +183,6 @@ class CreateShotClip(phiero.Creator):
                     "target": "tag",
                     "toolTip": "Is resloution taken from timeline or source?",  # noqa
                     "order": 4},
-            }
-        },
-        "convertSettings": {
-            "type": "section",
-            "label": "<b>Conversion settings</b>",
-            "target": "ui",
-            "order": 5,
-            "value": {
-                "convertClips": {
-                    "value": True,
-                    "type": "QCheckBox",
-                    "label": "Convert tracks to \"scene_linear\"",
-                    "target": "tag",
-                    "toolTip": "Converts tracks to scene_linear and replaces file list for integration",  # noqa
-                    "order": 0
-                },
-                "keepSourceClips": {
-                    "value": True,
-                    "type": "QCheckBox",
-                    "label": "Publish source clips along",
-                    "target": "tag",
-                    "toolTip": "Publish along source clips with no conversion. These will always be at source resolution.",  # noqa
-                    "order": 1
-                },
-                "subsetSourceName": {
-                    "value": "Source",
-                    "type": "QLineEdit",
-                    "label": "Subset Source Name to append",
-                    "target": "tag",
-                    "toolTip": "Subset name to append to any clip while publishing source. NOTE: this will work only if the option \"Publish source clips\" above is checked.", #noqa
-                    "order": 2
-                }
             }
         },
         "frameRangeAttr": {
