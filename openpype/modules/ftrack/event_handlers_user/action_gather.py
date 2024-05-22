@@ -162,7 +162,10 @@ class GatherAction(BaseAction):
             create_plugin.remove_instances([instance])
 
         for version in self.assetversions:
-            
+            current_links = len(version["outgoing_links"])
+            if current_links > 0:
+                self.log.debug("This asset has already linked delivery versions attached, skipping delivery for now...")
+                continue
             self.target_asset_name = "{}_delivery".format(version["asset"]["name"])
             self.publisher_start(session, create_context, version, user_values)
 
