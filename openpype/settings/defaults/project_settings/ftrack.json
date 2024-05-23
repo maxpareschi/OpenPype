@@ -189,6 +189,14 @@
                 "Administrator"
             ]
         },
+        "gather_action": {
+            "missing_task_override": [
+                "Roundtrip"
+            ],
+            "delivery_root": "to_client",
+            "delivery_asset_suffix": "delivery",
+            "subset_name_template": "{family}{task}{variant}"
+        },
         "store_thubmnail_to_avalon": {
             "enabled": true,
             "role_list": [
@@ -456,8 +464,7 @@
             "enabled": true
         },
         "IntegrateFtrackApi": {
-            "enabled": true,
-            "delivery_root": "to_client"
+            "enabled": true
         },
         "IntegrateFtrackInstance": {
             "family_mapping": {

@@ -179,7 +179,7 @@ class SlateCreator:
         self.data = data.copy()
 
         self.log.debug(
-            "Data: '{}'".format(self.data)
+            "Data: '{}'".format(json.dumps(self.data, indent=4, default=str))
         )
 
     def set_resolution(self, width, height):
@@ -343,7 +343,14 @@ class SlateCreator:
 
             for m in optional_matches:
                 self.data["{}_optional".format(m)] = ""
+                is_empty = False
                 if not self.data[m]:
+                    is_empty = True
+                elif isinstance(self.data[m], dict):
+                    for k, v in self.data[m].items():
+                        if not v:
+                            is_empty = True
+                if is_empty:
                     self.data["{}_optional".format(m)] = hidden_string
         
         try:

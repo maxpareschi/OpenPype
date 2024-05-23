@@ -22,14 +22,14 @@ from openpype.client import (
     get_asset_by_name,
     get_subset_by_name,
     get_representation_by_name,
-    get_last_version_by_subset_id,
-    get_project
+    get_last_version_by_subset_id
 )
 
 import openpype.pipeline
 from openpype.settings import (
     get_system_settings,
-    get_project_settings
+    get_project_settings,
+    get_anatomy_settings
 )
 
 import openpype
@@ -205,12 +205,12 @@ class GatherAction(BaseAction):
             etype = entity.entity_type
 
             if etype == "FileComponent":
-                query = "select id, asset_id, task_id, version, asset.name, asset.parent.name from AssetVersion where components any (id='{0}')".format(entity["id"])
+                query = "select id, asset_id, task.name, task_id, version, asset.name, asset.parent.name from AssetVersion where components any (id='{0}')".format(entity["id"])
                 for assetversion in session.query(query).all():
                     result.append(assetversion)
 
             elif etype == "AssetVersion":
-                query = "select id, asset_id, task_id, version, asset.name, asset.parent.name from AssetVersion where id is '{0}'".format(entity["id"])
+                query = "select id, asset_id, task.name, task_id, version, asset.name, asset.parent.name from AssetVersion where id is '{0}'".format(entity["id"])
                 for assetversion in session.query(query).all():
                     result.append(assetversion)
 
@@ -227,11 +227,14 @@ class GatherAction(BaseAction):
 
     def publisher_start(self, session, create_context, version, user_values):
 
+        family = "delivery"
         project_name = self.project_name
         project_id = version["project_id"]
         subset_name = version["asset"]["name"]
         asset_name = version["asset"]["parent"]["name"]
         repre_name = user_values[version["id"]]
+        anatomy = get_anatomy_settings(project_name)
+        settings = get_project_settings(project_name)["ftrack"]["user_handlers"]["gather_action"]
 
         self.log.debug("Asset Name for subset '{}' is '{}'".format(subset_name, asset_name))
 
@@ -255,46 +258,58 @@ class GatherAction(BaseAction):
         )
 
         repre_files = self.get_files_from_repre(repre_doc, version_doc)
-
-        computed_asset = repre_doc["context"]["asset"]
+        
+        task_override = ""
         try:
             computed_task = repre_doc["context"]["task"]["name"]
         except:
-            computed_task = "Roundtrip"
-        computed_variant = repre_doc["context"]["subset"].replace(repre_doc["context"]["family"], "")
-        computed_variant = computed_task.capitalize() + computed_variant.replace(computed_task.capitalize(), "")
-        computed_subset = "{}_delivery{}".format(computed_asset, computed_variant)
-        # computed_name = "{}_{}".format(computed_asset, computed_subset)
+            computed_task = ""
+
+        if not computed_task:
+            if len(settings["missing_task_override"]) > 0:
+                task_override = settings["missing_task_override"][0]
+
+        computed_asset = repre_doc["context"]["asset"]
+        computed_variant = repre_doc["context"]["subset"].lower().replace(
+            repre_doc["context"]["family"].lower(),
+            ""
+        ).replace(
+            computed_task.lower(),
+            ""
+        ).capitalize()
+
+        subset_format_data = {
+            "asset": computed_asset,
+            "family": family,
+            "task": computed_task.capitalize() if computed_task else task_override.capitalize(),
+            "variant": computed_variant
+        }
+
+        computed_subset = settings["subset_name_template"].format_map(subset_format_data)
+        computed_name = "{}_{}".format(computed_asset, computed_subset)
 
         self.log.debug("Computed asset Name for subset '{}' is '{}'".format(computed_subset, computed_asset))
 
-        asset_tasks = session.query("select id, name, type.name, type_id from Task where parent.name is {}".format(asset_name)).all()
-        ftrack_task_names = [at["name"] for at in asset_tasks]
-        ftrack_task_types = [at["type"]["name"] for at in asset_tasks]
-
-        self.log.debug("Searching for task '{}' into ftrack asset tasks...".format(computed_task))
-        if (computed_task not in ftrack_task_names) and (computed_task not in ftrack_task_types):
-            self.log.debug("Task {} not found in task names: {} and task types: {}".format(
-                computed_task, ftrack_task_names, ftrack_task_types
-            ))
-            computed_task = ""
+        delivery_suffix = settings["delivery_asset_suffix"]
+        if delivery_suffix:
+            delivery_suffix = "_" + delivery_suffix
 
         delivery_instance = {
             "project": project_name,
-            "family": "delivery",
-            "families": ["delivery"],
+            "family": family,
+            "families": [family],
             "subset": computed_subset,
-            "variant": computed_variant,
+            "variant": computed_task.capitalize() + computed_variant if computed_task else task_override.capitalize() + computed_variant,
             "asset": repre_doc["context"]["asset"],
             "task": computed_task,
-            "name": computed_subset,
-            "label": computed_subset,
-            "delivery_root_name": get_project_settings(project_name)["ftrack"]["publish"]["IntegrateFtrackApi"]["delivery_root"],
+            "name": computed_name,
+            "label": computed_name,
+            "delivery_root_name": settings["delivery_root"],
             "delivery_project_name": project_name,
             "delivery_project_id": project_id,
             "delivery_representation_name": repre_doc["name"],
             "delivery_representation_files": repre_files,
-            "delivery_asset_name": "{}_delivery".format(asset_name),
+            "delivery_asset_name": asset_name + delivery_suffix,
             "delivery_task_id": str(version["task_id"]) if str(version["task_id"]) != "NOT_SET" else None,
             "delivery_ftrack_source_id": version["id"]
         }
@@ -309,7 +324,7 @@ class GatherAction(BaseAction):
             repre_files, allow_sequences=True)]
         
         create_context.create(
-            "settings_delivery",
+            "settings_{}".format(family),
             computed_subset,
             delivery_instance,
             pre_create_data={
