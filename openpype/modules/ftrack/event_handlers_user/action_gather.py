@@ -257,8 +257,12 @@ class GatherAction(BaseAction):
         repre_files = self.get_files_from_repre(repre_doc, version_doc)
 
         computed_asset = repre_doc["context"]["asset"]
-        computed_task = repre_doc["context"]["task"]["name"]
+        try:
+            computed_task = repre_doc["context"]["task"]["name"]
+        except:
+            computed_task = "Roundtrip"
         computed_variant = repre_doc["context"]["subset"].replace(repre_doc["context"]["family"], "")
+        computed_variant = computed_task.capitalize() + computed_variant.replace(computed_task.capitalize(), "")
         computed_subset = "{}_delivery{}".format(computed_asset, computed_variant)
         # computed_name = "{}_{}".format(computed_asset, computed_subset)
 
