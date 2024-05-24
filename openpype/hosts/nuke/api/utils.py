@@ -1,4 +1,5 @@
 import os
+import re
 import nuke
 
 from openpype import resources
@@ -117,9 +118,17 @@ def get_colorspace_list(colorspace_knob):
         list: list of strings names of profiles
     """
 
-    all_clrs = list(colorspace_knob.values())
+    all_clrs = []
     reduced_clrs = []
-
+    for cs in list(colorspace_knob.values()):
+        # insert roles without the string append in nuke.
+        # Separator for roles is empty since it's a tab
+        new_cs = re.split(r'\t+', cs)
+        if isinstance(new_cs, list):
+            all_clrs.append(new_cs[0])
+        else:
+            all_clrs.append(new_cs)
+    
     if not colorspace_knob.getFlag(nuke.STRIP_CASCADE_PREFIX):
         return all_clrs
 

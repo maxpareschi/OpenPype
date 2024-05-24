@@ -111,5 +111,6 @@ tools/run_eventserver.*
 
 #  Developer tools
 tools/dev_*
+ttd_tools/
 
 .github_changelog_generator
