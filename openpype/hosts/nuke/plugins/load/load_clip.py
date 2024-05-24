@@ -19,7 +19,8 @@ from openpype.hosts.nuke.api import (
     containerise,
     update_container,
     viewer_update_and_undo_stop,
-    colorspace_exists_on_node
+    colorspace_exists_on_node,
+    get_colorspace_list
 )
 from openpype.hosts.nuke.api import plugin
 
@@ -78,6 +79,16 @@ class LoadClip(plugin.NukeLoader):
                 default=cls.options_defaults["add_retime"]
             )
         ]
+    
+    @classmethod
+    def get_monitor_gamma_extensions(cls):
+        return (
+            "mov",
+            "mp4",
+            "mxf",
+            "avi",
+            "mkv"
+        )
 
     @classmethod
     def get_representations(cls):
@@ -154,7 +165,7 @@ class LoadClip(plugin.NukeLoader):
             read_node["file"].setValue(filepath)
 
             used_colorspace = self._set_colorspace(
-                read_node, version_data, representation["data"])
+                read_node, version_data, representation)
 
             self._set_range_to_node(read_node, first, last, start_at_workfile)
 
@@ -288,7 +299,7 @@ class LoadClip(plugin.NukeLoader):
         # we will switch off undo-ing
         with viewer_update_and_undo_stop():
             used_colorspace = self._set_colorspace(
-                read_node, version_data, representation["data"],
+                read_node, version_data, representation,
                 path=filepath)
 
             self._set_range_to_node(read_node, first, last, start_at_workfile)
@@ -436,15 +447,22 @@ class LoadClip(plugin.NukeLoader):
 
         return self.node_name_template.format(**name_data)
 
-    def _set_colorspace(self, node, version_data, repre_data, path=None):
+    def _set_colorspace(self, node, version_data, repre, path=None):
         output_color = None
         path = path or self.fname.replace("\\", "/")
         # get colorspace
-        colorspace = repre_data.get("colorspace")
+        colorspace = repre["data"].get("colorspace")
+        self.log.debug("Colorspace from representation is '{}'".format(colorspace))
         colorspace = colorspace or version_data.get("colorspace")
+        self.log.debug("Colorspace from version is '{}'".format(version_data.get("colorspace")))
+
+        # force gamma footage in color_picking
+        if repre["context"]["ext"] in self.get_monitor_gamma_extensions():
+            colorspace = "color_picking"
 
         # colorspace from `project_settings/nuke/imageio/regexInputs`
         iio_colorspace = get_imageio_input_colorspace(path)
+        self.log.debug("Colorspace from ImageIO is '{}'".format(iio_colorspace))
 
         # Set colorspace defined in version data
         if (
@@ -456,5 +474,7 @@ class LoadClip(plugin.NukeLoader):
         elif iio_colorspace is not None:
             node["colorspace"].setValue(iio_colorspace)
             output_color = iio_colorspace
+
+        self.log.debug("Assigning colorspace: '{}'".format(output_color))
 
         return output_color

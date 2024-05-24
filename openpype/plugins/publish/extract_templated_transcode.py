@@ -84,6 +84,9 @@ class ExtractTemplatedTranscode(publish.Extractor):
 
                 new_repre = copy.deepcopy(repre)
 
+                if not new_repre.get("data"):
+                    new_repre["data"] = dict()
+
                 repre_name_override = profile_def["representation_name_override"].strip()
 
                 if review_enabled_in_profiles:
@@ -245,7 +248,7 @@ class ExtractTemplatedTranscode(publish.Extractor):
 
                 if transcoding_type == "template":
                     processed_data["template"] = template_original_path.format(**template_format_data)
-                    new_repre["colorspace"] = "data"
+                    new_repre["data"]["colorspace"] = "data"
                     self.log.debug("will process template '{}' for rendering in context '{}'".format(
                         processed_data["template"],
                         instance.data["asset"]
@@ -256,7 +259,7 @@ class ExtractTemplatedTranscode(publish.Extractor):
                     for subset in subset_chain:
                         subset_list.append(subset)
                     processed_data["subset_chain"] = subset_list
-                    new_repre["colorspace"] = "data"
+                    new_repre["data"]["colorspace"] = "data"
                     self.log.debug("Will chain subsets {} for rendering in context '{}'".format(
                         processed_data["subset_chain"],
                         instance.data["asset"]
@@ -264,7 +267,7 @@ class ExtractTemplatedTranscode(publish.Extractor):
 
                 elif transcoding_type == "color_conversion":
                     new_repre["colorspaceData"]["colorspace"] = output_colorspace
-                    new_repre["colorspace"] = output_colorspace
+                    new_repre["data"]["colorspace"] = output_colorspace
                     self.log.debug("Will convert representation from '{}' to '{}' for rendering in context '{}'".format(
                         processed_data["input_colorspace"],
                         processed_data["output_colorspace"],
