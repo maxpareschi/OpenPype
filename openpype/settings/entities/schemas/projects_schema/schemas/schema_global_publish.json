@@ -340,19 +340,25 @@
                                             ]
                                         },
                                         {
-                                            "type": "schema",
-                                            "name": "schema_representation_tags"
+                                            "type": "splitter"
                                         },
                                         {
-                                            "key": "representation_name_override",
-                                            "label": "Representation name override",
-                                            "type": "text"
-                                        },
-                                        {
-                                            "key": "custom_tags",
-                                            "label": "Custom Tags",
-                                            "type": "list",
-                                            "object_type": "text"
+                                            "type": "dict",
+                                            "collapsible": true,
+                                            "key": "write_options",
+                                            "label": "Write options",
+                                            "children": [
+                                                {
+                                                    "type": "schema_template",
+                                                    "name": "template_nuke_knob_inputs",
+                                                    "template_data": [
+                                                        {
+                                                            "label": "Knobs",
+                                                            "key": "knobs"
+                                                        }
+                                                    ]
+                                                }
+                                            ]
                                         },
                                         {
                                             "type": "dict",
@@ -392,9 +398,27 @@
                                             ]
                                         },
                                         {
+                                            "type": "splitter"
+                                        },
+                                        {
                                             "type": "boolean",
                                             "key": "override_thumbnail",
                                             "label": "Override/Create thumbnail"
+                                        },
+                                        {
+                                            "type": "schema",
+                                            "name": "schema_representation_tags"
+                                        },
+                                        {
+                                            "key": "representation_name_override",
+                                            "label": "Representation name override",
+                                            "type": "text"
+                                        },
+                                        {
+                                            "key": "custom_tags",
+                                            "label": "Custom Tags",
+                                            "type": "list",
+                                            "object_type": "text"
                                         }
                                     ]
                                 }

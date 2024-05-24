@@ -144,16 +144,13 @@ class ExtractTemplatedTranscode(publish.Extractor):
 
                 if transcoding_type == "template":
                     if template_original_path == "":
-                        self.log.debug("Skipping Representation: missing template path!")
-                        continue
+                        raise ValueError("Skipping Representation: missing template path!")
                 elif transcoding_type == "chain_subsets":
                     if len(subset_chain) == 0:
-                        self.log.debug("Skipping Representation: missing subset chain!")
-                        continue
+                        raise ValueError("Skipping Representation: missing subset chain!")
                 elif transcoding_type == "color_conversion":
                     if output_colorspace == "":
-                        self.log.debug("Skipping Representation: missing output color profile!")
-                        continue
+                        raise ValueError("Skipping Representation: missing output color profile!")
 
                 new_staging_dir = self._get_transcode_temp_dir(
                     self.staging_dir(instance),
@@ -220,11 +217,41 @@ class ExtractTemplatedTranscode(publish.Extractor):
 
                 self.log.debug(json.dumps(profile_def, indent=4, default=str))
 
+                # processed_data = {
+                #     "mode": transcoding_type,
+                #     "input_path": repre_in[0],
+                #     "output_path": repre_out[0],
+                #     "save_path": nuke_script_save_path,
+                #     "input_is_sequence": input_is_sequence,
+                #     "frameStart": frame_start,
+                #     "frameEnd": frame_end,
+                #     "fps": instance.data["fps"],
+                #     "project": instance.data["anatomyData"]["project"],
+                #     "asset": instance.data["asset"],
+                #     "task": instance.data.get("task", ""),
+                #     "input_colorspace": input_colorspace,
+                #     "output_colorspace": output_colorspace,
+                #     "color_config": color_config,
+                #     "reformat": profile_def["reformat_options"]["enabled"],
+                #     "reformat_type": profile_def["reformat_options"]["reformat_type"],
+                #     "reformat_width": profile_def["reformat_options"]["reformat_width"],
+                #     "reformat_height": profile_def["reformat_options"]["reformat_height"],
+                #     "override_thumbnail": profile_def["override_thumbnail"],
+                #     "thumbnail_path": os.path.join(
+                #         os.path.dirname(repre_out[0]),
+                #         repre_out[1] + "thumbnail.jpg"
+                #     ).replace("\\", "/")
+                # }
+
                 processed_data = {
                     "mode": transcoding_type,
                     "input_path": repre_in[0],
                     "output_path": repre_out[0],
                     "save_path": nuke_script_save_path,
+                    "thumbnail_path": os.path.join(
+                        os.path.dirname(repre_out[0]),
+                        repre_out[1] + "thumbnail.jpg"
+                    ).replace("\\", "/"),
                     "input_is_sequence": input_is_sequence,
                     "frameStart": frame_start,
                     "frameEnd": frame_end,
@@ -232,36 +259,22 @@ class ExtractTemplatedTranscode(publish.Extractor):
                     "project": instance.data["anatomyData"]["project"],
                     "asset": instance.data["asset"],
                     "task": instance.data.get("task", ""),
-                    "input_colorspace": input_colorspace,
-                    "output_colorspace": output_colorspace,
                     "color_config": color_config,
-                    "reformat": profile_def["reformat_options"]["enabled"],
-                    "reformat_type": profile_def["reformat_options"]["reformat_type"],
-                    "reformat_width": profile_def["reformat_options"]["reformat_width"],
-                    "reformat_height": profile_def["reformat_options"]["reformat_height"],
-                    "override_thumbnail": profile_def["override_thumbnail"],
-                    "thumbnail_path": os.path.join(
-                        os.path.dirname(repre_out[0]),
-                        repre_out[1] + "thumbnail.jpg"
-                    ).replace("\\", "/")
+                    "profile_data": profile_def
                 }
 
                 if transcoding_type == "template":
-                    processed_data["template"] = template_original_path.format(**template_format_data)
+                    processed_data["profile_data"]["template_path"]["template"] = template_original_path.format(**template_format_data)
                     new_repre["data"]["colorspace"] = "data"
                     self.log.debug("will process template '{}' for rendering in context '{}'".format(
-                        processed_data["template"],
+                        processed_data["profile_data"]["template_path"]["template"],
                         instance.data["asset"]
                     ))
 
                 elif transcoding_type == "chain_subsets":
-                    subset_list = []
-                    for subset in subset_chain:
-                        subset_list.append(subset)
-                    processed_data["subset_chain"] = subset_list
                     new_repre["data"]["colorspace"] = "data"
                     self.log.debug("Will chain subsets {} for rendering in context '{}'".format(
-                        processed_data["subset_chain"],
+                        subset_chain,
                         instance.data["asset"]
                     ))
 
@@ -269,14 +282,18 @@ class ExtractTemplatedTranscode(publish.Extractor):
                     new_repre["colorspaceData"]["colorspace"] = output_colorspace
                     new_repre["data"]["colorspace"] = output_colorspace
                     self.log.debug("Will convert representation from '{}' to '{}' for rendering in context '{}'".format(
-                        processed_data["input_colorspace"],
-                        processed_data["output_colorspace"],
+                        input_colorspace,
+                        output_colorspace,
                         instance.data["asset"]
                     ))
+
+                if processed_data["profile_data"]["write_options"]:
+                    self.log.debug(json.dumps(processed_data["profile_data"]["write_options"], indent=4, default=str))
 
                 nuke_process = self.run_transcode_script(processed_data)
 
                 if int(nuke_process) != 0:
+                    raise RuntimeError("Error in Transcode process!! (return code != 0)")
                     self.log.debug("Transcode process returned a non zero code, skipping...")
                     continue
 
