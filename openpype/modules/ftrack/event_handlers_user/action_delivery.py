@@ -37,7 +37,7 @@ class Delivery(BaseAction):
     def discover(self, session, entities, event):
         is_valid = False
         for entity in entities:
-            if entity.entity_type.lower() in ("assetversion", "reviewsession", "assetversionlist"):
+            if entity.entity_type.lower() in ("assetversion", "reviewsession"):
                 is_valid = True
                 break
 
@@ -261,42 +261,23 @@ class Delivery(BaseAction):
     def _extract_asset_versions(self, session, entities):
         asset_version_ids = set()
         review_session_ids = set()
-        asset_version_list_ids = set()
-
         for entity in entities:
             entity_type_low = entity.entity_type.lower()
-
             if entity_type_low == "assetversion":
                 asset_version_ids.add(entity["id"])
-
             elif entity_type_low == "reviewsession":
                 review_session_ids.add(entity["id"])
-
-            elif entity_type_low == "assetversionlist":
-                asset_version_list_ids.add(entity["id"])
-
-        for version_id in self._get_asset_version_ids_from_asset_ver_list(
-            session, asset_version_list_ids
-        ):
-            asset_version_ids.add(version_id)
 
         for version_id in self._get_asset_version_ids_from_review_sessions(
             session, review_session_ids
         ):
             asset_version_ids.add(version_id)
 
-        qkeys = self.join_query_keys(asset_version_ids)
-        query = "select id, version, asset_id, incoming_links"
-        query += f" from AssetVersion where id in ({qkeys})"
-        asset_versions = session.query(query).all()
+        asset_versions = session.query((
+            "select id, version, asset_id from AssetVersion where id in ({})"
+        ).format(self.join_query_keys(asset_version_ids))).all()
 
-        filtered_ver = list()
-        for asset_version in asset_versions:
-            version_links = list(asset_version["incoming_links"]) or [asset_version]
-            filtered_ver.append(version_links[0])
-
-        return filtered_ver
-
+        return asset_versions
 
     def _get_asset_version_ids_from_review_sessions(
         self, session, review_session_ids
@@ -312,19 +293,6 @@ class Delivery(BaseAction):
             review_session_object["version_id"]
             for review_session_object in review_session_objects
         }
-
-
-    def _get_asset_version_ids_from_asset_ver_list( self, session, asset_ver_list_ids):
-        # this can be static method..
-        if not asset_ver_list_ids:
-            return set()
-
-        ids = ", ".join(asset_ver_list_ids)
-        query_str = f"select id from AssetVersion where lists any (id in ({ids}))"
-        asset_versions = session.query(query_str).all()
-
-        return {asset_version["id"] for asset_version in asset_versions}
-
 
     def _get_version_docs(
         self,
