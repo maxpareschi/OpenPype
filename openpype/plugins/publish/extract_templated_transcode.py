@@ -217,32 +217,6 @@ class ExtractTemplatedTranscode(publish.Extractor):
 
                 self.log.debug(json.dumps(profile_def, indent=4, default=str))
 
-                # processed_data = {
-                #     "mode": transcoding_type,
-                #     "input_path": repre_in[0],
-                #     "output_path": repre_out[0],
-                #     "save_path": nuke_script_save_path,
-                #     "input_is_sequence": input_is_sequence,
-                #     "frameStart": frame_start,
-                #     "frameEnd": frame_end,
-                #     "fps": instance.data["fps"],
-                #     "project": instance.data["anatomyData"]["project"],
-                #     "asset": instance.data["asset"],
-                #     "task": instance.data.get("task", ""),
-                #     "input_colorspace": input_colorspace,
-                #     "output_colorspace": output_colorspace,
-                #     "color_config": color_config,
-                #     "reformat": profile_def["reformat_options"]["enabled"],
-                #     "reformat_type": profile_def["reformat_options"]["reformat_type"],
-                #     "reformat_width": profile_def["reformat_options"]["reformat_width"],
-                #     "reformat_height": profile_def["reformat_options"]["reformat_height"],
-                #     "override_thumbnail": profile_def["override_thumbnail"],
-                #     "thumbnail_path": os.path.join(
-                #         os.path.dirname(repre_out[0]),
-                #         repre_out[1] + "thumbnail.jpg"
-                #     ).replace("\\", "/")
-                # }
-
                 processed_data = {
                     "mode": transcoding_type,
                     "input_path": repre_in[0],
@@ -294,8 +268,6 @@ class ExtractTemplatedTranscode(publish.Extractor):
 
                 if int(nuke_process) != 0:
                     raise RuntimeError("Error in Transcode process!! (return code != 0)")
-                    self.log.debug("Transcode process returned a non zero code, skipping...")
-                    continue
 
                 # cleanup temporary transcoded files
                 instance.context.data["cleanupFullPaths"].append(
