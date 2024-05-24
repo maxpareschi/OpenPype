@@ -792,7 +792,6 @@ class PublishClip:
 
         # create subset for publishing
         self.subset = self.subset_family + self.subset_name.capitalize()
-        self.source_subset = self.subset + self.subset_source_name.capitalize()
 
     def _replace_hash_to_expression(self, name, text):
         """ Replace hash with number in correct padding. """

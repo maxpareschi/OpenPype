@@ -89,9 +89,6 @@ class PrecollectInstances(pyblish.api.ContextPlugin):
             family = tag_data["family"]
             families = [str(f) for f in tag_data["families"]]
             families.insert(0, str(family))
-
-            if "shot" not in families and tag_data["convertClips"]:
-                families.append("transcode")
             
             staging_dir = os.path.join(
                 os.path.dirname(context.data["activeProject"].path()),

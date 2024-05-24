@@ -19,26 +19,11 @@ class CreateShotClip(phiero.Creator):
     gui_name = "Pype publish attributes creator"
     gui_info = "Define sequential rename and fill hierarchy data."
     gui_inputs = {
-        # "farmHierarchy": {
-        #     "type": "section",
-        #     "label": "<span style=\"color: #77DDFF;\"><b>FARM SETTINGS</b></span>",
-        #     "target": "ui",
-        #     "order": 0,
-        #     "value": {
-        #         "submitToDeadline": {
-        #             "value": False,
-        #             "type": "QCheckBox",
-        #             "label": "<span style=\"color: #77DDFF;\">Submit to Deadline</span>",
-        #             "target": "ui",
-        #             "toolTip": "shot creation on the farm!",  # noqa
-        #             "order": 0},
-        #     }
-        # },
         "renameHierarchy": {
             "type": "section",
             "label": "<b>Shot Hierarchy And Rename Settings</b>",
             "target": "ui",
-            "order": 1,
+            "order": 0,
             "value": {
                 "hierarchy": {
                     "value": "{folder}/{sequence}",
@@ -81,7 +66,7 @@ class CreateShotClip(phiero.Creator):
             "type": "dict",
             "label": "<b>Shot Template Keywords</b>",
             "target": "tag",
-            "order": 2,
+            "order": 1,
             "value": {
                 "folder": {
                     "value": "shots",
@@ -124,7 +109,7 @@ class CreateShotClip(phiero.Creator):
             "type": "section",
             "label": "<b>Vertical Synchronization Of Attributes</b>",
             "target": "ui",
-            "order": 3,
+            "order": 2,
             "value": {
                 "vSyncOn": {
                     "value": True,
@@ -146,7 +131,7 @@ class CreateShotClip(phiero.Creator):
             "type": "section",
             "label": "<b>Publish Settings</b>",
             "target": "ui",
-            "order": 4,
+            "order": 3,
             "value": {
                 "subsetName": {
                     "value": ["<track_name>", "main", "bg", "fg", "bg",
@@ -189,7 +174,7 @@ class CreateShotClip(phiero.Creator):
             "type": "section",
             "label": "<b>Shot Attributes</b>",
             "target": "ui",
-            "order": 6,
+            "order": 4,
             "value": {
                 "workfileFrameStart": {
                     "value": 1009,

@@ -62,9 +62,9 @@ class ExtractTemplatedTranscode(publish.Extractor):
             json.dumps(repres, indent=4, default=str)
         ))
 
-        added_representations = False
-
         for idx, repre in enumerate(list(repres)):
+
+            added_representations = False
 
             self.log.debug("repre ({}): '{}':\n{}".format(
                 idx + 1, repre["name"], json.dumps(repre, indent=4, default=str)))
@@ -80,6 +80,7 @@ class ExtractTemplatedTranscode(publish.Extractor):
 
             for profile_name, profile_def in profile.get("outputs", {}).items():
                 self.log.debug("Processing profile '{}'".format(profile_name))
+                self.log.debug("Profile data '{}'".format(json.dumps(profile_def, indent=4, default=str)))
 
                 new_repre = copy.deepcopy(repre)
 
@@ -244,6 +245,7 @@ class ExtractTemplatedTranscode(publish.Extractor):
 
                 if transcoding_type == "template":
                     processed_data["template"] = template_original_path.format(**template_format_data)
+                    new_repre["colorspace"] = "data"
                     self.log.debug("will process template '{}' for rendering in context '{}'".format(
                         processed_data["template"],
                         instance.data["asset"]
@@ -254,6 +256,7 @@ class ExtractTemplatedTranscode(publish.Extractor):
                     for subset in subset_chain:
                         subset_list.append(subset)
                     processed_data["subset_chain"] = subset_list
+                    new_repre["colorspace"] = "data"
                     self.log.debug("Will chain subsets {} for rendering in context '{}'".format(
                         processed_data["subset_chain"],
                         instance.data["asset"]
@@ -261,6 +264,7 @@ class ExtractTemplatedTranscode(publish.Extractor):
 
                 elif transcoding_type == "color_conversion":
                     new_repre["colorspaceData"]["colorspace"] = output_colorspace
+                    new_repre["colorspace"] = output_colorspace
                     self.log.debug("Will convert representation from '{}' to '{}' for rendering in context '{}'".format(
                         processed_data["input_colorspace"],
                         processed_data["output_colorspace"],
@@ -445,6 +449,7 @@ class ExtractTemplatedTranscode(publish.Extractor):
             if version_data_cspace:
                 cdata["colorspace"] = version_data_cspace
             repre["colorspaceData"] = cdata
+            repre["colorspace"] = cdata["colorspace"]
 
         if not repre.get("colorspaceData"):
             self.log.debug("Representation '{}' has no colorspace data. "
