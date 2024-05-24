@@ -225,6 +225,42 @@ class GatherAction(BaseAction):
         
         return result
 
+    def get_comment_from_notes(self, session, entity):
+        client_tag = "For Client"
+        notes = []
+        query = "select content, date, note_label_links.label.name from Note where parent_id is '{0}' and note_label_links.label.name is '{1}'".format(entity["id"],
+                                                                                                                                           client_tag)
+        for note in session.query(query).all():
+            notes.append(note)
+
+        if not notes:
+            return None
+        
+        notes_sorted = list(sorted(notes, key=lambda d: d["date"]))
+        intent_value = None
+        result = {
+            "comment": "",
+            "intent": {
+                "label": "",
+                "value": ""
+            }
+        }
+        for label in notes_sorted[-1]["note_label_links"]:
+            if label["label"]["name"] != client_tag:
+                intent_value = label["label"]["name"]
+        
+        if intent_value:
+            system_settings = get_system_settings()
+            intent_settings = system_settings["modules"]["ftrack"]["intent"]["items"]
+            for key, value in intent_settings.items():
+                if key == intent_value:
+                    result["intent"]["label"] = value
+                    result["intent"]["value"] = key
+
+        result["comment"] = notes_sorted[-1]["content"]
+
+        return result
+
     def publisher_start(self, session, create_context, version, user_values):
 
         family = "delivery"
@@ -233,7 +269,6 @@ class GatherAction(BaseAction):
         subset_name = version["asset"]["name"]
         asset_name = version["asset"]["parent"]["name"]
         repre_name = user_values[version["id"]]
-        anatomy = get_anatomy_settings(project_name)
         settings = get_project_settings(project_name)["ftrack"]["user_handlers"]["gather_action"]
 
         self.log.debug("Asset Name for subset '{}' is '{}'".format(subset_name, asset_name))
@@ -318,7 +353,8 @@ class GatherAction(BaseAction):
         if note:
             delivery_instance.update(note)
 
-        self.log.debug("Instance data to be created: {}".format(json.dumps(delivery_instance, indent=4, default=str)))
+        self.log.debug("Instance data to be created: {}".format(
+            json.dumps(delivery_instance, indent=4, default=str)))
 
         publish_file_list = [item.to_dict() for item in openpype.lib.FileDefItem.from_paths(
             repre_files, allow_sequences=True)]
@@ -332,42 +368,6 @@ class GatherAction(BaseAction):
                 "reviewable": publish_file_list[0],
             }
         )
-
-    def get_comment_from_notes(self, session, entity):
-        client_tag = "For Client"
-        notes = []
-        query = "select content, date, note_label_links.label.name from Note where parent_id is '{0}' and note_label_links.label.name is '{1}'".format(entity["id"],
-                                                                                                                                           client_tag)
-        for note in session.query(query).all():
-            notes.append(note)
-
-        if not notes:
-            return None
-        
-        notes_sorted = list(sorted(notes, key=lambda d: d["date"]))
-        intent_value = None
-        result = {
-            "comment": "",
-            "intent": {
-                "label": "",
-                "value": ""
-            }
-        }
-        for label in notes_sorted[-1]["note_label_links"]:
-            if label["label"]["name"] != client_tag:
-                intent_value = label["label"]["name"]
-        
-        if intent_value:
-            system_settings = get_system_settings()
-            intent_settings = system_settings["modules"]["ftrack"]["intent"]["items"]
-            for key, value in intent_settings.items():
-                if key == intent_value:
-                    result["intent"]["label"] = value
-                    result["intent"]["value"] = key
-
-        result["comment"] = notes_sorted[-1]["content"]
-
-        return result
 
     
 def register(session):
