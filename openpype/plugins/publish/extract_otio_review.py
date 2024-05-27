@@ -257,11 +257,12 @@ class ExtractOTIOReview(publish.Extractor):
         files = [f for f in collection]
         ext = collection.format("{tail}")
         representation_data.update({
-            "name": ext[1:],
+            "name": ext[1:] + "_otio",
             "ext": ext[1:],
             "files": files,
             "frameStart": start,
             "frameEnd": end,
+            "outputName": ext[1:] + "_otio"
         })
         return representation_data
 
