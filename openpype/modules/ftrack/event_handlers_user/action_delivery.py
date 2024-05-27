@@ -214,8 +214,12 @@ class Delivery(BaseAction):
         # Prepare Asset ids
         asset_ids = {
             asset_version["asset_id"]
-            for asset_version in asset_versions
+            for asset_version in asset_versions if not asset_version["incoming_links"]
         }
+        asset_ids.union({
+            asset_version["incoming_links"][0]["from"]["asset_id"]
+            for asset_version in asset_versions if asset_version["incoming_links"]
+        })
         # Query Asset entities
         assets = session.query((
             "select id, name, context_id from Asset where id in ({})"
@@ -229,6 +233,8 @@ class Delivery(BaseAction):
         version_nums = set()
         for asset_version in asset_versions:
             asset_id = asset_version["asset_id"]
+            if asset_version["incoming_links"]:
+                asset_id = asset_version["incoming_links"][0]["from"]["asset_id"]
             asset = assets_by_id[asset_id]
             subset_realname = asset_version["custom_attributes"].get("subset")
             if not subset_realname:
