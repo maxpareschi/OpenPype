@@ -201,5 +201,6 @@ class DeleteVersionAction(BaseAction):
 
 
 def register(session):
-    if session.server_url == "https://testing-22dogs.ftrackapp.com":
-        DeleteVersionAction(session).register()
+    # if session.server_url == "https://testing-22dogs.ftrackapp.com":
+    #     DeleteVersionAction(session).register()
+    DeleteVersionAction(session).register()
