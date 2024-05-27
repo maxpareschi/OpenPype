@@ -1,15 +1,15 @@
 {
     "palette": {
-        "grey-base": "#333333",
-        "grey-light": "#444444",
-        "grey-lighter": "#4A4A4A",
-        "grey-lightest": "#555555",
-        "grey-input": "#444444",
-        "grey-dark": "#272727",
+        "grey-base": "#2C313A",
+        "grey-light": "#373D48",
+        "grey-lighter": "#434a56",
+        "grey-lightest": "#4E5565",
+        "grey-input": "#353A45",
+        "grey-dark": "#21252B",
 
-        "text-darker": "#AAAAAA",
-        "text-base": "#DADADA",
-        "text-lighter": "#FFFFFF",
+        "text-darker": "#99A3B2",
+        "text-base": "#D3D8DE",
+        "text-lighter": "#F0F2F5",
 
         "blue-base": "hsl(200, 60%, 60%)",
         "blue-light": "hsl(200, 80%, 80%)",
@@ -18,36 +18,36 @@
         "green-light": "hsl(155, 80%, 80%)"
     },
     "color": {
-        "font": "#DADADA",
-        "font-hover": "#FFFFFF",
-        "font-disabled": "#666666",
-        "font-view-selection": "#FFFFFF",
-        "font-view-hover": "#FFFFFF",
+        "font": "#D3D8DE",
+        "font-hover": "#F0F2F5",
+        "font-disabled": "#5b6779",
+        "font-view-selection": "#ffffff",
+        "font-view-hover": "#F0F2F5",
 
-        "bg": "#333333",
-        "bg-inputs": "#272727",
-        "bg-buttons": "#4A4A4A",
+        "bg": "#2C313A",
+        "bg-inputs": "#21252B",
+        "bg-buttons": "#434a56",
         "bg-button-hover": "rgb(81, 86, 97)",
-        "bg-inputs-disabled": "#333333",
-        "bg-buttons-disabled": "#4A4A4A",
+        "bg-inputs-disabled": "#2C313A",
+        "bg-buttons-disabled": "#434a56",
 
-        "bg-splitter": "#4A4A4A",
+        "bg-splitter": "#434a56",
         "bg-splitter-hover": "rgba(168, 175, 189, 0.3)",
 
         "bg-menu-separator": "rgba(75, 83, 98, 127)",
 
-        "bg-scroll-handle": "#555555",
+        "bg-scroll-handle": "#4B5362",
 
-        "bg-view": "#272727",
-        "bg-view-header": "#444444",
+        "bg-view": "#21252B",
+        "bg-view-header": "#373D48",
         "bg-view-hover": "rgba(168, 175, 189, .3)",
         "bg-view-alternate": "rgb(36, 42, 50)",
-        "bg-view-disabled": "#333333",
-        "bg-view-alternate-disabled": "#333333",
+        "bg-view-disabled": "#2C313A",
+        "bg-view-alternate-disabled": "#2C313A",
         "bg-view-selection": "rgba(92, 173, 214, .4)",
         "bg-view-selection-hover": "rgba(92, 173, 214, .8)",
 
-        "border": "#444444",
+        "border": "#373D48",
         "border-hover": "rgba(168, 175, 189, .3)",
         "border-focus": "rgb(92, 173, 214)",
 
@@ -58,29 +58,29 @@
 
         "icon-tools": "#ffffff",
         "icon-alert-tools": "#AA5050",
-        "icon-entity-default": "EE9933",
+        "icon-entity-default": "#bfccd6",
         "icon-entity-disabled": "#808080",
         "font-entity-deprecated": "#666666",
         "overlay-messages": {
-            "close-btn": "#DADADA",
+            "close-btn": "#D3D8DE",
             "bg-success": "#458056",
             "bg-success-hover": "#55a066",
             "bg-error": "#AD2E2E",
             "bg-error-hover": "#C93636"
         },
         "tab-widget": {
-            "bg": "#272727",
-            "bg-selected": "#4A4A4A",
-            "bg-hover": "#444444",
-            "color": "#AAAAAA",
-            "color-selected": "#FFFFFF",
-            "color-hover": "#FFFFFF"
+            "bg": "#21252B",
+            "bg-selected": "#434a56",
+            "bg-hover": "#373D48",
+            "color": "#99A3B2",
+            "color-selected": "#F0F2F5",
+            "color-hover": "#F0F2F5"
         },
         "nice-checkbox": {
             "bg-checked": "#56a06f",
-            "bg-unchecked": "#272727",
-            "bg-checker": "#DADADA",
-            "bg-checker-hover": "#FFFFFF"
+            "bg-unchecked": "#21252B",
+            "bg-checker": "#D3D8DE",
+            "bg-checker-hover": "#F0F2F5"
         },
         "loader": {
             "asset-view": {
@@ -96,10 +96,10 @@
             "warning": "#ffc671",
             "tab-bg": "#16191d",
             "list-view-group": {
-                "bg": "#4A4A4A",
+                "bg": "#434a56",
                 "bg-hover": "rgba(168, 175, 189, 0.3)",
                 "bg-selected-hover": "rgba(92, 173, 214, 0.4)",
-                "bg-expander": "#333333",
+                "bg-expander": "#2C313A",
                 "bg-expander-hover": "#2d6c9f",
                 "bg-expander-selected-hover": "#3784c5"
             }
@@ -128,13 +128,13 @@
 
             "content-highlighted": "rgba(19, 26, 32, 15)",
             "focus-border": "#839caf",
-            "image-btn": "EE9933",
+            "image-btn": "#bfccd6",
             "image-btn-hover": "#189aea",
-            "image-btn-disabled": "EE9933",
+            "image-btn-disabled": "#bfccd6",
             "version-exists": "#458056",
             "version-not-found": "#ffc671",
 
-            "source-version": "#DADADA",
+            "source-version": "#D3D8DE",
             "source-version-outdated": "#ffc671"
         }
     }
