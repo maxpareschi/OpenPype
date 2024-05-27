@@ -29,7 +29,7 @@ class DeleteOldVersions(BaseAction):
         "Delete files from older publishes so project can be"
         " archived with only lates versions."
     )
-    icon = statics_icon("ftrack", "action_icons", "OpenPypeAdmin.svg")
+    icon = statics_icon("ftrack", "action_icons", "OpenPypeAdmin.png")
 
     settings_key = "delete_old_versions"
 

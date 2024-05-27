@@ -31,7 +31,7 @@ class Delivery(BaseAction):
     label = "Delivery"
     description = "Deliver data to client"
     role_list = ["Pypeclub", "Administrator", "Project manager"]
-    icon = statics_icon("ftrack", "action_icons", "Delivery.svg")
+    icon = statics_icon("ftrack", "action_icons", "Delivery.png")
     settings_key = "delivery_action"
 
     def discover(self, session, entities, event):

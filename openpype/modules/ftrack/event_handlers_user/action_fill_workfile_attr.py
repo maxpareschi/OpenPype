@@ -34,7 +34,7 @@ class FillWorkfileAttributeAction(BaseAction):
     label = "OpenPype Admin"
     variant = "- Fill workfile attribute"
     description = "Precalculate and fill workfile name into a custom attribute"
-    icon = statics_icon("ftrack", "action_icons", "OpenPypeAdmin.svg")
+    icon = statics_icon("ftrack", "action_icons", "OpenPypeAdmin.png")
 
     settings_key = "fill_workfile_attribute"
 

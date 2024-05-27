@@ -14,10 +14,11 @@ class CopyDeliveryNotes(BaseAction):
     identifier = 'ttd.copy.notes.action'
     label = 'Copy delivery notes'
     description = 'Forward notes from source into delivery.'
-    icon = statics_icon("ftrack", "action_icons", "forward_notes.png")
+    icon = statics_icon("ftrack", "action_icons", "ForwardNotes.png")
     settings_key = "delivery_action"
 
     def discover(self, session: Session, entities: List[Entity], event: Event):
+        return False
         is_valid = False
         for entity in entities:
             if entity.entity_type.lower() in ("assetversion", "reviewsession", "assetversionlist"):

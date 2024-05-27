@@ -12,7 +12,7 @@ class CleanHierarchicalAttrsAction(BaseAction):
     label = "OpenPype Admin"
     variant = "- Clean hierarchical custom attributes"
     description = "Unset empty hierarchical attribute values."
-    icon = statics_icon("ftrack", "action_icons", "OpenPypeAdmin.svg")
+    icon = statics_icon("ftrack", "action_icons", "OpenPypeAdmin.png")
 
     all_project_entities_query = (
         "select id, name, parent_id, link"

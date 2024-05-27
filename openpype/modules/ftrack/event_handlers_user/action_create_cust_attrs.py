@@ -143,7 +143,7 @@ class CustomAttributes(BaseAction):
     variant = '- Create/Update Custom Attributes'
     #: Action description.
     description = 'Creates required custom attributes in ftrack'
-    icon = statics_icon("ftrack", "action_icons", "OpenPypeAdmin.svg")
+    icon = statics_icon("ftrack", "action_icons", "OpenPypeAdmin.png")
     settings_key = "create_update_attributes"
 
     required_keys = ("key", "label", "type")
