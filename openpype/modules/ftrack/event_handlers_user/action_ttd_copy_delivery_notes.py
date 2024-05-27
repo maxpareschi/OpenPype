@@ -18,7 +18,6 @@ class CopyDeliveryNotes(BaseAction):
     settings_key = "delivery_action"
 
     def discover(self, session: Session, entities: List[Entity], event: Event):
-        return False
         is_valid = False
         for entity in entities:
             if entity.entity_type.lower() in ("assetversion", "reviewsession", "assetversionlist"):
@@ -184,5 +183,5 @@ class CopyDeliveryNotes(BaseAction):
 
         return {asset_version["id"] for asset_version in asset_versions}
 
-def register(session):
-    CopyDeliveryNotes(session).register()
+# def register(session):
+#     CopyDeliveryNotes(session).register()
