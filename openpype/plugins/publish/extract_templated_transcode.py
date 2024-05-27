@@ -14,11 +14,7 @@ from openpype.pipeline import (
 )
 
 from openpype.pipeline.template_data import get_template_data_with_names
-
-from openpype.lib.applications import (
-    ApplicationManager,
-)
-
+from openpype.lib.applications import ApplicationManager
 from openpype.lib.profiles_filtering import filter_profiles
 
 
@@ -34,7 +30,7 @@ class ExtractTemplatedTranscode(publish.Extractor):
     optional = True
 
     # Supported extensions
-    supported_exts = ["exr", "dpx", "mov", "mxf"]
+    supported_exts = ["exr", "dpx", "jpg", "png", "cin", "mov", "mxf", "mp4"]
 
     # Configurable by Settings
     profiles = None
@@ -80,7 +76,6 @@ class ExtractTemplatedTranscode(publish.Extractor):
 
             for profile_name, profile_def in profile.get("outputs", {}).items():
                 self.log.debug("Processing profile '{}'".format(profile_name))
-                self.log.debug("Profile data '{}'".format(json.dumps(profile_def, indent=4, default=str)))
 
                 new_repre = copy.deepcopy(repre)
 
@@ -139,18 +134,19 @@ class ExtractTemplatedTranscode(publish.Extractor):
                 input_colorspace = profile_def["color_conversion"]["input_colorspace"].strip()
                 if input_colorspace == "":
                     input_colorspace = new_repre["colorspaceData"]["colorspace"]
+                    profile_def["color_conversion"]["input_colorspace"] = input_colorspace
                 output_colorspace = profile_def["color_conversion"]["output_colorspace"].strip()
                 color_config = new_repre["colorspaceData"]["config"]["path"].strip()
 
                 if transcoding_type == "template":
                     if template_original_path == "":
-                        raise ValueError("Skipping Representation: missing template path!")
+                        raise ValueError("Error on Representation: missing template path!")
                 elif transcoding_type == "chain_subsets":
                     if len(subset_chain) == 0:
-                        raise ValueError("Skipping Representation: missing subset chain!")
+                        raise ValueError("Error on Representation: missing subset chain!")
                 elif transcoding_type == "color_conversion":
                     if output_colorspace == "":
-                        raise ValueError("Skipping Representation: missing output color profile!")
+                        raise ValueError("Error on Representation: missing output color profile!")
 
                 new_staging_dir = self._get_transcode_temp_dir(
                     self.staging_dir(instance),
@@ -195,9 +191,6 @@ class ExtractTemplatedTranscode(publish.Extractor):
                 repre_in = self._translate_to_sequence(repre)
                 repre_out = self._translate_to_sequence(new_repre)
 
-                self.log.debug(repre_in)
-                self.log.debug(repre_out)
-
                 nuke_script_save_path = os.path.join(
                     new_repre["stagingDir"],
                     "{}nk".format(repre_out[1])
@@ -214,8 +207,6 @@ class ExtractTemplatedTranscode(publish.Extractor):
                     self.log.debug("End frame detected: ({}) updated, script data...".format(frame_end))
                 except:
                     self.log.debug("Using frame end data ({}) from generated Instance...".format(frame_end))
-
-                self.log.debug(json.dumps(profile_def, indent=4, default=str))
 
                 processed_data = {
                     "mode": transcoding_type,
@@ -260,9 +251,6 @@ class ExtractTemplatedTranscode(publish.Extractor):
                         output_colorspace,
                         instance.data["asset"]
                     ))
-
-                if processed_data["profile_data"]["write_options"]:
-                    self.log.debug(json.dumps(processed_data["profile_data"]["write_options"], indent=4, default=str))
 
                 nuke_process = self.run_transcode_script(processed_data)
 
@@ -335,7 +323,6 @@ class ExtractTemplatedTranscode(publish.Extractor):
             ]),
             json.dumps(instance.data["representations"], indent=4, default=str)
         ))
-        self.log.debug(json.dumps(instance.data["representations"], indent=4, default=str))
                     
     def _translate_to_sequence(self, repre):
         pattern = [clique.PATTERNS["frames"]]
