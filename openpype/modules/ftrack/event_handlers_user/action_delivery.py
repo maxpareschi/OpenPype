@@ -212,14 +212,17 @@ class Delivery(BaseAction):
         # Extract AssetVersion entities
         asset_versions = self._extract_asset_versions(session, entities)
         # Prepare Asset ids
-        asset_ids = {
+        asset_ids = [
             asset_version["asset_id"]
             for asset_version in asset_versions if not asset_version["incoming_links"]
-        }
-        asset_ids.union({
+        ]
+        asset_ids.extend([
             asset_version["incoming_links"][0]["from"]["asset_id"]
             for asset_version in asset_versions if asset_version["incoming_links"]
-        })
+        ])
+        asset_ids = set(asset_ids)
+        if not asset_ids:
+            raise ValueError(f"Failed to find asset_ids for versions {[e['id'] for e in entities]}")
         # Query Asset entities
         assets = session.query((
             "select id, name, context_id from Asset where id in ({})"
@@ -292,7 +295,7 @@ class Delivery(BaseAction):
             asset_version_ids.add(version_id)
 
         qkeys = self.join_query_keys(asset_version_ids)
-        query = "select id, version, asset_id, incoming_links"
+        query = "select id, version, asset_id, incoming_links, outgoing_links"
         query += f" from AssetVersion where id in ({qkeys})"
         asset_versions = session.query(query).all()
 
@@ -370,6 +373,8 @@ class Delivery(BaseAction):
         filtered_versions = []
         for asset_version in asset_versions:
             asset_id = asset_version["asset_id"]
+            if asset_version["incoming_links"]:
+                asset_id = asset_version["incoming_links"][0]["from"]["asset_id"]
             asset = assets_by_id[asset_id]
             parent_id = asset["context_id"]
             asset_doc = asset_docs_by_ftrack_id.get(parent_id)
@@ -419,6 +424,8 @@ class Delivery(BaseAction):
         filtered_subsets = []
         for asset_version in asset_versions:
             asset_id = asset_version["asset_id"]
+            if asset_version["incoming_links"]:
+                asset_id = asset_version["incoming_links"][0]["from"]["asset_id"]
             asset = assets_by_id[asset_id]
 
             parent_id = asset["context_id"]
