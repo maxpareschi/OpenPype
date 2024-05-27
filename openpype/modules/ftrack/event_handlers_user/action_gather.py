@@ -5,17 +5,14 @@ import platform
 import traceback
 
 import openpype.lib
-import pyblish.api
 
 import openpype.hosts
 import openpype.hosts.traypublisher
 import openpype.hosts.traypublisher.api
-from openpype.lib import ApplicationManager
 from qtpy import QtWidgets, QtCore
 
 import openpype.modules
 from openpype.pipeline import install_host
-from openpype.modules.ftrack import FTRACK_MODULE_DIR
 from openpype.modules.ftrack.lib import BaseAction, statics_icon
 
 from openpype.client import (
@@ -192,7 +189,7 @@ class GatherAction(BaseAction):
             files.append(file["path"].format(**repre["context"]))
         repre_start = int(re.findall(r'\d+$', os.path.splitext(files[0])[0])[0])
         version_start = int(version["data"]["frameStart"]) - int(version["data"]["handleStart"])
-        self.log.debug("FRAMES DETECTED: repre_start:{} <-> version_start:{}".format(repre_start, version_start))
+        self.log.debug("Detected frames: repre_start:{} <-> version_start:{}".format(repre_start, version_start))
         if repre_start < version_start:
             files.pop(0)
         return files
@@ -205,17 +202,17 @@ class GatherAction(BaseAction):
             etype = entity.entity_type
 
             if etype == "FileComponent":
-                query = "select id, asset_id, task.name, task_id, version, asset.name, asset.parent.name from AssetVersion where components any (id='{0}')".format(entity["id"])
+                query = "select id, asset_id, task.name, task_id, version, asset.name, asset.parent.name, outgoing_links from AssetVersion where components any (id='{0}')".format(entity["id"])
                 for assetversion in session.query(query).all():
                     result.append(assetversion)
 
             elif etype == "AssetVersion":
-                query = "select id, asset_id, task.name, task_id, version, asset.name, asset.parent.name from AssetVersion where id is '{0}'".format(entity["id"])
+                query = "select id, asset_id, task.name, task_id, version, asset.name, asset.parent.name, outgoing_links from AssetVersion where id is '{0}'".format(entity["id"])
                 for assetversion in session.query(query).all():
                     result.append(assetversion)
 
             elif etype == "AssetVersionList":
-                query = "select id, asset_id, task_id, version, asset.name, asset.parent.name from AssetVersion where lists any (id='{0}')".format(entity["id"])
+                query = "select id, asset_id, task.name, task_id, version, asset.name, asset.parent.name, outgoing_links from AssetVersion where lists any (id='{0}')".format(entity["id"])
                 for assetversion in session.query(query).all():
                     result.append(assetversion)
             
@@ -261,6 +258,17 @@ class GatherAction(BaseAction):
 
         return result
 
+    def get_all_available_tasks(self, session, version):
+        task_names = []
+        task_types = []
+        query = "select id, name, type.name from Task where parent_id is '{}'".format(version["asset"]["parent"]["id"])
+        for task in session.query(query).all():
+            task_names.append(task["name"])
+            task_types.append(task["type"]["name"])
+        self.log.debug("Available tasks for current asset | Names: {} | Types: {}".format(task_names, task_types))
+
+        return task_types, task_names
+
     def publisher_start(self, session, create_context, version, user_values):
 
         family = "delivery"
@@ -297,12 +305,15 @@ class GatherAction(BaseAction):
         task_override = ""
         try:
             computed_task = repre_doc["context"]["task"]["name"]
+            self.log.debug("Detected task is '{}'".format(computed_task))
+            avail_task_names, avail_task_types = self.get_all_available_tasks(session, version)
+            if computed_task not in avail_task_names and computed_task not in avail_task_types:
+                computed_task = ""
         except:
             computed_task = ""
-
         if not computed_task:
             if len(settings["missing_task_override"]) > 0:
-                task_override = settings["missing_task_override"][0]
+                task_override = settings["missing_task_override"][0]  
 
         computed_asset = repre_doc["context"]["asset"]
         computed_variant = repre_doc["context"]["subset"].lower().replace(
@@ -319,6 +330,7 @@ class GatherAction(BaseAction):
             "task": computed_task.capitalize() if computed_task else task_override.capitalize(),
             "variant": computed_variant
         }
+        self.log.debug("Computed task is '{}'".format(subset_format_data["task"]))
 
         computed_subset = settings["subset_name_template"].format_map(subset_format_data)
         computed_name = "{}_{}".format(computed_asset, computed_subset)
