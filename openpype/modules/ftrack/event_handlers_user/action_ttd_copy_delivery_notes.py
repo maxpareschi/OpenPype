@@ -10,12 +10,19 @@ from ftrack_api.event.base import Event
 class CopyDeliveryNotes(BaseAction):
     """Action for forwarding notes from source into delivery."""
 
-    matching_fields = ["content", "project_id", "parent_type", "category_id", "user_id"]
+    matching_fields = [
+        "content",
+        "project_id",
+        "parent_type",
+        "category_id",
+        "user_id",
+        ]
     identifier = 'ttd.copy.notes.action'
     label = 'Copy delivery notes'
     description = 'Forward notes from source into delivery.'
     icon = statics_icon("ftrack", "action_icons", "forward_notes.png")
     settings_key = "delivery_action"
+    note_tag = "Client Feedback"
 
     def discover(self, session: Session, entities: List[Entity], event: Event):
         is_valid = False
@@ -35,7 +42,7 @@ class CopyDeliveryNotes(BaseAction):
         versions_by_id = {v["id"]: v for v in versions}
 
         select = "select author, category, content, in_reply_to, category.name, parent_id"
-        where = f"where parent_id in {versions_ids} and in_reply_to is None and category.name is \"For Client\""
+        where = f"where parent_id in {versions_ids} and in_reply_to is None and category.name is \"{self.note_tag}\""
 
         notes = session.query(f"{select} from Note {where}").all()
 
@@ -57,11 +64,12 @@ class CopyDeliveryNotes(BaseAction):
                 self.log.info(f"Skipping version {version}. Too many links found.")
                 continue
         
-            elif in_links and not out_links:
-                self.log.info(f"Skipping version {version}. This note is already delivery.")
+            elif out_links and not in_links:
+                self.log.info(f"Skipping version {version}. This note is already copied.")
                 continue
-        
-            target = list(version["outgoing_links"])[0]["to"]
+            
+            # target is the source version and source is the delivery version
+            target = list(version["incoming_links"])[0]["from"]
             source = version
             self.log.info(f"Working on note {note} from version {source}")
     
@@ -71,7 +79,8 @@ class CopyDeliveryNotes(BaseAction):
 
             for target_note in notes_in_target:
                 if  all(note[f] == target_note[f] for f in self.matching_fields):
-                    self.log.info(f"Note already copied. {note} -> {target_note}, removing it.")
+                    self.log.info(f"Note already copied. {note} -> {target_note}, "
+                        "removing it. Content is: {note['content']}")
                     session.delete(target_note)
                     # check content
                     # break
@@ -82,10 +91,25 @@ class CopyDeliveryNotes(BaseAction):
                         {tag: reply[tag] for tag in self.matching_fields}
                         ) for reply in note["replies"]
                     ]
+                # note_components = [
+                #     session.create(
+                #         "NoteComponent",
+                #         {tag:comp[tag] for tag in ("component_id")})
+                #      for comp in note["note_components"]
+                #     ]
+                # note_label_links = [
+                #     session.create(
+                #         "NoteLabelComponent",
+                #         {tag: reply[tag] for tag in self.matching_fields}
+                #         ) for reply in note["note_label_links"]
+                #     ]
+
                 r = session.create("Note", {
                     **{tag: note[tag] for tag in self.matching_fields},
                     "parent_id": target["id"],
-                    "replies": replies
+                    "replies": replies,
+                    # "note_components" : note_components,
+                    # "note_label_links" : note_label_links,
                     })
 
                 self.log.info(f"Updated client notes for version_id {target['id']}")
