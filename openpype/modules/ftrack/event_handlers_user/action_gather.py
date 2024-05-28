@@ -19,7 +19,6 @@ from openpype.client import (
     get_asset_by_name,
     get_subset_by_name,
     get_representation_by_name,
-    get_last_version_by_subset_id,
     get_version_by_name
 )
 
@@ -294,10 +293,6 @@ class GatherAction(BaseAction):
             subset_name,
             asset_doc["_id"]
         )
-        # version_doc = get_last_version_by_subset_id(
-        #     project_name,
-        #     subset_doc["_id"]
-        # )
         version_doc = get_version_by_name(
             project_name,
             version_name,
