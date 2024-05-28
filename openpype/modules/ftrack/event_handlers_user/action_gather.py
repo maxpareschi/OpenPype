@@ -19,7 +19,8 @@ from openpype.client import (
     get_asset_by_name,
     get_subset_by_name,
     get_representation_by_name,
-    get_last_version_by_subset_id
+    get_last_version_by_subset_id,
+    get_version_by_name
 )
 
 import openpype.pipeline
@@ -276,6 +277,7 @@ class GatherAction(BaseAction):
         family = "delivery"
         project_name = self.project_name
         project_id = version["project_id"]
+        version_name = int(version["version"])
         subset_name = version["asset"]["name"]
         asset_name = version["asset"]["parent"]["name"]
         repre_name = user_values[version["id"]]
@@ -292,8 +294,13 @@ class GatherAction(BaseAction):
             subset_name,
             asset_doc["_id"]
         )
-        version_doc = get_last_version_by_subset_id(
+        # version_doc = get_last_version_by_subset_id(
+        #     project_name,
+        #     subset_doc["_id"]
+        # )
+        version_doc = get_version_by_name(
             project_name,
+            version_name,
             subset_doc["_id"]
         )
         repre_doc = get_representation_by_name(
