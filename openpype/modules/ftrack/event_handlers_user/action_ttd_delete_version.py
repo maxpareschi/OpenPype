@@ -232,8 +232,8 @@ class DeleteVersionAction(BaseAction):
             for version in versions_to_delete:
                 session.delete(version)
             session.commit()
-            msg = f"Removing versions {[v['id'] for v in versions_to_delete]}"
-        # return { "success" : True, "message" : msg}
+            # msg = f"Removing versions {[v['id'] for v in versions_to_delete]}"
+        return { "success" : True, "message" : "Versions removed correctly."}
 
     def _extract_asset_versions(self, session: Session, entities: List[Entity]):
         asset_version_ids = set()
