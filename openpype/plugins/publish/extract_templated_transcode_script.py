@@ -76,7 +76,7 @@ def transcode_template(data):
     if os.path.isfile(data["save_path"]):
         os.remove(data["save_path"])
 
-    nuke.nodePaste(data["template"])
+    nuke.nodePaste(data["profile_data"]["template_path"]["template"])
 
     input_node = None
     output_node = None
@@ -145,18 +145,18 @@ def transcode_template(data):
     write["file_type"].setValue(
         os.path.splitext(data["output_path"])[1].replace(".", "")
     )
-    try:
-        write["metadata"].setValue("all metadata")
-    except:
-        print("\nNo metadata type to be set.")
+
+    if data["profile_data"]["write_options"].get("knobs"):
+        for option in data["profile_data"]["write_options"]["knobs"]:
+            write[option["name"]].setValue(option["value"])
         
-    if data["reformat"]:
+    if data["profile_data"]["reformat_options"]["enabled"]:
         reformat = nuke.nodes.Reformat()
         reformat["type"].setValue("to box")
         reformat["box_fixed"].setValue(True)
-        reformat["box_width"].setValue(data["reformat_width"])
-        reformat["box_height"].setValue(data["reformat_height"])
-        reformat["resize"].setValue(data["reformat_type"])
+        reformat["box_width"].setValue(data["profile_data"]["reformat_options"]["reformat_width"])
+        reformat["box_height"].setValue(data["profile_data"]["reformat_options"]["reformat_height"])
+        reformat["resize"].setValue(data["profile_data"]["reformat_options"]["reformat_type"])
         reformat["filter"].setValue("Lanczos6")
         reformat["clamp"].setValue(True)
         reformat["center"].setValue(True)
@@ -202,7 +202,7 @@ def transcode_subsetchain(data):
     node_list.append(read)
     print("'{}' node created.".format(node_list[-1].name()))
 
-    for subset in data["subset_chain"]:
+    for subset in data["profile_data"]["subset_chain"]:
         loader_name = subset["loader"]
         subset_name = subset["subset"]
         repre_name = subset["representation"]
@@ -214,13 +214,13 @@ def transcode_subsetchain(data):
         node_list.append(subset_node)
         print("'{}' node created.".format(node_list[-1].name()))
 
-    if data["reformat"]:
+    if data["profile_data"]["reformat_options"]["enabled"]:
         reformat = nuke.nodes.Reformat()
         reformat["type"].setValue("to box")
         reformat["box_fixed"].setValue(True)
-        reformat["box_width"].setValue(data["reformat_width"])
-        reformat["box_height"].setValue(data["reformat_height"])
-        reformat["resize"].setValue(data["reformat_type"])
+        reformat["box_width"].setValue(data["profile_data"]["reformat_options"]["reformat_width"])
+        reformat["box_height"].setValue(data["profile_data"]["reformat_options"]["reformat_height"])
+        reformat["resize"].setValue(data["profile_data"]["reformat_options"]["reformat_type"])
         reformat["filter"].setValue("Lanczos6")
         reformat["clamp"].setValue(True)
         reformat["center"].setValue(True)
@@ -237,10 +237,10 @@ def transcode_subsetchain(data):
     write["file_type"].setValue(
         os.path.splitext(data["output_path"])[1].replace(".", "")
     )
-    try:
-        write["metadata"].setValue("all metadata")
-    except:
-        print("\nNo metadata type to be set.")
+    if data["profile_data"]["write_options"].get("knobs"):
+        for option in data["profile_data"]["write_options"]["knobs"]:
+            write[option["name"]].setValue(option["value"])
+
     node_list.append(write)
     print("'{}' node created.".format(node_list[-1].name()))
 
@@ -279,18 +279,18 @@ def transcode_color_conversion(data):
         read["origlast"].setValue(data["frameEnd"]-data["frameStart"]+1)
     read["frame_mode"].setValue("start at")
     read["frame"].setValue(str(data["frameStart"]))
-    read["colorspace"].setValue(data["input_colorspace"])
+    read["colorspace"].setValue(data["profile_data"]["color_conversion"]["input_colorspace"])
     read["file"].setValue(data["input_path"])
     node_list.append(read)
     print("'{}' node created.".format(node_list[-1].name()))
 
-    if data["reformat"]:
+    if data["profile_data"]["reformat_options"]["enabled"]:
         reformat = nuke.nodes.Reformat()
         reformat["type"].setValue("to box")
         reformat["box_fixed"].setValue(True)
-        reformat["box_width"].setValue(data["reformat_width"])
-        reformat["box_height"].setValue(data["reformat_height"])
-        reformat["resize"].setValue(data["reformat_type"])
+        reformat["box_width"].setValue(data["profile_data"]["reformat_options"]["reformat_width"])
+        reformat["box_height"].setValue(data["profile_data"]["reformat_options"]["reformat_height"])
+        reformat["resize"].setValue(data["profile_data"]["reformat_options"]["reformat_type"])
         reformat["filter"].setValue("Lanczos6")
         reformat["clamp"].setValue(True)
         reformat["center"].setValue(True)
@@ -303,14 +303,14 @@ def transcode_color_conversion(data):
     write["use_limit"].setValue(True)
     write["first"].setValue(data["frameStart"])
     write["last"].setValue(data["frameEnd"])
-    write["colorspace"].setValue(data["output_colorspace"])
+    write["colorspace"].setValue(data["profile_data"]["color_conversion"]["output_colorspace"])
     write["file_type"].setValue(
         os.path.splitext(data["output_path"])[1].replace(".", "")
     )
-    try:
-        write["metadata"].setValue("all metadata")
-    except:
-        print("\nTranscode: No metadata type to be set.")
+    if data["profile_data"]["write_options"].get("knobs"):
+        for option in data["profile_data"]["write_options"]["knobs"]:
+            write[option["name"]].setValue(option["value"])
+
     node_list.append(write)
     print("'{}' node created.".format(node_list[-1].name()))
 
@@ -385,13 +385,7 @@ def process_thumb(node, data):
     thumb_write["first"].setValue(frame_number)
     thumb_write["last"].setValue(frame_number)
     thumb_write["raw"].setValue(True)
-    thumb_write["file_type"].setValue(
-        os.path.splitext(data["output_path"])[1].replace(".", "")
-    )
-    try:
-        thumb_write["metadata"].setValue("all metadata")
-    except:
-        print("\nThumbnail: No metadata type to be set.")
+    thumb_write["file_type"].setValue("jpg")
     thumb_write.setInput(0, node)
     
     if thumb_write:
@@ -412,8 +406,10 @@ if __name__ == "__main__":
     sys.stdout = log
     
     install_all()
+
     main_write_node = process_all(data)
-    if data["override_thumbnail"]:
+    
+    if data["profile_data"]["override_thumbnail"]:
         process_thumb(main_write_node, data)
 
     nuke.scriptExit()

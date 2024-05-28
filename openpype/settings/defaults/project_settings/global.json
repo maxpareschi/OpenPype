@@ -74,16 +74,35 @@
                                 "input_colorspace": "",
                                 "output_colorspace": "color_picking"
                             },
-                            "tags": [],
-                            "representation_name_override": "proxy",
-                            "custom_tags": [],
+                            "write_options": {
+                                "knobs": [
+                                    {
+                                        "type": "text",
+                                        "name": "channels",
+                                        "value": "rgb"
+                                    },
+                                    {
+                                        "type": "decimal_number",
+                                        "name": "_jpeg_quality",
+                                        "value": 0.85
+                                    },
+                                    {
+                                        "type": "text",
+                                        "name": "_jpeg_sub_sampling",
+                                        "value": "4:2:2"
+                                    }
+                                ]
+                            },
                             "reformat_options": {
                                 "enabled": false,
-                                "reformat_width": 0,
-                                "reformat_height": 0,
+                                "reformat_width": 1920,
+                                "reformat_height": 1080,
                                 "reformat_type": "width"
                             },
-                            "override_thumbnail": false
+                            "override_thumbnail": false,
+                            "tags": [],
+                            "representation_name_override": "proxy",
+                            "custom_tags": []
                         },
                         "passthrough": {
                             "extension": "",
@@ -96,16 +115,19 @@
                                 "input_colorspace": "",
                                 "output_colorspace": ""
                             },
-                            "tags": [],
-                            "representation_name_override": "source",
-                            "custom_tags": [],
+                            "write_options": {
+                                "knobs": []
+                            },
                             "reformat_options": {
                                 "enabled": false,
-                                "reformat_width": 0,
-                                "reformat_height": 0,
+                                "reformat_width": 1920,
+                                "reformat_height": 1080,
                                 "reformat_type": "width"
                             },
-                            "override_thumbnail": false
+                            "override_thumbnail": false,
+                            "tags": [],
+                            "representation_name_override": "source",
+                            "custom_tags": []
                         },
                         "main": {
                             "extension": "exr",
@@ -118,16 +140,40 @@
                                 "input_colorspace": "",
                                 "output_colorspace": "scene_linear"
                             },
-                            "tags": [],
-                            "representation_name_override": "",
-                            "custom_tags": [],
+                            "write_options": {
+                                "knobs": [
+                                    {
+                                        "type": "text",
+                                        "name": "channels",
+                                        "value": "rgb"
+                                    },
+                                    {
+                                        "type": "text",
+                                        "name": "datatype",
+                                        "value": "16 bit half"
+                                    },
+                                    {
+                                        "type": "text",
+                                        "name": "compression",
+                                        "value": "Zip (1 scanline)"
+                                    },
+                                    {
+                                        "type": "text",
+                                        "name": "metadata",
+                                        "value": "all metadata"
+                                    }
+                                ]
+                            },
                             "reformat_options": {
                                 "enabled": false,
-                                "reformat_width": 0,
-                                "reformat_height": 0,
+                                "reformat_width": 1920,
+                                "reformat_height": 1080,
                                 "reformat_type": "width"
                             },
-                            "override_thumbnail": false
+                            "override_thumbnail": false,
+                            "tags": [],
+                            "representation_name_override": "",
+                            "custom_tags": []
                         }
                     }
                 }

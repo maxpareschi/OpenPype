@@ -613,6 +613,37 @@
                 },
                 {
                     "type": "dict",
+                    "key": "gather_action",
+                    "label": "Gather",
+                    "children": [
+                        {
+                            "type": "task-types-enum",
+                            "key": "missing_task_override",
+                            "label": "Override task type if main task is not found (SELECT ONLY ONE!)"
+                        },
+                        {
+                            "key": "delivery_root",
+                            "label": "Root folder name for Delivery/Gather",
+                            "type": "text"
+                        },
+                        {
+                            "key": "delivery_asset_suffix",
+                            "label": "Suffix for asset in ftrack for Delivery/Gather",
+                            "type": "text"
+                        },
+                        {
+                            "key": "subset_name_template",
+                            "label": "Subset name template for Delivery/Gather",
+                            "type": "text"
+                        },
+                        {
+                            "type": "label",
+                            "label": "NOTE: Valid subset template strings are {asset}, {task}, {family}, {variant}"
+                        }
+                    ]
+                },
+                {
+                    "type": "dict",
                     "key": "store_thubmnail_to_avalon",
                     "label": "Store Thumbnails to avalon",
                     "checkbox_key": "enabled",
@@ -1002,11 +1033,6 @@
                             "type": "boolean",
                             "key": "enabled",
                             "label": "Enabled"
-                        },
-                        {
-                            "key": "delivery_root",
-                            "label": "Root folder name for Delivery/Gather",
-                            "type": "text"
                         }
                     ]
                 },

@@ -1,7 +1,7 @@
 import re
 import pyblish.api
 import json
-from openpype.settings import get_current_project_settings, get_anatomy_settings
+from openpype.settings import get_current_project_settings
 
 
 class CollectClipEffects(pyblish.api.InstancePlugin):
