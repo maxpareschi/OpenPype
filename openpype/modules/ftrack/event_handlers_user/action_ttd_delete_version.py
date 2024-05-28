@@ -114,16 +114,16 @@ def ttd_remove_versions(prj_name: str, versions: List[dict]):
 def delete_versions(versions: List[AssetVersion]):
     op_versions = list()
     for version in versions:
-        prj = version["project"]["name"].upper()
-        verison_parent = version["asset"]["parent"]
-        asset_mongo_id = verison_parent["custom_attributes"]["avalon_mongo_id"]
+        prj = version["project"]["full_name"]
+        version_parent = version["asset"]["parent"]
+        asset_mongo_id = version_parent["custom_attributes"]["avalon_mongo_id"]
         subset_name = version["asset"]["name"]
         version_number = version["version"]
 
         in_links = list(version["incoming_links"])
         if in_links:
-            verison_parent = in_links[0]["from"]["asset"]["parent"]
-            asset_mongo_id = verison_parent["custom_attributes"]["avalon_mongo_id"]
+            version_parent = in_links[0]["from"]["asset"]["parent"]
+            asset_mongo_id = version_parent["custom_attributes"]["avalon_mongo_id"]
         op_version = get_op_version_from_ftrack_assetversion(
             prj, asset_mongo_id, subset_name, version_number
         )
@@ -141,7 +141,7 @@ class DeleteVersionAction(BaseAction):
     description = 'Delete version action'
     priority = 10000
     # role_list = ['Pypeclub']
-    icon = statics_icon("ftrack", "action_icons", "delete_version.png")
+    icon = statics_icon("ftrack", "action_icons", "DeleteVersion.png")
     query_items = "asset.parent, asset.parent.custom_attributes, asset.name, version"
     settings_key = "delivery_action"
 

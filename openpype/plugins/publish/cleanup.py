@@ -32,6 +32,7 @@ class CleanUp(pyblish.api.InstancePlugin):
         "unreal",
         "standalonepublisher",
         "webpublisher",
+        "traypublisher",
         "shell"
     ]
     exclude_families = ["clip"]
