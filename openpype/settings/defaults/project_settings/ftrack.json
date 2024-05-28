@@ -195,7 +195,9 @@
             ],
             "delivery_root": "to_client",
             "delivery_asset_suffix": "delivery",
-            "subset_name_template": "{family}{task}{variant}"
+            "subset_name_template": "{family}{task}{variant}",
+            "min_gather_version": 1,
+            "missing_task_gather_version": 0
         },
         "store_thubmnail_to_avalon": {
             "enabled": true,

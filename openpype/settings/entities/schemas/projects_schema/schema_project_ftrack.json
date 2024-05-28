@@ -622,6 +622,9 @@
                             "label": "Override task type if main task is not found (SELECT ONLY ONE!)"
                         },
                         {
+                            "type": "separator"
+                        },
+                        {
                             "key": "delivery_root",
                             "label": "Root folder name for Delivery/Gather",
                             "type": "text"
@@ -632,6 +635,9 @@
                             "type": "text"
                         },
                         {
+                            "type": "separator"
+                        },
+                        {
                             "key": "subset_name_template",
                             "label": "Subset name template for Delivery/Gather",
                             "type": "text"
@@ -639,6 +645,19 @@
                         {
                             "type": "label",
                             "label": "NOTE: Valid subset template strings are {asset}, {task}, {family}, {variant}"
+                        },
+                        {
+                            "type": "separator"
+                        },
+                        {
+                            "key": "min_gather_version",
+                            "label": "Minimum gathered version",
+                            "type": "number"
+                        },
+                        {
+                            "key": "missing_task_gather_version",
+                            "label": "Minimum version for missing task gathers (i.e. Roundtrips)",
+                            "type": "number"
                         }
                     ]
                 },

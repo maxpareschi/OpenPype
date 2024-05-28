@@ -9,7 +9,7 @@ import openpype.lib
 import openpype.hosts
 import openpype.hosts.traypublisher
 import openpype.hosts.traypublisher.api
-from qtpy import QtWidgets, QtCore
+from qtpy import QtWidgets
 
 import openpype.modules
 from openpype.pipeline import install_host
@@ -25,8 +25,7 @@ from openpype.client import (
 import openpype.pipeline
 from openpype.settings import (
     get_system_settings,
-    get_project_settings,
-    get_anatomy_settings
+    get_project_settings
 )
 
 import openpype
@@ -50,20 +49,6 @@ class GatherAction(BaseAction):
         self.assetversions = list()
         self.project_name = None
         super().__init__(*args, **kwargs)
-
-    def get_all_available_components_for_assetversion(self, session, assetversion):
-        component_list = []
-        components = session.query("select name from Component where version_id is '{}'".format(assetversion["id"])).all()
-        for comp in components:
-            valid = True
-            for excl in self.exclude_component_list:
-                if comp["name"].find(excl) >= 0:
-                    valid = False
-                    break
-            if valid:
-                component_list.append(comp["name"])
-            
-        return list(set(component_list))
 
     def discover(self, session, entities, event):
         etype = entities[0].entity_type
@@ -166,6 +151,14 @@ class GatherAction(BaseAction):
             self.target_asset_name = "{}_delivery".format(version["asset"]["name"])
             self.publisher_start(session, create_context, version, user_values)
 
+        if not create_context.instances:
+            msg = "No valid instances could be gathered, aborting..."
+            self.log.debug(msg)
+            return {
+                "success": False,
+                "message": msg
+            }
+
         app_instance = QtWidgets.QApplication.instance()
         if app_instance is None:
             app_instance = QtWidgets.QApplication([])
@@ -182,6 +175,20 @@ class GatherAction(BaseAction):
         app_instance.exec_()
 
         return True
+
+    def get_all_available_components_for_assetversion(self, session, assetversion):
+        component_list = []
+        components = session.query("select name from Component where version_id is '{}'".format(assetversion["id"])).all()
+        for comp in components:
+            valid = True
+            for excl in self.exclude_component_list:
+                if comp["name"].find(excl) >= 0:
+                    valid = False
+                    break
+            if valid:
+                component_list.append(comp["name"])
+            
+        return list(set(component_list))
 
     def get_files_from_repre(self, repre, version):
         files = []
@@ -259,18 +266,13 @@ class GatherAction(BaseAction):
         return result
 
     def get_all_available_tasks(self, session, version):
-        task_names = []
-        task_types = []
+        tasks = {}
         query = "select id, name, type.name from Task where parent_id is '{}'".format(version["asset"]["parent"]["id"])
         for task in session.query(query).all():
-            task_names.append(task["name"])
-            task_types.append(task["type"]["name"])
-        self.log.debug("Available tasks for current asset | Names: {} | Types: {}".format(task_names, task_types))
-
-        return task_types, task_names
+            tasks.update({ task["name"]: task["type"]["name"] })
+        return tasks
 
     def publisher_start(self, session, create_context, version, user_values):
-
         family = "delivery"
         project_name = self.project_name
         project_id = version["project_id"]
@@ -301,41 +303,50 @@ class GatherAction(BaseAction):
         )
 
         repre_files = self.get_files_from_repre(repre_doc, version_doc)
-        
-        task_override = ""
-        try:
-            computed_task = repre_doc["context"]["task"]["name"]
-            self.log.debug("Detected task is '{}'".format(computed_task))
-            avail_task_names, avail_task_types = self.get_all_available_tasks(session, version)
-            if computed_task not in avail_task_names and computed_task not in avail_task_types:
-                computed_task = ""
-        except:
-            computed_task = ""
-        if not computed_task:
-            if len(settings["missing_task_override"]) > 0:
-                task_override = settings["missing_task_override"][0]  
 
         computed_asset = repre_doc["context"]["asset"]
+
+        if len(settings["missing_task_override"]) > 0:
+            task_override = settings["missing_task_override"][0]
+        else:
+            task_override = ""
+        avail_tasks = self.get_all_available_tasks(session, version)
+        avail_tasks.update({ "": task_override })
+        self.log.debug("Available tasks for current asset:\n{}".format(json.dumps(avail_tasks, indent=4, default=str)))
+
+        try:
+            detected_task_name = repre_doc["context"]["task"]["name"]
+            if detected_task_name not in avail_tasks.keys():
+                self.log.debug("Task type not found in available tasks.")
+                detected_task_name = ""
+        except:
+            self.log.debug("Failed to fetch task!")
+            detected_task_name = ""
+
+
+        self.log.debug("Detected task name is '{}'".format(detected_task_name))
+        self.log.debug("Computed task type is '{}'".format(avail_tasks[detected_task_name]))
+
         computed_variant = repre_doc["context"]["subset"].lower().replace(
-            repre_doc["context"]["family"].lower(),
+            repre_doc["context"]["family"],
             ""
         ).replace(
-            computed_task.lower(),
+            detected_task_name.lower(),
             ""
         ).capitalize()
+        self.log.debug("Computed variant is '{}'".format(computed_variant))
 
         subset_format_data = {
             "asset": computed_asset,
             "family": family,
-            "task": computed_task.capitalize() if computed_task else task_override.capitalize(),
+            "task": avail_tasks[detected_task_name],
             "variant": computed_variant
         }
-        self.log.debug("Computed task is '{}'".format(subset_format_data["task"]))
-
         computed_subset = settings["subset_name_template"].format_map(subset_format_data)
-        computed_name = "{}_{}".format(computed_asset, computed_subset)
+        self.log.debug("Computed subset is '{}'".format(computed_subset))
 
-        self.log.debug("Computed asset Name for subset '{}' is '{}'".format(computed_subset, computed_asset))
+        computed_name = computed_asset + "_" + computed_subset
+        self.log.debug("Computed instance name is '{}'".format(computed_name))
 
         delivery_suffix = settings["delivery_asset_suffix"]
         if delivery_suffix:
@@ -346,9 +357,9 @@ class GatherAction(BaseAction):
             "family": family,
             "families": [family],
             "subset": computed_subset,
-            "variant": computed_task.capitalize() + computed_variant if computed_task else task_override.capitalize() + computed_variant,
+            "variant": avail_tasks[detected_task_name] + computed_variant,
             "asset": repre_doc["context"]["asset"],
-            "task": computed_task,
+            "task": detected_task_name,
             "name": computed_name,
             "label": computed_name,
             "delivery_root_name": settings["delivery_root"],
