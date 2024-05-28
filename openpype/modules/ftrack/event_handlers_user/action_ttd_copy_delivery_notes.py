@@ -75,7 +75,7 @@ class CopyDeliveryNotes(BaseAction):
     identifier = 'ttd.copy.notes.action'
     label = 'Copy delivery notes'
     description = 'Forward notes from source into delivery.'
-    icon = statics_icon("ftrack", "action_icons", "forward_notes.png")
+    icon = statics_icon("ftrack", "action_icons", "ForwardNotes.png")
     settings_key = "delivery_action"
     note_tag = "Client Feedback"
 

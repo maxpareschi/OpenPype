@@ -27,7 +27,7 @@ class TransferHierarchicalValues(ServerAction):
         "Move values from a hierarchical attribute to"
         " second hierarchical attribute."
     )
-    icon = statics_icon("ftrack", "action_icons", "OpenPypeAdmin.svg")
+    icon = statics_icon("ftrack", "action_icons", "OpenPypeAdmin.png")
 
     all_project_entities_query = (
         "select id, name, parent_id, link"

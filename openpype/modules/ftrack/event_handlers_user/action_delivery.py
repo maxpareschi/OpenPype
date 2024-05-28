@@ -10,9 +10,9 @@ from openpype.client import (
     get_versions,
     get_representations
 )
-from openpype_modules.ftrack.lib import BaseAction, statics_icon
-from openpype_modules.ftrack.lib.avalon_sync import CUST_ATTR_ID_KEY
-from openpype_modules.ftrack.lib.custom_attributes import (
+from openpype_modules.ftrack.lib import BaseAction, statics_icon # type: ignore
+from openpype_modules.ftrack.lib.avalon_sync import CUST_ATTR_ID_KEY # type: ignore
+from openpype_modules.ftrack.lib.custom_attributes import ( # type: ignore
     query_custom_attributes
 )
 from openpype.lib.dateutils import get_datetime_data
@@ -31,13 +31,13 @@ class Delivery(BaseAction):
     label = "Delivery"
     description = "Deliver data to client"
     role_list = ["Pypeclub", "Administrator", "Project manager"]
-    icon = statics_icon("ftrack", "action_icons", "Delivery.svg")
+    icon = statics_icon("ftrack", "action_icons", "Delivery.png")
     settings_key = "delivery_action"
 
     def discover(self, session, entities, event):
         is_valid = False
         for entity in entities:
-            if entity.entity_type.lower() in ("assetversion", "reviewsession"):
+            if entity.entity_type.lower() in ("assetversion", "reviewsession", "assetversionlist"):
                 is_valid = True
                 break
 
@@ -212,10 +212,17 @@ class Delivery(BaseAction):
         # Extract AssetVersion entities
         asset_versions = self._extract_asset_versions(session, entities)
         # Prepare Asset ids
-        asset_ids = {
+        asset_ids = [
             asset_version["asset_id"]
-            for asset_version in asset_versions
-        }
+            for asset_version in asset_versions if not asset_version["incoming_links"]
+        ]
+        asset_ids.extend([
+            asset_version["incoming_links"][0]["from"]["asset_id"]
+            for asset_version in asset_versions if asset_version["incoming_links"]
+        ])
+        asset_ids = set(asset_ids)
+        if not asset_ids:
+            raise ValueError(f"Failed to find asset_ids for versions {[e['id'] for e in entities]}")
         # Query Asset entities
         assets = session.query((
             "select id, name, context_id from Asset where id in ({})"
@@ -229,6 +236,8 @@ class Delivery(BaseAction):
         version_nums = set()
         for asset_version in asset_versions:
             asset_id = asset_version["asset_id"]
+            if asset_version["incoming_links"]:
+                asset_id = asset_version["incoming_links"][0]["from"]["asset_id"]
             asset = assets_by_id[asset_id]
             subset_realname = asset_version["custom_attributes"].get("subset")
             if not subset_realname:
@@ -261,23 +270,45 @@ class Delivery(BaseAction):
     def _extract_asset_versions(self, session, entities):
         asset_version_ids = set()
         review_session_ids = set()
+        asset_version_list_ids = set()
+
         for entity in entities:
             entity_type_low = entity.entity_type.lower()
+
             if entity_type_low == "assetversion":
                 asset_version_ids.add(entity["id"])
+
             elif entity_type_low == "reviewsession":
                 review_session_ids.add(entity["id"])
+
+            elif entity_type_low == "assetversionlist":
+                asset_version_list_ids.add(entity["id"])
+
+        for version_id in self._get_asset_version_ids_from_asset_ver_list(
+            session, asset_version_list_ids
+        ):
+            asset_version_ids.add(version_id)
 
         for version_id in self._get_asset_version_ids_from_review_sessions(
             session, review_session_ids
         ):
             asset_version_ids.add(version_id)
 
-        asset_versions = session.query((
-            "select id, version, asset_id from AssetVersion where id in ({})"
-        ).format(self.join_query_keys(asset_version_ids))).all()
+        qkeys = self.join_query_keys(asset_version_ids)
+        query = "select id, version, asset_id, incoming_links, outgoing_links"
+        query += f" from AssetVersion where id in ({qkeys})"
+        asset_versions = session.query(query).all()
 
-        return asset_versions
+        filtered_ver = list()
+        for version in asset_versions:
+            if version["outgoing_links"]:
+                version_ = version["outgoing_links"][0]["to"]
+                self.log.info(f"Using delivery version {version_} instead of {version}")
+                version = version_
+            filtered_ver.append(version)
+
+        return filtered_ver
+
 
     def _get_asset_version_ids_from_review_sessions(
         self, session, review_session_ids
@@ -293,6 +324,19 @@ class Delivery(BaseAction):
             review_session_object["version_id"]
             for review_session_object in review_session_objects
         }
+
+
+    def _get_asset_version_ids_from_asset_ver_list( self, session, asset_ver_list_ids):
+        # this can be static method..
+        if not asset_ver_list_ids:
+            return set()
+
+        ids = ", ".join(asset_ver_list_ids)
+        query_str = f"select id from AssetVersion where lists any (id in ({ids}))"
+        asset_versions = session.query(query_str).all()
+
+        return {asset_version["id"] for asset_version in asset_versions}
+
 
     def _get_version_docs(
         self,
@@ -329,6 +373,8 @@ class Delivery(BaseAction):
         filtered_versions = []
         for asset_version in asset_versions:
             asset_id = asset_version["asset_id"]
+            if asset_version["incoming_links"]:
+                asset_id = asset_version["incoming_links"][0]["from"]["asset_id"]
             asset = assets_by_id[asset_id]
             parent_id = asset["context_id"]
             asset_doc = asset_docs_by_ftrack_id.get(parent_id)
@@ -378,6 +424,8 @@ class Delivery(BaseAction):
         filtered_subsets = []
         for asset_version in asset_versions:
             asset_id = asset_version["asset_id"]
+            if asset_version["incoming_links"]:
+                asset_id = asset_version["incoming_links"][0]["from"]["asset_id"]
             asset = assets_by_id[asset_id]
 
             parent_id = asset["context_id"]

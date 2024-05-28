@@ -37,7 +37,7 @@ class SyncToAvalonLocal(BaseAction):
     label = "OpenPype Admin"
     variant = "- Sync To Avalon (Local)"
     priority = 200
-    icon = statics_icon("ftrack", "action_icons", "OpenPypeAdmin.svg")
+    icon = statics_icon("ftrack", "action_icons", "OpenPypeAdmin.png")
 
     settings_key = "sync_to_avalon_local"
 
