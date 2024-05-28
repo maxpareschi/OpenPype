@@ -63,7 +63,7 @@ def transfer_note_components(note_src: Note, note_target: Note, session: Session
 
 
 class CopyDeliveryNotes(BaseAction):
-    """Action for forwarding notes from source into delivery."""
+    """Action for forwarding client notes from delivery version into source."""
 
     matching_fields = [
         "content",
@@ -73,8 +73,8 @@ class CopyDeliveryNotes(BaseAction):
         "user_id",
         ]
     identifier = 'ttd.copy.notes.action'
-    label = 'Copy delivery notes'
-    description = 'Forward notes from source into delivery.'
+    label = 'Forward delivery notes'
+    description = 'Forward client notes from delivery to source.'
     icon = statics_icon("ftrack", "action_icons", "ForwardNotes.png")
     settings_key = "delivery_action"
     note_tag = "Client Feedback"
