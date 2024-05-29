@@ -187,7 +187,10 @@
                 "Pypeclub",
                 "Project Manager",
                 "Administrator"
-            ]
+            ],
+            "list_template": "{yyyy}{mm}{dd}_client_delivery",
+            "use_source_list_name": false,
+            "list_suffix": ""
         },
         "gather_action": {
             "missing_task_override": [

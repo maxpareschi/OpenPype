@@ -608,6 +608,27 @@
                             "key": "role_list",
                             "label": "Roles",
                             "object_type": "text"
+                        },
+                        {
+                            "type": "separator"
+                        },
+                        {
+                            "key": "list_template",
+                            "label": "Created delivery list template",
+                            "type": "text"
+                        },
+                        {
+                            "type": "boolean",
+                            "key": "use_source_list_name",
+                            "label": "Use source list name instead of list template"
+                        },
+                        {
+                            "type": "separator"
+                        },
+                        {
+                            "key": "list_suffix",
+                            "label": "Optional suffix on above template",
+                            "type": "text"
                         }
                     ]
                 },
