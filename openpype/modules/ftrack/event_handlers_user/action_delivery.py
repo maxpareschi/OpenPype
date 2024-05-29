@@ -1,3 +1,5 @@
+from __future__ import annotations
+from typing import List
 import os
 import copy
 import json
@@ -611,6 +613,34 @@ class Delivery(BaseAction):
 
         return report
 
+    def generate_version_by_repre_id_dict(self, session: Session, entities: List[Entity]):
+        # reset "AssetVersion" custom attribute "disk_file_location"
+        version_by_repre_id = dict()
+        ftrack_asset_versions = self._extract_asset_versions(session, entities)
+        for v in ftrack_asset_versions:
+            project_name = v["project"]["full_name"]
+            asset_mongo_id = v["asset"]["parent"]["custom_attributes"]["avalon_mongo_id"]
+            in_links = list(v["incoming_links"])
+            if in_links:
+                # v = in_links[0]
+                version_parent = in_links[0]["from"]["asset"]["parent"]
+                asset_mongo_id = version_parent["custom_attributes"]["avalon_mongo_id"]
+            subset_name = v["asset"]["name"]
+            version_number = v["version"]
+            op_v = get_op_version_from_ftrack_assetversion(
+                project_name, asset_mongo_id, subset_name, version_number)
+            if not op_v:
+                continue
+            version_id = op_v["_id"]
+            representations = list(get_representations(
+                project_name, version_ids=[version_id]))
+    
+            for r in representations:
+                print(f"Adding {r['_id']}{v} for repre-version dict")
+                version_by_repre_id[r["_id"]] = v
+        
+        return version_by_repre_id
+
     def real_launch(self, session, entities, event):
         self.log.info("Delivery action just started.")
         report_items = collections.defaultdict(list)
@@ -648,25 +678,7 @@ class Delivery(BaseAction):
             version_ids=version_ids
         ))
 
-
-        # reset "AssetVersion" custom attribute "disk_file_location"
-        version_by_repre_id = dict()
-
-        ftrack_asset_versions = self._extract_asset_versions(session, entities)
-        for v in ftrack_asset_versions:
-            asset_mongo_id = v["asset"]["parent"]["custom_attributes"]["avalon_mongo_id"]
-            subset_name = v["asset"]["name"]
-            version_number = v["version"]
-            op_v = get_op_version_from_ftrack_assetversion(
-                project_name, asset_mongo_id, subset_name, version_number)
-            if not op_v:
-                continue
-            version_ids = [op_v["_id"]]
-            representations = list(get_representations(
-                project_name, version_ids=version_ids))
-    
-            for r in representations:
-                version_by_repre_id[r["_id"]] = v
+        version_by_repre_id = self.generate_version_by_repre_id_dict(session, entities)
 
         for v in set(version_by_repre_id.values()):
             v["custom_attributes"]["disk_file_location"] = ""
