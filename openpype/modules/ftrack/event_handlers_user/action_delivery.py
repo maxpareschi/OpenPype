@@ -2,6 +2,10 @@ import os
 import copy
 import json
 import collections
+from logging import getLogger
+from datetime import datetime
+
+logger = getLogger(__name__)
 
 from openpype.client import (
     get_project,
@@ -25,7 +29,35 @@ from openpype.pipeline.delivery import (
     deliver_single_file,
     deliver_sequence,
 )
+from ftrack_api import Session
+from ftrack_api.entity.base import Entity
 
+from openpype.modules.ftrack.event_handlers_user.action_ttd_delete_version import get_op_version_from_ftrack_assetversion
+
+
+def create_list_from_delivery(src_list: Entity, name: str, session: Session):
+
+    def sanitize_name(name: str):
+        q = f"select name from AssetVersionList where project.name is {src_list['project']['name']}"
+        existing_names = [l["name"] for l in session.query(q).all()]
+        i = 1
+        temp_name = name
+        while temp_name in existing_names:
+            temp_name = f"{name}_{i:02}"
+            i += 1
+        return temp_name
+
+    final_name = sanitize_name(name)
+    fields = ["category", "owner", "user_id", "system_type", "project"]
+    data = {**{f:src_list[f] for f in fields}, "name":final_name}
+    new_list = session.create("AssetVersionList", data)
+
+    if final_name != name:
+        logger.info(f"The name {name} existed already. The list will be renamed as {final_name}")
+    
+    logger.info(f"Creating list '{new_list}'")
+
+    return new_list
 
 class Delivery(BaseAction):
     identifier = "delivery.action"
@@ -73,6 +105,15 @@ class Delivery(BaseAction):
             "name": "__project_name__",
             "value": project_name
         })
+
+        items.append(
+            {
+                "label": "Create new ftrack list from submitted items.",
+                "type": "boolean",
+                "value": True,
+                "name": "create_list"
+            }
+        )
 
         # Prepare anatomy data
         anatomy = Anatomy(project_name)
@@ -574,17 +615,11 @@ class Delivery(BaseAction):
         self.log.info("Delivery action just started.")
         report_items = collections.defaultdict(list)
 
-        values = event["data"]["values"]
+        values: dict = event["data"]["values"]
 
         location_path = values.pop("__location_path__")
         anatomy_name = values.pop("__new_anatomies__")
         project_name = values.pop("__project_name__")
-
-        settings = get_project_settings(project_name)
-        
-        list_template = settings["project_settings"]["ftrack"]["user_handlers"]["delivery_action"]["list_template"]
-        use_source_list_name = settings["project_settings"]["ftrack"]["user_handlers"]["delivery_action"]["use_source_list_name"]
-        list_template = settings["project_settings"]["ftrack"]["user_handlers"]["delivery_action"]["list_suffix"]
 
         repre_names = []
         for key, value in values.items():
@@ -612,11 +647,36 @@ class Delivery(BaseAction):
             representation_names=repre_names,
             version_ids=version_ids
         ))
+
+
+        # reset "AssetVersion" custom attribute "disk_file_location"
+        version_by_repre_id = dict()
+
+        ftrack_asset_versions = self._extract_asset_versions(session, entities)
+        for v in ftrack_asset_versions:
+            asset_mongo_id = v["asset"]["parent"]["custom_attributes"]["avalon_mongo_id"]
+            subset_name = v["asset"]["name"]
+            version_number = v["version"]
+            op_v = get_op_version_from_ftrack_assetversion(
+                project_name, asset_mongo_id, subset_name, version_number)
+            if not op_v:
+                continue
+            version_ids = [op_v["_id"]]
+            representations = list(get_representations(
+                project_name, version_ids=version_ids))
+    
+            for r in representations:
+                version_by_repre_id[r["_id"]] = v
+
+        for v in set(version_by_repre_id.values()):
+            v["custom_attributes"]["disk_file_location"] = ""
+
+        assert version_by_repre_id != dict()
+
         anatomy = Anatomy(project_name)
-
         format_dict = get_format_dict(anatomy, location_path)
-
         datetime_data = get_datetime_data()
+
         for repre in repres_to_deliver:
             source_path = repre.get("data", {}).get("path")
             debug_msg = "Processing representation {}".format(repre["_id"])
@@ -655,10 +715,42 @@ class Delivery(BaseAction):
                 self.log
             )
             if not frame:
-                deliver_single_file(*args)
+                r, success = deliver_single_file(*args)
             else:
-                deliver_sequence(*args)
+                r, success = deliver_sequence(*args)
 
+            if not success:
+                continue
+
+            if success:
+                try:
+                    version = version_by_repre_id[repre["_id"]]
+                    files = "\n".join(r["created_files"][:1])
+                    version["custom_attributes"]["disk_file_location"] += files +"\n\n"
+                except:
+                    print(f"Failed to update version for representation {repre['_id']}")
+                    print(f"valid ids are: {version_by_repre_id.keys()}")
+
+
+        settings = get_project_settings(project_name)
+        temp_ = settings["ftrack"]["user_handlers"]["delivery_action"]
+        list_template = temp_["list_template"]
+        use_source_list_name = temp_["use_source_list_name"]
+        list_suffix = temp_["list_suffix"]
+
+        # print(list_template, use_source_list_name, list_suffix)
+        # print(anatomy)
+
+        if values.get("create_list"):
+            for entity in entities:
+                if entity.entity_type == "AssetVersionList":
+                    name = list_template if not use_source_list_name else entity["name"]
+                    name += list_suffix
+                    # {yyyy}{mm}{dd}_client_delivery False
+                    # hardcoding for now the resolving of the string
+                    name = datetime.now().strftime("%y%m%d") + list_suffix
+                    create_list_from_delivery(entity, name, session)
+        report_items.pop("created_files") # removes false positive
         return self.report(report_items)
 
     def report(self, report_items):
