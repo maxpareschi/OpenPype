@@ -194,8 +194,12 @@ class GatherAction(BaseAction):
         files = []
         for file in repre["files"]:
             files.append(file["path"].format(**repre["context"]))
-        repre_start = int(re.findall(r'\d+$', os.path.splitext(files[0])[0])[0])
         version_start = int(version["data"]["frameStart"]) - int(version["data"]["handleStart"])
+        detected_startframe = re.findall(r'\d+$', os.path.splitext(files[0])[0])
+        if detected_startframe:
+            repre_start = int(detected_startframe[0])
+        else:
+            repre_start = version_start
         self.log.debug("Detected frames: repre_start:{} <-> version_start:{}".format(repre_start, version_start))
         if repre_start < version_start:
             files.pop(0)
@@ -369,6 +373,7 @@ class GatherAction(BaseAction):
             "delivery_project_id": project_id,
             "delivery_representation_name": repre_doc["name"],
             "delivery_representation_files": repre_files,
+            "delivery_representation_ext": os.path.splitext(repre_files[0])[-1].replace(".", ""),
             "delivery_asset_name": asset_name + delivery_suffix,
             "delivery_task_id": str(version["task_id"]) if str(version["task_id"]) != "NOT_SET" else None,
             "delivery_ftrack_source_id": version["id"]

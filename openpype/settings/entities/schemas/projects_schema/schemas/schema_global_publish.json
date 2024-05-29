@@ -251,6 +251,12 @@
                                 "object_type": "text"
                             },
                             {
+                                "key": "extensions",
+                                "label": "Estensions",
+                                "type": "list",
+                                "object_type": "text"
+                            },
+                            {
                                 "type": "boolean",
                                 "key": "delete_original",
                                 "label": "Delete Original Representation"

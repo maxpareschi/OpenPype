@@ -61,6 +61,7 @@
                     "task_types": [],
                     "task_names": [],
                     "subsets": [],
+                    "extensions": [],
                     "delete_original": true,
                     "outputs": {
                         "proxy": {
