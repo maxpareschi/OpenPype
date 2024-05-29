@@ -23,9 +23,11 @@ from openpype.client import (
 )
 
 import openpype.pipeline
-from openpype.settings import (
+
+from openpype.settings.lib import (
     get_system_settings,
-    get_project_settings
+    get_project_settings,
+    get_anatomy_settings
 )
 
 import openpype
@@ -34,7 +36,7 @@ import openpype.tools.traypublisher
 
 
 class GatherAction(BaseAction):
-    """Gather selected Assetversions for publish into delivery family."""
+    """Gather selected Assetversions for publish into gather family."""
 
     identifier = "gather.versions"
     label = "Gather"
@@ -146,9 +148,8 @@ class GatherAction(BaseAction):
         for version in self.assetversions:
             current_links = len(version["outgoing_links"])
             if current_links > 0:
-                self.log.debug("This asset has already linked delivery versions attached, skipping delivery for now...")
+                self.log.debug("This asset has already linked gather versions attached, skipping gather for now...")
                 continue
-            self.target_asset_name = "{}_delivery".format(version["asset"]["name"])
             self.publisher_start(session, create_context, version, user_values)
 
         if not create_context.instances:
@@ -275,9 +276,9 @@ class GatherAction(BaseAction):
         for task in session.query(query).all():
             tasks.update({ task["name"]: task["type"]["name"] })
         return tasks
-
+     
     def publisher_start(self, session, create_context, version, user_values):
-        family = "delivery"
+        family = "gather"
         project_name = self.project_name
         project_id = version["project_id"]
         version_name = int(version["version"])
@@ -285,6 +286,7 @@ class GatherAction(BaseAction):
         asset_name = version["asset"]["parent"]["name"]
         repre_name = user_values[version["id"]]
         settings = get_project_settings(project_name)["ftrack"]["user_handlers"]["gather_action"]
+        anatomy = get_anatomy_settings(project_name)
 
         self.log.debug("Asset Name for subset '{}' is '{}'".format(subset_name, asset_name))
 
@@ -330,8 +332,14 @@ class GatherAction(BaseAction):
             detected_task_name = ""
 
 
-        self.log.debug("Detected task name is '{}'".format(detected_task_name))
-        self.log.debug("Computed task type is '{}'".format(avail_tasks[detected_task_name]))
+        self.log.debug("Task name is '{}'".format(detected_task_name))
+        self.log.debug("Task type is '{}'".format(avail_tasks[detected_task_name]))
+
+        task_info = {
+            "type": avail_tasks[detected_task_name],
+            "name": detected_task_name,
+            "short": anatomy["tasks"][avail_tasks[detected_task_name]]["short_name"]
+        }
 
         computed_variant = repre_doc["context"]["subset"].lower().replace(
             repre_doc["context"]["family"],
@@ -345,20 +353,31 @@ class GatherAction(BaseAction):
         subset_format_data = {
             "asset": computed_asset,
             "family": family,
-            "task": avail_tasks[detected_task_name],
-            "variant": computed_variant
+            "task": task_info,
+            "variant": computed_variant,
         }
+
         computed_subset = settings["subset_name_template"].format_map(subset_format_data)
+        computed_assetversion_name = settings["ftrack_name_template"].format_map(subset_format_data)
         self.log.debug("Computed subset is '{}'".format(computed_subset))
 
-        computed_name = computed_asset + "_" + computed_subset
+        computed_name = "({}) - {}".format(computed_asset, computed_subset)
         self.log.debug("Computed instance name is '{}'".format(computed_name))
 
-        delivery_suffix = settings["delivery_asset_suffix"]
-        if delivery_suffix:
-            delivery_suffix = "_" + delivery_suffix
 
-        delivery_instance = {
+        gather_root = settings["gather_root"].strip()
+        gather_suffix = settings["gather_asset_suffix"].strip()
+
+        if gather_root:
+            if gather_suffix:
+                gather_suffix = "_" + gather_suffix
+            else:
+                gather_suffix = "_gather"
+        else:
+            gather_root = asset_doc["data"]["parents"][-1]
+            gather_suffix = ""
+
+        gather_instance = {
             "project": project_name,
             "family": family,
             "families": [family],
@@ -368,23 +387,24 @@ class GatherAction(BaseAction):
             "task": detected_task_name,
             "name": computed_name,
             "label": computed_name,
-            "delivery_root_name": settings["delivery_root"],
-            "delivery_project_name": project_name,
-            "delivery_project_id": project_id,
-            "delivery_representation_name": repre_doc["name"],
-            "delivery_representation_files": repre_files,
-            "delivery_representation_ext": os.path.splitext(repre_files[0])[-1].replace(".", ""),
-            "delivery_asset_name": asset_name + delivery_suffix,
-            "delivery_task_id": str(version["task_id"]) if str(version["task_id"]) != "NOT_SET" else None,
-            "delivery_ftrack_source_id": version["id"]
+            "gather_root_name": gather_root,
+            "gather_project_name": project_name,
+            "gather_project_id": project_id,
+            "gather_assetversion_name": computed_assetversion_name,
+            "gather_representation_name": repre_doc["name"],
+            "gather_representation_files": repre_files,
+            "gather_representation_ext": os.path.splitext(repre_files[0])[-1].replace(".", ""),
+            "gather_asset_name": asset_name + gather_suffix,
+            "gather_task_id": str(version["task_id"]) if str(version["task_id"]) != "NOT_SET" else None,
+            "gather_ftrack_source_id": version["id"]
         }
 
         note = self.get_comment_from_notes(session, version)
         if note:
-            delivery_instance.update(note)
+            gather_instance.update(note)
 
         self.log.debug("Instance data to be created: {}".format(
-            json.dumps(delivery_instance, indent=4, default=str)))
+            json.dumps(gather_instance, indent=4, default=str)))
 
         publish_file_list = [item.to_dict() for item in openpype.lib.FileDefItem.from_paths(
             repre_files, allow_sequences=True)]
@@ -392,7 +412,7 @@ class GatherAction(BaseAction):
         create_context.create(
             "settings_{}".format(family),
             computed_subset,
-            delivery_instance,
+            gather_instance,
             pre_create_data={
                 "representation_files": publish_file_list,
                 "reviewable": publish_file_list[0],

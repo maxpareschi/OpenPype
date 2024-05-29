@@ -18,7 +18,6 @@ import six
 import pyblish.api
 import clique
 
-from openpype.settings import get_project_settings
 
 
 class IntegrateFtrackApi(pyblish.api.InstancePlugin):
@@ -51,16 +50,15 @@ class IntegrateFtrackApi(pyblish.api.InstancePlugin):
 
         try:
             source = None
-            if instance.data["family"] == "delivery":
-                
-                root = session.query("Folder where name is '{}' and project_id is '{}'".format(
-                    instance.data["delivery_root_name"],
-                    instance.data["delivery_project_id"])
+            if instance.data["family"] == "gather":
+                root = session.query("TypedContext where name is '{}' and project_id is '{}'".format(
+                    instance.data["gather_root_name"],
+                    instance.data["gather_project_id"])
                     ).one()
                 source = session.query("AssetVersion where id is '{}'".format(
-                    instance.data["delivery_ftrack_source_id"])).one()
+                    instance.data["gather_ftrack_source_id"])).one()
                 asset_data = {
-                    "name": instance.data["delivery_asset_name"],
+                    "name": instance.data["gather_asset_name"],
                     "parent_id": root["id"],
                 }
 
@@ -162,6 +160,8 @@ class IntegrateFtrackApi(pyblish.api.InstancePlugin):
             asset_data = data.get("asset_data") or {}
             if "name" not in asset_data:
                 asset_data["name"] = default_asset_name
+            if instance.data["family"] == "gather":
+                asset_data["name"] = instance.data["gather_assetversion_name"]
             asset_entity = self._ensure_asset_exists(
                 session,
                 asset_data,
@@ -197,7 +197,7 @@ class IntegrateFtrackApi(pyblish.api.InstancePlugin):
 
         self._create_components(session, asset_versions_data_by_id)
 
-        if instance.data["family"] == "delivery":
+        if instance.data["family"] == "gather":
             custom_attr_link_config = session.query(
                 "select id from CustomAttributeLinkConfiguration where key is 'client_version_link'"
             ).first()

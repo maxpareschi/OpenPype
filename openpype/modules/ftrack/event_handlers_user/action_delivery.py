@@ -10,7 +10,6 @@ from openpype.client import (
     get_versions,
     get_representations
 )
-from openpype.settings import get_project_settings
 from openpype_modules.ftrack.lib import BaseAction, statics_icon # type: ignore
 from openpype_modules.ftrack.lib.avalon_sync import CUST_ATTR_ID_KEY # type: ignore
 from openpype_modules.ftrack.lib.custom_attributes import ( # type: ignore
@@ -579,12 +578,6 @@ class Delivery(BaseAction):
         location_path = values.pop("__location_path__")
         anatomy_name = values.pop("__new_anatomies__")
         project_name = values.pop("__project_name__")
-
-        settings = get_project_settings(project_name)
-        
-        list_template = settings["project_settings"]["ftrack"]["user_handlers"]["delivery_action"]["list_template"]
-        use_source_list_name = settings["project_settings"]["ftrack"]["user_handlers"]["delivery_action"]["use_source_list_name"]
-        list_template = settings["project_settings"]["ftrack"]["user_handlers"]["delivery_action"]["list_suffix"]
 
         repre_names = []
         for key, value in values.items():

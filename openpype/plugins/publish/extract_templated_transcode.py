@@ -363,7 +363,7 @@ class ExtractTemplatedTranscode(publish.Extractor):
         task_name = task_data.get("name")
         task_type = task_data.get("type")
         subset = instance.data["subset"]
-        extension = instance.data.get("delivery_representation_ext", "")
+        extension = instance.data.get("gather_representation_ext", "")
         filtering_criteria = {
             "hosts": host_name,
             "families": family,

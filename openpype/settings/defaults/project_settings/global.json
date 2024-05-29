@@ -310,7 +310,7 @@
                             "filter": {
                                 "families": [
                                     "render",
-                                    "delivery",
+                                    "gather",
                                     "review",
                                     "ftrack"
                                 ],

@@ -59,7 +59,7 @@ class DeliveryProcess:
         )
         repre_doc = get_representation_by_name(
             self.data["project"],
-            self.data["delivery_representation_name"],
+            self.data["gather_representation_name"],
             version_doc["_id"]
         )
 
@@ -68,5 +68,5 @@ class DeliveryProcess:
         computed_asset = repre_doc["context"]["asset"]
         computed_task = repre_doc["context"]["task"]["name"]
         computed_variant = "{}_{}".format(repre_doc["context"]["subset"].replace(repre_doc["context"]["family"], ""), computed_asset)
-        computed_subset = "delivery{}".format(computed_variant)
+        computed_subset = "gather{}".format(computed_variant)
         computed_name = computed_subset
