@@ -12,6 +12,7 @@ from .settings import (
 )
 from .custom_attributes import (
     default_custom_attributes_definition,
+    default_custom_attributes_extra_definition,
     app_definitions_from_app_manager,
     tool_definitions_from_app_manager,
     get_openpype_attr,
@@ -37,6 +38,7 @@ __all__ = (
     "get_ftrack_event_mongo_info",
 
     "default_custom_attributes_definition",
+    "default_custom_attributes_extra_definition",
     "app_definitions_from_app_manager",
     "tool_definitions_from_app_manager",
     "get_openpype_attr",
