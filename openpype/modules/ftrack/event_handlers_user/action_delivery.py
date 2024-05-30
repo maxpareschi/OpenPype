@@ -16,6 +16,7 @@ from openpype.client import (
     get_versions,
     get_representations
 )
+from openpype.settings.lib import get_project_settings
 from openpype_modules.ftrack.lib import BaseAction, statics_icon # type: ignore
 from openpype_modules.ftrack.lib.avalon_sync import CUST_ATTR_ID_KEY # type: ignore
 from openpype_modules.ftrack.lib.custom_attributes import ( # type: ignore
@@ -49,7 +50,7 @@ def create_list_from_delivery(src_list: Entity, name: str, session: Session):
         return temp_name
 
     final_name = sanitize_name(name)
-    fields = ["category", "owner", "user_id", "system_type", "project"]
+    fields = ["category", "owner", "user_id", "system_type", "project", "items"]
     data = {**{f:src_list[f] for f in fields}, "name":final_name}
     new_list = session.create("AssetVersionList", data)
 
@@ -111,7 +112,7 @@ class Delivery(BaseAction):
             {
                 "label": "Create new ftrack list from submitted items.",
                 "type": "boolean",
-                "value": True,
+                "value": False,
                 "name": "create_list"
             }
         )
@@ -352,7 +353,6 @@ class Delivery(BaseAction):
 
         return filtered_ver
 
-
     def _get_asset_version_ids_from_review_sessions(
         self, session, review_session_ids
     ):
@@ -368,7 +368,6 @@ class Delivery(BaseAction):
             for review_session_object in review_session_objects
         }
 
-
     def _get_asset_version_ids_from_asset_ver_list( self, session, asset_ver_list_ids):
         # this can be static method..
         if not asset_ver_list_ids:
@@ -379,7 +378,6 @@ class Delivery(BaseAction):
         asset_versions = session.query(query_str).all()
 
         return {asset_version["id"] for asset_version in asset_versions}
-
 
     def _get_version_docs(
         self,
@@ -617,19 +615,24 @@ class Delivery(BaseAction):
         version_by_repre_id = dict()
         ftrack_asset_versions = self._extract_asset_versions(session, entities)
         for v in ftrack_asset_versions:
+            print(f"Looking for repre mapping for version {v}")
             project_name = v["project"]["full_name"]
             asset_mongo_id = v["asset"]["parent"]["custom_attributes"]["avalon_mongo_id"]
             in_links = list(v["incoming_links"])
+
             if in_links:
                 # v = in_links[0]
                 version_parent = in_links[0]["from"]["asset"]["parent"]
                 asset_mongo_id = version_parent["custom_attributes"]["avalon_mongo_id"]
+
             subset_name = v["asset"]["name"]
             version_number = v["version"]
             op_v = get_op_version_from_ftrack_assetversion(
                 project_name, asset_mongo_id, subset_name, version_number)
             if not op_v:
+                print(f"Failed to find OP version for v {v}")
                 continue
+
             version_id = op_v["_id"]
             representations = list(get_representations(
                 project_name, version_ids=[version_id]))
@@ -680,6 +683,7 @@ class Delivery(BaseAction):
         version_by_repre_id = self.generate_version_by_repre_id_dict(session, entities)
 
         for v in set(version_by_repre_id.values()):
+            print(f"Reseting custom attributes values for version {v}")
             v["custom_attributes"]["disk_file_location"] = ""
 
         assert version_by_repre_id != dict()
@@ -687,6 +691,8 @@ class Delivery(BaseAction):
         anatomy = Anatomy(project_name)
         format_dict = get_format_dict(anatomy, location_path)
         datetime_data = get_datetime_data()
+
+        attr_by_version = dict()
 
         for repre in repres_to_deliver:
             source_path = repre.get("data", {}).get("path")
@@ -730,17 +736,28 @@ class Delivery(BaseAction):
             else:
                 r, success = deliver_sequence(*args)
 
+            # print(r, success)
+
             if not success:
+                # print(f"Not success")
                 continue
 
-            if success:
-                try:
-                    version = version_by_repre_id[repre["_id"]]
-                    files = "\n".join(r["created_files"][:1])
-                    version["custom_attributes"]["disk_file_location"] += files +"\n\n"
-                except:
-                    print(f"Failed to update version for representation {repre['_id']}")
-                    print(f"valid ids are: {version_by_repre_id.keys()}")
+            try:
+                version = version_by_repre_id[repre["_id"]]
+                if version["id"] not in attr_by_version:
+                    attr_by_version[version["id"]] = {"attr":"", "entity": version}
+
+                files = "\n".join(r["created_files"][-1:])
+                # c_attr = version["custom_attributes"]["disk_file_location"]
+                # print(f"Updating custom attr from {c_attr} to {files}")
+                attr_by_version[version["id"]]["attr"] += files +"\n\n"
+            except Exception as e:
+                print(f"Failed to update version for representation {repre['_id']} due to {e}")
+                print(f"valid ids are: {version_by_repre_id.keys()}")
+
+
+        for id_, value in attr_by_version.items():
+            value["entity"]["custom_attributes"]["disk_file_location"] = value["attr"]
 
 
         settings = get_project_settings(project_name)
