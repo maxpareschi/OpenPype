@@ -146,10 +146,10 @@ class CreateListsAction(BaseAction):
                 },
                 {
                     "type": "label",
-                    "value": "Classic list category if not client review"
+                    "value": "'Category' for classic lists or 'Folder' for client review lists."
                 },
                 {
-                    "label": "List Category",
+                    "label": "List Category/Folder",
                     "type": "enumerator",
                     "name": "list_category",
                     "data": enum_data,

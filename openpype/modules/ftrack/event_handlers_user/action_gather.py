@@ -171,7 +171,7 @@ class GatherAction(BaseAction):
         
         window = openpype.tools.traypublisher.window.TrayPublishWindow()
         window._overlay_widget._set_project(self.project_name)
-        # window.set_context_label("{} - GATHER DELIVERIES".format(self.project_name))
+        window.set_context_label("{} - GATHER VERSIONS".format(self.project_name))
         window.show()
         app_instance.exec_()
 
@@ -341,13 +341,13 @@ class GatherAction(BaseAction):
             "short": anatomy["tasks"][avail_tasks[detected_task_name]]["short_name"]
         }
 
-        computed_variant = repre_doc["context"]["subset"].lower().replace(
+        computed_variant = repre_doc["context"]["subset"].replace(
             repre_doc["context"]["family"],
             ""
         ).replace(
-            detected_task_name.lower(),
+            detected_task_name.capitalize(),
             ""
-        ).capitalize()
+        )
         self.log.debug("Computed variant is '{}'".format(computed_variant))
 
         subset_format_data = {
@@ -361,7 +361,7 @@ class GatherAction(BaseAction):
         computed_assetversion_name = settings["ftrack_name_template"].format_map(subset_format_data)
         self.log.debug("Computed subset is '{}'".format(computed_subset))
 
-        computed_name = "({}) - {}".format(computed_asset, computed_subset)
+        computed_name = "{} ({})".format(computed_subset, computed_asset)
         self.log.debug("Computed instance name is '{}'".format(computed_name))
 
 
@@ -385,7 +385,7 @@ class GatherAction(BaseAction):
             "variant": avail_tasks[detected_task_name] + computed_variant,
             "asset": repre_doc["context"]["asset"],
             "task": detected_task_name,
-            "name": computed_name,
+            "name": computed_name.replace(" ", "_").replace("(", "").replace(")", ""),
             "label": computed_name,
             "gather_root_name": gather_root,
             "gather_project_name": project_name,

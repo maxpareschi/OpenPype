@@ -573,6 +573,10 @@ class Delivery(BaseAction):
         self.log.info("Delivery action just started.")
         report_items = collections.defaultdict(list)
 
+        ftrack_list_name = None
+        if entities[0].entity_type == "AssetVersionList":
+            ftrack_list_name = entities[0]["name"]
+
         values = event["data"]["values"]
 
         location_path = values.pop("__location_path__")
@@ -609,6 +613,8 @@ class Delivery(BaseAction):
 
         format_dict = get_format_dict(anatomy, location_path)
 
+        self.log.debug(format_dict)
+
         datetime_data = get_datetime_data()
         for repre in repres_to_deliver:
             source_path = repre.get("data", {}).get("path")
@@ -618,6 +624,14 @@ class Delivery(BaseAction):
             self.log.debug(debug_msg)
 
             anatomy_data = copy.deepcopy(repre["context"])
+
+            if ftrack_list_name:
+                anatomy_data.update({
+                    "ftrack": {
+                        "listname": ftrack_list_name
+                    }
+                })
+            
             repre_report_items = check_destination_path(repre["_id"],
                                                         anatomy,
                                                         anatomy_data,
