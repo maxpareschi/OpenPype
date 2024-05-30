@@ -10,7 +10,7 @@ class MultipleNotes(BaseAction):
     label = 'Multiple Notes'
     #: Action description.
     description = 'Add same note to multiple entities'
-    icon = statics_icon("ftrack", "action_icons", "MultipleNotes.svg")
+    icon = statics_icon("ftrack", "action_icons", "MultipleNotes.png")
 
     def discover(self, session, entities, event):
         ''' Validation '''

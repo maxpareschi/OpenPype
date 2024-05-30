@@ -54,7 +54,7 @@ class CreateProjectFolders(BaseAction):
     label = "Create Project Structure"
     description = "Creates folder structure"
     role_list = ["Pypeclub", "Administrator", "Project Manager"]
-    icon = statics_icon("ftrack", "action_icons", "CreateProjectFolders.svg")
+    icon = statics_icon("ftrack", "action_icons", "CreateProjectFolders.png")
 
     pattern_array = re.compile(r"\[.*\]")
     pattern_ftrack = re.compile(r".*\[[.]*ftrack[.]*")

@@ -12,7 +12,7 @@ class ComponentOpen(BaseAction):
     # Action label
     label = 'Open File'
     # Action icon
-    icon = statics_icon("ftrack", "action_icons", "ComponentOpen.svg")
+    icon = statics_icon("ftrack", "action_icons", "ComponentOpen.png")
 
     def discover(self, session, entities, event):
         ''' Validation '''

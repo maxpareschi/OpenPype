@@ -12,7 +12,7 @@ class ThumbToChildren(BaseAction):
     # Action variant
     variant = " to Children"
     # Action icon
-    icon = statics_icon("ftrack", "action_icons", "Thumbnail.svg")
+    icon = statics_icon("ftrack", "action_icons", "Thumbnail.png")
 
     def discover(self, session, entities, event):
         """Show only on project."""

@@ -12,7 +12,7 @@ class ThumbToParent(BaseAction):
     # Action variant
     variant = " to Parent"
     # Action icon
-    icon = statics_icon("ftrack", "action_icons", "Thumbnail.svg")
+    icon = statics_icon("ftrack", "action_icons", "Thumbnail.png")
 
     def discover(self, session, entities, event):
         '''Return action config if triggered on asset versions.'''
