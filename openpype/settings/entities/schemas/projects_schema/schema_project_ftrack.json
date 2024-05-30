@@ -556,6 +556,25 @@
                 },
                 {
                     "type": "dict",
+                    "key": "create_lists_action",
+                    "label": "Create Lists Action",
+                    "checkbox_key": "enabled",
+                    "children": [
+                        {
+                            "type": "boolean",
+                            "key": "enabled",
+                            "label": "Enabled"
+                        },
+                        {
+                            "type": "list",
+                            "key": "role_list",
+                            "label": "Roles",
+                            "object_type": "text"
+                        }
+                    ]
+                },
+                {
+                    "type": "dict",
                     "key": "delete_asset_subset",
                     "label": "Delete Asset/Subsets",
                     "checkbox_key": "enabled",
@@ -613,21 +632,35 @@
                             "type": "separator"
                         },
                         {
-                            "key": "list_template",
-                            "label": "Created delivery list template",
-                            "type": "text"
+                            "type": "boolean",
+                            "key": "create_list",
+                            "label": "Create delivery list"
+                        },
+                        {
+                            "type": "boolean",
+                            "key": "create_client_review",
+                            "label": "Create client review"
                         },
                         {
                             "type": "boolean",
                             "key": "use_source_list_name",
-                            "label": "Use source list name instead of list template"
+                            "label": "Use source list name (if present)"
                         },
                         {
                             "type": "separator"
                         },
                         {
+                            "key": "list_template",
+                            "label": "Template name for lists",
+                            "type": "text"
+                        },
+                        {
+                            "type": "label",
+                            "label": "NOTE: Template will be ignored if \"Use source list name\" option is checked"
+                        },
+                        {
                             "key": "list_suffix",
-                            "label": "Optional suffix on above template",
+                            "label": "Optional suffix on created lists",
                             "type": "text"
                         }
                     ]
@@ -646,12 +679,16 @@
                             "type": "separator"
                         },
                         {
-                            "key": "delivery_root",
+                            "type": "label",
+                            "label": "NOTE: If Root folder is left empty use the source shot context as a publish base AND ignore the suffix."
+                        },
+                        {
+                            "key": "gather_root",
                             "label": "Root folder name for Delivery/Gather",
                             "type": "text"
                         },
                         {
-                            "key": "delivery_asset_suffix",
+                            "key": "gather_asset_suffix",
                             "label": "Suffix for asset in ftrack for Delivery/Gather",
                             "type": "text"
                         },
@@ -659,13 +696,18 @@
                             "type": "separator"
                         },
                         {
+                            "type": "label",
+                            "label": "NOTE: Valid subset template strings are {asset}, {task[name]}, {task[type]}, {task[short]} {family}, {variant}"
+                        },
+                        {
                             "key": "subset_name_template",
                             "label": "Subset name template for Delivery/Gather",
                             "type": "text"
                         },
                         {
-                            "type": "label",
-                            "label": "NOTE: Valid subset template strings are {asset}, {task}, {family}, {variant}"
+                            "key": "ftrack_name_template",
+                            "label": "Ftrack AssetVersion for  Delivery/Gather",
+                            "type": "text"
                         },
                         {
                             "type": "separator"

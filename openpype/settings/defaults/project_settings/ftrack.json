@@ -165,6 +165,14 @@
                 "Project manager"
             ]
         },
+        "create_lists_action": {
+            "enabled": true,
+            "role_list": [
+                "Pypeclub",
+                "Project Manager",
+                "Administrator"
+            ]
+        },
         "delete_asset_subset": {
             "enabled": true,
             "role_list": [
@@ -188,17 +196,20 @@
                 "Project Manager",
                 "Administrator"
             ],
-            "list_template": "{yyyy}{mm}{dd}_client_delivery",
+            "create_list": true,
+            "create_client_review": false,
             "use_source_list_name": false,
+            "list_template": "{yyyy}{mm}{dd}_client_delivery",
             "list_suffix": ""
         },
         "gather_action": {
             "missing_task_override": [
                 "Roundtrip"
             ],
-            "delivery_root": "to_client",
-            "delivery_asset_suffix": "delivery",
-            "subset_name_template": "{family}{task}{variant}",
+            "gather_root": "to_client",
+            "gather_asset_suffix": "gather",
+            "subset_name_template": "{family}{task[type]}{variant}",
+            "ftrack_name_template": "{asset}_{task[short]}",
             "min_gather_version": 1,
             "missing_task_gather_version": 0
         },
@@ -505,8 +516,8 @@
                 "vrayproxy": "cache",
                 "redshiftproxy": "cache",
                 "usd": "usd",
-                "delivery": "delivery",
-                "effect": "luteffect"
+                "gather": "gather",
+                "effect": "effect"
             },
             "keep_first_subset_name_for_review": true,
             "asset_versions_status_profiles": [],

@@ -17,7 +17,7 @@ class CollectSlateGlobal(pyblish.api.InstancePlugin):
     families = [
         "review",
         # "render",
-        "delivery"
+        "gather"
     ]
 
     _slate_settings_name = "ExtractSlateGlobal"

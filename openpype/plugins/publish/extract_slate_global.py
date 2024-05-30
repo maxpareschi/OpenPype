@@ -782,7 +782,7 @@ class ExtractSlateGlobal(publish.Extractor):
             self.log.debug("Slate timecode is set to: {}".format(slate_timecode))
         else:
             slate_timecode = "00:00:41:07"
-            self.log.debug("Slate timecode  was not found, defaulted to: {}".format(slate_timecode))
+            self.log.debug("Slate timecode was not found, defaulted to: {}".format(slate_timecode))
 
 
         # loop through repres
@@ -888,6 +888,8 @@ class ExtractSlateGlobal(publish.Extractor):
                         tc_frame=int(repre["frameStart"]))
             else:
                 timecode = instance_timecode
+            if slate_timecode:
+                timecode = slate_timecode
             resolution = slate.get_resolution_ffprobe(file_path)
 
             for profile in slate_data["slate_profiles"]:

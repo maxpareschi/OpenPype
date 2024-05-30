@@ -1,7 +1,4 @@
-import os
-import json
 import pyblish.api
-import collections
 
 from openpype.client import (
     get_asset_by_name,
@@ -15,7 +12,7 @@ class CollectGatherData(pyblish.api.InstancePlugin):
     label = "Collect for Delivery/Gather data"
     order = pyblish.api.CollectorOrder + 0.489999
     families = [
-        "delivery"
+        "gather"
     ]
 
     def get_last_version(self, instance):

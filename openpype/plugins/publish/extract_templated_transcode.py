@@ -356,19 +356,21 @@ class ExtractTemplatedTranscode(publish.Extractor):
         return file_name, collection.head, frame_str, collection.tail, frames
 
     def _get_profile(self, instance, log=None):
-        """Returns profile if and how repre should be color transcoded."""
+        """Returns profile if and how repre should be transcoded."""
         host_name = instance.context.data["hostName"]
         family = instance.data["family"]
         task_data = instance.data["anatomyData"].get("task", {})
         task_name = task_data.get("name")
         task_type = task_data.get("type")
         subset = instance.data["subset"]
+        extension = instance.data.get("gather_representation_ext", "")
         filtering_criteria = {
             "hosts": host_name,
             "families": family,
             "task_names": task_name,
             "task_types": task_type,
-            "subsets": subset
+            "subsets": subset,
+            "extensions": extension
         }
 
         profile = filter_profiles(self.profiles, filtering_criteria,
