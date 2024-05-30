@@ -1,0 +1,49 @@
+{
+    "CustomAttributeLinkConfiguration": [
+        {
+            "entity_type": "asset_version",
+            "entity_type_to": "asset_version",
+            "key": "client_version_link",
+            "label": "Version Link",
+            "one_to_one": true,
+            "group": "openpype"
+        },
+        {
+            "entity_type": "list",
+            "entity_type_to": "list",
+            "key": "delivery_list_link",
+            "label": "List Link",
+            "one_to_one": true,
+            "group": "openpype"
+        }
+    ],
+    "CustomAttributeGroup": [
+        {
+            "name": "ttd"
+        }
+    ],
+    "AssetType": [
+        {
+            "name": "Workfile",
+            "short": "workfile"
+        },
+        {
+            "name": "Effect",
+            "short": "effect"
+        },
+        {
+            "name": "Gather",
+            "short": "gather"
+        }
+    ],
+    "NoteLabels": [
+        {
+            "name": "Client feedback",
+            "color": "#3498DB"
+        },
+        {
+            "name": "For Client",
+            "color": "#FFCC00"
+        }
+    ]
+}

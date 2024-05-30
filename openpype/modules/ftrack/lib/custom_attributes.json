@@ -1,17 +1,55 @@
 {
     "show": {
         "avalon_auto_sync": {
-          "label": "Avalon auto-sync",
-          "type": "boolean"
+            "label": "Avalon auto-sync",
+            "type": "boolean"
         },
         "library_project": {
-          "label": "Library Project",
-          "type": "boolean"
+            "label": "Library Project",
+            "type": "boolean"
+        },
+        "vendor_name": {
+            "label": "Vendor Name",
+            "type": "text",
+            "markdown": false,
+            "default": "TTD"
+        }
+    },
+    "list": {
+        "delivery_type": {
+            "label": "Delivery Type",
+            "type": "text",
+            "markdown": false,
+            "default": ""
+        },
+        "delivery_package_name": {
+            "label": "Delivery Package Name",
+            "type": "text",
+            "markdown": false,
+            "default": ""
+        },
+        "delivery_package_path": {
+            "label": "Delivery Package Path",
+            "type": "text",
+            "markdown": false,
+            "default": ""
         }
     },
     "assetversion": {
         "subset": {
             "label": "Subset Name",
+            "type": "text",
+            "markdown": false,
+            "default": ""
+        },
+        "delivery_name": {
+            "label": "Delivery Name",
+            "type": "text",
+            "markdown": false,
+            "default": ""
+        },
+        "client_version_string": {
+            "label": "Client Version",
             "type": "text",
             "markdown": false,
             "default": ""
@@ -21,7 +59,10 @@
         "fps": {
             "label": "FPS",
             "type": "number",
-            "config": {"isdecimal": true}
+            "config": {
+                "isdecimal": true,
+                "precision": 3
+            }
         },
         "clipIn": {
             "label": "Clip in",
@@ -50,7 +91,10 @@
         "pixelAspect": {
             "label": "Pixel aspect",
             "type": "number",
-            "config": {"isdecimal": true}
+            "config": {
+                "isdecimal": true,
+                "precision": 3
+            }
         },
         "handleStart": {
             "label": "Frame handles start",
