@@ -74,7 +74,7 @@ class houdiniSubmitUSDRenderDeadline(pyblish.api.InstancePlugin):
             instance.context.data["frameEndHandle"])
         submit_frame_step = int(
             instance.context.data.get("byFrameStep", 1))
-        
+
         try:
             rop_frame_start = int(
                 node.parm("f1").eval())
@@ -401,6 +401,7 @@ class houdiniSubmitUSDRenderDeadline(pyblish.api.InstancePlugin):
         rend.parm("f3").set(ropnode.parm("f3").eval())
         rend.parm("loppath").set(loppath)
         rend.parm("lopoutput").set(file_abs_path)
+        rend.parm("fileperframe").set(True)
 
         self.log.info("Writing intermediate render USD '%s' to '%s'" % (
             file_name, staging_dir))
