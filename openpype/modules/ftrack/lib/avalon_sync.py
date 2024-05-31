@@ -3,7 +3,7 @@ import json
 import collections
 import copy
 import numbers
-
+import math
 import six
 
 from openpype.client import (
@@ -34,9 +34,16 @@ import ftrack_api
 log = Logger.get_logger(__name__)
 
 
-def truncate(n, decimals=0):
-    multiplier = 10**decimals
-    return int(n * multiplier) / multiplier
+def truncate(number, digits) -> float:
+    # Improve accuracy with floating point operations, to avoid truncate(16.4, 2) = 16.39 or truncate(-1.13, 2) = -1.12
+    try:
+        nbDecimals = len(str(number).split('.')[1])
+    except:
+        nbDecimals = 0
+    if nbDecimals <= digits:
+        return number
+    stepper = 10.0 ** digits
+    return math.trunc(stepper * number) / stepper
 
 class InvalidFpsValue(Exception):
     pass
@@ -97,8 +104,8 @@ def convert_to_fps(source_value):
     """
     if not isinstance(source_value, six.string_types):
         if isinstance(source_value, numbers.Number):
-            return truncate(float(source_value), 3)
-        return truncate(source_value, 3)
+            return float(source_value)
+        return source_value
 
     value = source_value.strip().replace(",", ".")
     if not value:
@@ -111,7 +118,7 @@ def convert_to_fps(source_value):
             raise InvalidFpsValue(
                 "Value \"{}\" can't be converted to number.".format(value)
             )
-        return truncate(float(str_value), 3)
+        return float(str_value)
 
     elif len(subs) == 2:
         divident, divisor = subs
@@ -131,7 +138,7 @@ def convert_to_fps(source_value):
         divisor_float = float(divisor)
         if divisor_float == 0.0:
             raise InvalidFpsValue("Can't divide by zero")
-        return truncate(float(divident) / divisor_float, 3)
+        return float(divident) / divisor_float
 
     raise InvalidFpsValue(
         "Value can't be converted to number \"{}\"".format(source_value)
@@ -1094,7 +1101,8 @@ class SyncEntitiesFactory:
 
             if key in FPS_KEYS:
                 try:
-                    value = convert_to_fps(value)
+                    value = truncate(convert_to_fps(value), 3)
+                    print(value)
                 except InvalidFpsValue:
                     invalid_fps_items.append((entity_id, value))
             self.entities_dict[entity_id][store_key][key] = value
@@ -1144,7 +1152,8 @@ class SyncEntitiesFactory:
             default_value = attr["default"]
             if key in FPS_KEYS:
                 try:
-                    default_value = convert_to_fps(default_value)
+                    default_value = truncate(convert_to_fps(default_value), 3)
+                    print(default_value)
                 except InvalidFpsValue:
                     pass
 
@@ -1213,7 +1222,8 @@ class SyncEntitiesFactory:
             key = attribute_key_by_id[attr_id]
             if key in FPS_KEYS:
                 try:
-                    value = convert_to_fps(value)
+                    value = truncate(convert_to_fps(value), 3)
+                    print(value)
                 except InvalidFpsValue:
                     invalid_fps_items.append((entity_id, value))
                     continue

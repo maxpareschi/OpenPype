@@ -1,14 +1,22 @@
 # -*- coding: utf-8 -*-
 """OpenPype script commands to be used directly in Maya."""
+import math
 from maya import cmds
 
 from openpype.client import get_asset_by_name, get_project
 from openpype.pipeline import legacy_io
 
 
-def truncate(n, decimals=0):
-    multiplier = 10**decimals
-    return int(n * multiplier) / multiplier
+def truncate(number, digits) -> float:
+    # Improve accuracy with floating point operations, to avoid truncate(16.4, 2) = 16.39 or truncate(-1.13, 2) = -1.12
+    try:
+        nbDecimals = len(str(number).split('.')[1])
+    except:
+        nbDecimals = 0
+    if nbDecimals <= digits:
+        return number
+    stepper = 10.0 ** digits
+    return math.trunc(stepper * number) / stepper
 
 
 class ToolWindows:
@@ -65,6 +73,7 @@ def edit_shader_definitions():
 def reset_frame_range():
     """Set frame range to current asset"""
     # Set FPS first
+
     fps = {15: 'game',
            24: 'film',
            25: 'pal',
