@@ -98,6 +98,7 @@
                                 "enabled": false,
                                 "reformat_width": 1920,
                                 "reformat_height": 1080,
+                                "reformat_black_outside": false,
                                 "reformat_type": "width"
                             },
                             "override_thumbnail": false,
@@ -123,6 +124,7 @@
                                 "enabled": false,
                                 "reformat_width": 1920,
                                 "reformat_height": 1080,
+                                "reformat_black_outside": false,
                                 "reformat_type": "width"
                             },
                             "override_thumbnail": false,
@@ -169,6 +171,7 @@
                                 "enabled": false,
                                 "reformat_width": 1920,
                                 "reformat_height": 1080,
+                                "reformat_black_outside": false,
                                 "reformat_type": "width"
                             },
                             "override_thumbnail": false,
