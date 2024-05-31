@@ -8,6 +8,11 @@ from openpype.pipeline import (
 from openpype.settings import get_project_settings
 
 
+def truncate(n, decimals=0):
+    multiplier = 10**decimals
+    return int(n * multiplier) / multiplier
+
+
 class AlembicStandinLoader(load.LoaderPlugin):
     """Load Alembic as Arnold Standin"""
 
@@ -46,7 +51,7 @@ class AlembicStandinLoader(load.LoaderPlugin):
 
         settings = get_project_settings(os.environ['AVALON_PROJECT'])
         colors = settings["maya"]["load"]["colors"]
-        fps = legacy_io.Session["AVALON_FPS"]
+        fps = truncate(legacy_io.Session["AVALON_FPS"], 3)
         c = colors.get(family[0])
         if c is not None:
             r = (float(c[0]) / 255)
@@ -94,7 +99,7 @@ class AlembicStandinLoader(load.LoaderPlugin):
         import pymel.core as pm
 
         path = get_representation_path(representation)
-        fps = legacy_io.Session["AVALON_FPS"]
+        fps = truncate(legacy_io.Session["AVALON_FPS"], 3)
         # Update the standin
         standins = list()
         members = pm.sets(container['objectName'], query=True)

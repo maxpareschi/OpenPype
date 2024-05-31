@@ -113,6 +113,9 @@ FLOAT_FPS = {23.98, 23.976, 29.97, 47.952, 59.94}
 
 RENDERLIKE_INSTANCE_FAMILIES = ["rendering", "vrayscene"]
 
+def truncate(n, decimals=0):
+    multiplier = 10**decimals
+    return int(n * multiplier) / multiplier
 
 def get_main_window():
     """Acquire Maya's main window"""
@@ -2218,7 +2221,7 @@ def set_context_settings():
 
     # Set project fps
     fps = asset_data.get("fps", project_data.get("fps", 25))
-    legacy_io.Session["AVALON_FPS"] = str(fps)
+    legacy_io.Session["AVALON_FPS"] = str(truncate(fps, 3))
     set_scene_fps(fps)
 
     reset_scene_resolution()

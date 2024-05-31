@@ -6,6 +6,11 @@ from openpype.client import get_asset_by_name, get_project
 from openpype.pipeline import legacy_io
 
 
+def truncate(n, decimals=0):
+    multiplier = 10**decimals
+    return int(n * multiplier) / multiplier
+
+
 class ToolWindows:
 
     _windows = {}
@@ -75,7 +80,7 @@ def reset_frame_range():
            59.94: '59.94fps',
            44100: '44100fps',
            48000: '48000fps'
-           }.get(float(legacy_io.Session.get("AVALON_FPS", 25)), "pal")
+           }.get(truncate(float(legacy_io.Session.get("AVALON_FPS", 25)), 3), "pal")
 
     cmds.currentUnit(time=fps)
 

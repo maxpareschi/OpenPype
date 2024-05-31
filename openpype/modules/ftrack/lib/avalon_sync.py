@@ -34,6 +34,10 @@ import ftrack_api
 log = Logger.get_logger(__name__)
 
 
+def truncate(n, decimals=0):
+    multiplier = 10**decimals
+    return int(n * multiplier) / multiplier
+
 class InvalidFpsValue(Exception):
     pass
 
@@ -93,8 +97,8 @@ def convert_to_fps(source_value):
     """
     if not isinstance(source_value, six.string_types):
         if isinstance(source_value, numbers.Number):
-            return float(source_value)
-        return source_value
+            return truncate(float(source_value), 3)
+        return truncate(source_value, 3)
 
     value = source_value.strip().replace(",", ".")
     if not value:
@@ -107,7 +111,7 @@ def convert_to_fps(source_value):
             raise InvalidFpsValue(
                 "Value \"{}\" can't be converted to number.".format(value)
             )
-        return float(str_value)
+        return truncate(float(str_value), 3)
 
     elif len(subs) == 2:
         divident, divisor = subs
@@ -127,7 +131,7 @@ def convert_to_fps(source_value):
         divisor_float = float(divisor)
         if divisor_float == 0.0:
             raise InvalidFpsValue("Can't divide by zero")
-        return float(divident) / divisor_float
+        return truncate(float(divident) / divisor_float, 3)
 
     raise InvalidFpsValue(
         "Value can't be converted to number \"{}\"".format(source_value)
