@@ -130,6 +130,33 @@
             ]
         },
         {
+            "family": "playblast",
+            "identifier": "",
+            "label": "Playblast",
+            "icon": "mdi.folder-multiple-image",
+            "default_variants": [
+                "Main",
+                "Previz",
+                "Preview"
+            ],
+            "description": "Playblast from DCCs",
+            "detailed_description": "Sequence or single file renders",
+            "allow_sequences": true,
+            "allow_multiple_items": true,
+            "extensions": [
+                ".exr",
+                ".png",
+                ".dpx",
+                ".jpg",
+                ".jpeg",
+                ".tiff",
+                ".tif",
+                ".mov",
+                ".mp4",
+                ".avi"
+            ]
+        },
+        {
             "family": "camera",
             "identifier": "",
             "label": "Camera",
@@ -234,6 +261,31 @@
             "allow_sequences": false,
             "allow_multiple_items": true,
             "extensions": []
+        },
+        {
+            "family": "gather",
+            "identifier": "",
+            "label": "Gather",
+            "icon": "fa.send",
+            "default_variants": [
+                "Main"
+            ],
+            "description": "Create 'gathered' versions for client submission",
+            "detailed_description": "A 'gathered' version is a version that has been processed to conform to client spec. This means transforming to camera colorspace, slate, timecode, color for editorial reviewables, repositioning and so on.",
+            "allow_sequences": true,
+            "allow_multiple_items": false,
+            "extensions": [
+                ".exr",
+                ".png",
+                ".dpx",
+                ".cin",
+                ".jpg",
+                ".tiff",
+                ".tif",
+                ".mov",
+                ".mp4",
+                ".avi"
+            ]
         }
     ],
     "editorial_creators": {
