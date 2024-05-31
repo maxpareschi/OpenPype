@@ -196,6 +196,7 @@ class CustomAttributes(BaseAction):
             self.custom_asset_types_from_file(session)
             self.custom_attribute_links_from_file(session)
             self.intent_attribute_as_note_labels(session)
+            self.custom_list_categories_from_file(session)
 
             job['status'] = 'done'
             session.commit()
@@ -621,6 +622,25 @@ class CustomAttributes(BaseAction):
                 session.commit()
                 self.log.debug(
                     "Asset Type \"{}\" updated".format(attr["name"])
+                )
+
+    def custom_list_categories_from_file(self, session):
+        attrs = default_custom_attributes_extra_definition()["ListCategory"]
+        for attr in attrs:
+            try:
+                orig = session.query("ListCategory where name is '{}'".format(
+                    attr["name"]
+                )).one()
+            except:
+                orig = None
+            if not orig:
+                self.log.debug(
+                    "Creating List Category \"{}\"".format(attr["name"])
+                )
+                session.create("ListCategory", attr)
+                session.commit()
+                self.log.debug(
+                    "List Category \"{}\" created".format(attr["name"])
                 )
 
     def presets_for_attr_data(self, attr_data):

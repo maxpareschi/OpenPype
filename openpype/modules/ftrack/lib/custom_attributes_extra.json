@@ -7,14 +7,6 @@
             "label": "Version Link",
             "one_to_one": true,
             "group": "openpype"
-        },
-        {
-            "entity_type": "list",
-            "entity_type_to": "list",
-            "key": "delivery_list_link",
-            "label": "List Link",
-            "one_to_one": true,
-            "group": "openpype"
         }
     ],
     "CustomAttributeGroup": [
@@ -44,6 +36,17 @@
         {
             "name": "For Client",
             "color": "#FFCC00"
+        }
+    ],
+    "ListCategory": [
+        {
+            "name": "Submission"
+        },
+        {
+            "name": "Delivery"
+        },
+        {
+            "name": "Dailies"
         }
     ]
 }

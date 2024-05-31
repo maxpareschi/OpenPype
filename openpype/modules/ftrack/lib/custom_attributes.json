@@ -33,6 +33,12 @@
             "type": "text",
             "markdown": false,
             "default": ""
+        },
+        "source_list_name": {
+            "label": "Source List Name",
+            "type": "text",
+            "markdown": false,
+            "default": ""
         }
     },
     "assetversion": {
