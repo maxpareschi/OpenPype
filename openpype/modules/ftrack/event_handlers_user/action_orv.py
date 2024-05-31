@@ -363,8 +363,9 @@ class ORVAction(BaseAction):
         src = "from openrv_tools_22dogs import orvpush_inputs_callback\n"
         signature = f"({', '.join([str(i) for i in [paths, no_slate, fps]])})"
         src += "orvpush_inputs_callback" + signature
+        prj = entities[0]["project"]["full_name"]
 
-        cmd = [self.orvpush_path, "py-exec", src]
+        cmd = [self.orvpush_path, "-tag", prj, "py-exec", src]
         self.log.debug(f"Running ORVPUSH: {cmd}")
         rv_push_process = subprocess.Popen(cmd)
         msg = f"ORV Launching: {fps} FPS with {'no' if no_slate else ''} slate."
