@@ -38,14 +38,15 @@ from openpype.pipeline.delivery import (
 )
 
 
-class CreateListAction(BaseAction):
+class CreateListsAction(BaseAction):
     """Create daily review session object per project.
     """
-    identifier = "ttd.create.list"
-    label = "Create List"
+    identifier = "ttd.create.lists"
+    label = "Create Lists"
     description = "Manually create a list from other lists"
     role_list = ["Pypeclub", "Administrator", "Project manager"]
     icon = statics_icon("ftrack", "action_icons", "CreateList.png")
+    settings_key = "create_lists_action"
 
     def discover(self, session, entities, event):
         is_valid = False
@@ -306,4 +307,4 @@ class CreateListAction(BaseAction):
 def register(session):
     '''Register plugin. Called when used as an plugin.'''
 
-    CreateListAction(session).register()
+    CreateListsAction(session).register()
