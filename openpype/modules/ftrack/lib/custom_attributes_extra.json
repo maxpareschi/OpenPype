@@ -37,6 +37,10 @@
             "name": "For Client",
             "color": "#FFCC00"
         }
+        {
+            "name": "Submission Note",
+            "color": "#77CCEE"
+        }
     ],
     "ListCategory": [
         {
