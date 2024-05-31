@@ -477,7 +477,7 @@ class CustomAttributes(BaseAction):
             self.log.debug(
                 "Creating Note Label \"{}\"".format(label["name"])
             )
-            session.create("NoteLabel", label["name"])
+            session.create("NoteLabel", label)
             session.commit()
             self.log.debug(
                 "Note Label \"{}\" created".format(label["name"])
