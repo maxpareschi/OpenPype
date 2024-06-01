@@ -17,8 +17,6 @@ from ftrack_api.entity.asset_version import AssetVersion
 from ftrack_api.entity.base import Entity
 
 
-
-
 def get_op_version_from_ftrack_assetversion(
     prj_name: str, asset_mongo_id: str, subset_name: str, version_number: str
 ):
@@ -57,11 +55,11 @@ def ttd_remove_op_versions(prj_name: str, versions: List[dict], test_run: bool =
     for f in file_paths:
         try:
             f = anatomy.fill_root(f)
-            logger.info(f"Removing file {f}")
+            logger.info("Removing file {}".format(f))
             if test_run: continue
             remove(f)  # remove file
         except Exception as e:
-            logger.warning(f"Failed to remove file {f} because of: {str(e)}")
+            logger.warning("Failed to remove file {} because of: {}".format(f, str(e)))
     else:
         try:
             rmdir(Path(f).parent.as_posix())  # remove parent (folder called v###)
@@ -73,7 +71,11 @@ def ttd_remove_op_versions(prj_name: str, versions: List[dict], test_run: bool =
     # 2. delete repres
     for repre in representations:
         repre_id = repre["_id"]
-        logger.info(f"Removing representation (id={repre_id}, name={repre['name']})")
+        logger.info("Removing representation (id={}, name={})".format(
+            repre_id,
+            repre["name"]
+        ))
+
         if test_run: continue
         session.delete_entity(prj_name, "representation", repre_id)
 
@@ -84,13 +86,16 @@ def ttd_remove_op_versions(prj_name: str, versions: List[dict], test_run: bool =
         subset_versions = list(v["_id"] for v in subset_ver)
         # check if all versions in subset are marked for deletion
         if all(v in version_ids for v in subset_versions):
-            logger.info(f"Removing subset (id={subset['_id']}, name={subset['name']})")
+            logger.info("Removing subset (id={}, name={})".format(
+                subset["_id"],
+                subset["name"]
+            ))
             if test_run: continue
             session.delete_entity(prj_name, "subset", subset["_id"])
 
     # 4. remove versions
     for version_id in version_ids:
-        logger.info(f"Removing version (id={version_id})")
+        logger.info("Removing version (id={})".format(version_id))
         if test_run: continue
         session.delete_entity(prj_name, "version", version_id)
 
@@ -117,7 +122,9 @@ def delete_versions(versions: List[AssetVersion]):
         prj = version["project"]["full_name"]
         version_parent = version["asset"]["parent"]
         asset_mongo_id = version_parent["custom_attributes"]["avalon_mongo_id"]
-        subset_name = version["asset"]["name"]
+        subset_name = version["custom_attributes"]["subset"]
+        if not subset_name:
+            subset_name = version["asset"]["name"]
         version_number = version["version"]
 
         in_links = list(version["incoming_links"])
@@ -152,11 +159,14 @@ class DeleteVersionAction(BaseAction):
         logger = self.log
         return i
 
-
     def discover(self, session: Session, entities: List[Entity], event: Event):
         is_valid = False
         for entity in entities:
-            if entity.entity_type.lower() in ("assetversion", "reviewsession", "assetversionlist"):
+            if entity.entity_type in (
+                "AssetVersion",
+                "ReviewSession",
+                "AssetVersionList"
+            ):
                 is_valid = True
                 break
 
@@ -165,24 +175,33 @@ class DeleteVersionAction(BaseAction):
         self.versions = None
         return is_valid
 
-
     def get_interface(self):
         gui = [
-            {"type":"label",
-            "value": "<h2><b>WARNING</b>: The following versions will be removed from Ftrack and OpenPype.<br>"
-            "If you want to cancel, press the <b>X</b> button in the upper right corner.</h2>"},
-            {"type": "hidden", "name":"hidden", "value": True}
+            {
+                "type":"label",
+                "value": "<h2><b>WARNING</b>: The following versions will be removed from Ftrack and OpenPype.<br>"
+                "If you want to cancel, press the <b>X</b> button in the upper right corner.</h2>"
+            },
+            {
+                "type": "hidden",
+                "name":"hidden",
+                "value": True
+            }
         ]
         vlist = "<ul>"
         for v in self.versions:
-            name = f"<h3>{v['asset']['parent']['name']} - {v['asset']['name']} - {v['version']}</h3>"
-            vlist += f"<li>{name}</i>"
+            name = "<h3>{} - {} - {}</h3>".format(
+                v['asset']['parent']['name'],
+                v['asset']['name'],
+                v['version']
+            )
+            vlist += "<li>{}</i>".format(name)
         gui.append({
             "type":"label",
-            "value": vlist + "</ul>"})
+            "value": vlist + "</ul>"
+        })
 
         return gui
-
 
     def launch(self, session: Session, entities: List[Entity], event: Event):
         # from pprint import pprint
@@ -194,7 +213,7 @@ class DeleteVersionAction(BaseAction):
                 "items": self.get_interface(),
                 "title": "Confirm",
                 "submit_button_label": "I know what I'm doing. <b>Remove permanently.</b>"
-                }
+            }
 
         for entity in self.versions:
             self.log.info(f"Working on version {entity['asset']['name']}")
@@ -202,7 +221,7 @@ class DeleteVersionAction(BaseAction):
             out_links = list(entity["outgoing_links"])
 
             if out_links and in_links:
-                msg = f"Incoming and outgoing links should not happen simultaneously."
+                msg = "Incoming and outgoing links should not happen simultaneously."
                 raise NotImplementedError(msg)
 
             version_ids = [entity["id"]]
@@ -224,7 +243,10 @@ class DeleteVersionAction(BaseAction):
                 self.log.info("Working on normal version")
 
             ids = ", ".join(version_ids)
-            query = f"select {self.query_items} from AssetVersion where id in ({ids})"
+            query = "select {} from AssetVersion where id in ({})".format(
+                self.query_items,
+                ids
+            )
             versions_to_delete = self.session.query(query).all()
             if not versions_to_delete:
                 continue
@@ -264,7 +286,7 @@ class DeleteVersionAction(BaseAction):
 
         qkeys = self.join_query_keys(asset_version_ids)
         query = "select id, version, asset_id, incoming_links, outgoing_links"
-        query += f" from AssetVersion where id in ({qkeys})"
+        query += " from AssetVersion where id in ({})".format(qkeys)
 
         asset_versions = session.query(query).all()
         for version in [*asset_versions]:
@@ -273,7 +295,7 @@ class DeleteVersionAction(BaseAction):
                 if delivery in asset_versions:
                     continue
                 asset_versions.append(delivery)
-                self.log.info(f"Appending version source {delivery}")
+                self.log.info("Appending version source {}".format(delivery))
 
         return asset_versions
 
@@ -298,7 +320,7 @@ class DeleteVersionAction(BaseAction):
             return set()
 
         ids = ", ".join(asset_ver_list_ids)
-        query_str = f"select id from AssetVersion where lists any (id in ({ids}))"
+        query_str = "select id from AssetVersion where lists any (id in ({}}))".format(ids)
         asset_versions = session.query(query_str).all()
 
         return {asset_version["id"] for asset_version in asset_versions}
