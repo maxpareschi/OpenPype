@@ -234,11 +234,10 @@ class GatherAction(BaseAction):
         
         return result
 
-    def get_comment_from_notes(self, session, entity):
-        client_tag = "For Client"
+    def get_comment_from_notes(self, session, entity, label_name):
         notes = []
         query = "select content, date, note_label_links.label.name from Note where parent_id is '{0}' and note_label_links.label.name is '{1}'".format(entity["id"],
-                                                                                                                                           client_tag)
+                                                                                                                                           label_name)
         for note in session.query(query).all():
             notes.append(note)
 
@@ -255,7 +254,7 @@ class GatherAction(BaseAction):
             }
         }
         for label in notes_sorted[-1]["note_label_links"]:
-            if label["label"]["name"] != client_tag:
+            if label["label"]["name"] != label_name:
                 intent_value = label["label"]["name"]
         
         if intent_value:
@@ -372,7 +371,7 @@ class GatherAction(BaseAction):
             if gather_suffix:
                 gather_suffix = "_" + gather_suffix
             else:
-                gather_suffix = "_gather"
+                gather_suffix = "_"
         else:
             gather_root = asset_doc["data"]["parents"][-1]
             gather_suffix = ""
@@ -399,7 +398,8 @@ class GatherAction(BaseAction):
             "gather_ftrack_source_id": version["id"]
         }
 
-        note = self.get_comment_from_notes(session, version)
+        note = self.get_comment_from_notes(
+            session, version, settings["gather_note_label_name"].strip())
         if note:
             gather_instance.update(note)
 

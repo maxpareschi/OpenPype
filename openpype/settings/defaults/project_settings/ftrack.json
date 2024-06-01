@@ -208,6 +208,7 @@
             ],
             "gather_root": "to_client",
             "gather_asset_suffix": "gather",
+            "gather_note_label_name": "For Client",
             "subset_name_template": "{family}{task[type]}{variant}",
             "ftrack_name_template": "{asset}_{task[short]}",
             "min_gather_version": 1,

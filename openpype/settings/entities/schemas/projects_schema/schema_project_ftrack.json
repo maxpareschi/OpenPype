@@ -693,6 +693,11 @@
                             "type": "text"
                         },
                         {
+                            "key": "gather_note_label_name",
+                            "label": "Note label to gather slate info against",
+                            "type": "text"
+                        },
+                        {
                             "type": "separator"
                         },
                         {
