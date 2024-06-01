@@ -165,7 +165,7 @@
                 "Project manager"
             ]
         },
-        "create_lists_action": {
+        "create_derived_list_action": {
             "enabled": true,
             "role_list": [
                 "Pypeclub",

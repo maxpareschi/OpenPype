@@ -37,7 +37,9 @@ class Delivery(BaseAction):
     def discover(self, session, entities, event):
         is_valid = False
         for entity in entities:
-            if entity.entity_type.lower() in ("assetversion", "reviewsession", "assetversionlist"):
+            if entity.entity_type in (
+                "AssetVersion", "ReviewSession", "AssetVersionList"
+            ):
                 is_valid = True
                 break
 
@@ -309,7 +311,6 @@ class Delivery(BaseAction):
 
         return filtered_ver
 
-
     def _get_asset_version_ids_from_review_sessions(
         self, session, review_session_ids
     ):
@@ -325,7 +326,6 @@ class Delivery(BaseAction):
             for review_session_object in review_session_objects
         }
 
-
     def _get_asset_version_ids_from_asset_ver_list( self, session, asset_ver_list_ids):
         # this can be static method..
         if not asset_ver_list_ids:
@@ -336,7 +336,6 @@ class Delivery(BaseAction):
         asset_versions = session.query(query_str).all()
 
         return {asset_version["id"] for asset_version in asset_versions}
-
 
     def _get_version_docs(
         self,

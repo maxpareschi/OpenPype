@@ -252,7 +252,7 @@
                             },
                             {
                                 "key": "extensions",
-                                "label": "Estensions",
+                                "label": "Extensions",
                                 "type": "list",
                                 "object_type": "text"
                             },

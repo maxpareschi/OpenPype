@@ -1,62 +1,23 @@
-import threading
-import datetime
-import copy
-import collections
 import ftrack_api
-
-from openpype.lib import get_datetime_data
 from datetime import date
-from openpype.settings.lib import (
-    get_project_settings,
-    get_default_project_settings
-)
-import os
-import copy
-import json
-import collections
 
-from openpype.client import (
-    get_project,
-    get_assets,
-    get_subsets,
-    get_versions,
-    get_representations
-)
 from openpype_modules.ftrack.lib import BaseAction, statics_icon # type: ignore
-from openpype_modules.ftrack.lib.avalon_sync import CUST_ATTR_ID_KEY # type: ignore
-from openpype_modules.ftrack.lib.custom_attributes import ( # type: ignore
-    query_custom_attributes
-)
-from openpype.lib.dateutils import get_datetime_data
-from openpype.pipeline import Anatomy
-from openpype.pipeline.load import get_representation_path_with_anatomy
-from openpype.pipeline.delivery import (
-    get_format_dict,
-    check_destination_path,
-    deliver_single_file,
-    deliver_sequence,
-)
 
 
-class CreateListsAction(BaseAction):
+class CreateDerivedListAction(BaseAction):
     """Create daily review session object per project.
     """
-    identifier = "ttd.create.lists"
-    label = "Create Lists"
-    description = "Manually create a list from other lists"
+    identifier = "ttd.create.derived.list"
+    label = "Create Derived List"
+    description = "Manually create a derived list from other lists"
     role_list = ["Pypeclub", "Administrator", "Project manager"]
     icon = statics_icon("ftrack", "action_icons", "CreateList.png")
-    settings_key = "create_lists_action"
+    settings_key = "create_derived_list_action"
 
     def discover(self, session, entities, event):
         is_valid = False
-        for entity in entities:
-            if entity.entity_type.lower() in (
-                #"assetversion",
-                "assetversionlist"
-            ):
-                is_valid = True
-                break
+        if entities[0].entity_type == "AssetVersionList":
+            is_valid = True
 
         if is_valid:
             is_valid = self.valid_roles(session, entities, event)
@@ -93,11 +54,7 @@ class CreateListsAction(BaseAction):
             if lt["name"] == "Delivery":
                 category_name = "Delivery"
         
-
-        if entity_type == "AssetVersion":
-            entity_list_name = entities[0]["lists"][-1]["name"]
-            entity_list_category = entities[0]["lists"][-1]["category"]["name"]
-        elif entity_type == "AssetVersionList":
+        if entity_type == "AssetVersionList":
             entity_list_name = entities[0]["name"]
             entity_list_category = entities[0]["category"]["name"]
 
@@ -303,8 +260,7 @@ class CreateListsAction(BaseAction):
         return {"success": True, "message": "Creation successful!"}
 
 
-
 def register(session):
     '''Register plugin. Called when used as an plugin.'''
 
-    CreateListsAction(session).register()
+    CreateDerivedListAction(session).register()
