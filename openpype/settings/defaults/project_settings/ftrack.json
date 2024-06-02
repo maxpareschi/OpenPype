@@ -197,11 +197,7 @@
                 "Administrator"
             ],
             "delivery_templates": {},
-            "create_list": true,
-            "create_client_review": false,
-            "use_source_list_name": false,
-            "list_template": "{yyyy}{mm}{dd}_client_delivery",
-            "list_suffix": ""
+            "create_client_review": false
         },
         "gather_action": {
             "enabled": true,

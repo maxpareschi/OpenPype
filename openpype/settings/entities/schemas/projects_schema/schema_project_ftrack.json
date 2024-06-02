@@ -639,32 +639,8 @@
                         },
                         {
                             "type": "boolean",
-                            "key": "create_list",
-                            "label": "Create delivery list"
-                        },
-                        {
-                            "type": "boolean",
                             "key": "create_client_review",
-                            "label": "Create client review"
-                        },
-                        {
-                            "type": "boolean",
-                            "key": "use_source_list_name",
-                            "label": "Use source list name (if present)"
-                        },
-                        {
-                            "key": "list_suffix",
-                            "label": "Optional suffix on created lists",
-                            "type": "text"
-                        },
-                        {
-                            "type": "label",
-                            "label": "NOTE: Template will be ignored if \"Use source list name\" option is checked"
-                        },
-                        {
-                            "key": "list_template",
-                            "label": "Template name for lists",
-                            "type": "text"
+                            "label": "Create client review with same name as delivery list"
                         }
                     ]
                 },

@@ -1,7 +1,7 @@
 import ftrack_api
 from datetime import date
 
-from openpype_modules.ftrack.lib import BaseAction, statics_icon # type: ignore
+from openpype_modules.ftrack.lib import BaseAction, statics_icon, create_list # type: ignore
 
 
 class CreateDerivedListAction(BaseAction):
@@ -33,9 +33,6 @@ class CreateDerivedListAction(BaseAction):
         for listcat in session.query("select name, id from ListCategory").all():
             self.list_types.append({"id": listcat["id"], "name": listcat["name"]})
 
-        today = date.today()
-        formatted_date = today.strftime("%Y%m%d")
-
         items = [{
             "type": "label",
             "value": "<h1><b>Lists Options:</b></h1>"
@@ -48,8 +45,10 @@ class CreateDerivedListAction(BaseAction):
                 "value": list_type["name"]
             })
 
+        list_name = None
+        category_name = None
+
         category_name = enum_data[0]["value"]
-        list_name = formatted_date + "_delivery_submission_list"
         for lt in self.list_types:
             if lt["name"] == "Delivery":
                 category_name = "Delivery"
@@ -63,6 +62,9 @@ class CreateDerivedListAction(BaseAction):
 
         if entity_list_category:
             category_name = entity_list_category
+
+        if not list_name or not category_name:
+            return {"success": False, "message": "No list name or category found!"}
         
         items.extend(
             [   
@@ -140,122 +142,21 @@ class CreateDerivedListAction(BaseAction):
         
         self.log.info("Sumbitted choices: {}".format(user_values))
 
-        if user_values["client_review"]:
-            target_exists = True if session.query("ReviewSession where name is '{}'".format(
-                user_values["list_name"]
-            )).first() else False
-            if target_exists:
-                return {"success": False, "message": "Review Session is already present (duplicate name)!"}
-        else:
-            target_exists = True if session.query("AssetVersionList where name is '{}'".format(
-                user_values["list_name"]
-            )).first() else False
-            if target_exists:
-                return {"success": False, "message": "List is already present (duplicate name)!"}
+        created_list = create_list(
+            session,
+            entities,
+            event,
+            client_review = user_values["client_review"],
+            list_name = user_values["list_name"],
+            list_category_name = user_values["list_category"],
+            prioritize_gathers = user_values["prioritize_gathers"],
+            log = self.log
+        )
 
-        list_category = session.query("ListCategory where name is '{}'".format(
-            user_values["list_category"]
-        )).first() or None
-
-        review_session_folder = session.query("ReviewSessionFolder where name is '{}'".format(
-            user_values["list_category"]
-        )).first() or None
-
-        list_owner = session.query("User where id is '{}'".format(
-            event["source"]["user"]["id"]
-        )).first() or None
-
-        assetversions = session.query("AssetVersion where lists.id is '{}'".format(
-            entities[0]["id"]
-        )).all()
-
-
-        final_assetversions = []
-        for av in assetversions:
-            self.log.debug("Processing AssetVersion '{} v{}' in source_list".format(
-                av["asset"]["name"],
-                av["version"]
-            ))
-            if user_values["prioritize_gathers"]:
-                if av["incoming_links"]:
-                    self.log.debug("This is already a gathered version, collecting.")
-                    final_assetversions.append(av)
-                elif av["outgoing_links"]:
-                    self.log.debug("This is a source version, collecting '{} v{}' as linked gather.".format(
-                        av["outgoing_links"][0]["to"]["asset"]["name"],
-                        av["outgoing_links"][0]["to"]["version"]
-                    ))
-                    final_assetversions.append(
-                        av["outgoing_links"][0]["to"]
-                    )
-                else:
-                    self.log.debug("This version has no gather, skipping collection...")
-            else:
-                self.log.debug("Collecting direct version, skipping gathers if any.")
-                final_assetversions.append(av)
- 
-        if user_values["client_review"]:
-            if not review_session_folder:
-                review_session_folder = session.create("ReviewSessionFolder", {
-                    "project": entities[0]["project"],
-                    "name": list_category["name"]
-                })
-            review_session_data = {
-                "project": entities[0]["project"],
-                "category": list_category,
-                "name": user_values["list_name"]
-            }
-            if list_owner:
-                review_session_data.update({"created_by": list_owner})
-
-            review_session = session.create("ReviewSession", review_session_data)
-            review_session_folder["review_sessions"].append(review_session)
-            self.log.debug("Created Review Session '{}/{}'".format(
-                list_category["name"], user_values["list_name"]))
-
-            for fav in final_assetversions:
-                created_review_object = session.create("ReviewSessionObject", {
-                    "asset_version": fav,
-                    "review_session": review_session,
-                    "name": fav["asset"]["name"],
-                    "description": fav["comment"],
-                    "version": "Version {}".format(str(fav["version"]).zfill(3))
-                })
-                created_review_object["notes"].extend(
-                    [n for n in fav["notes"]]
-                )
-                self.log.debug("Appended version '{} v{}' to created review session: {}".format(
-                    fav["asset"]["name"],
-                    fav["version"],
-                    created_review_object["name"]
-                ))
-        
-        else:
-            list_data = {
-                "project": entities[0]["project"],
-                "category": list_category,
-                "name": user_values["list_name"]
-            }
-            if list_owner:
-                list_data.update({"owner": list_owner})
-
-            created_list = session.create("AssetVersionList", list_data)
-            self.log.debug("Created List '{}/{}'".format(
-                list_category["name"], user_values["list_name"]))
-
-            created_list["custom_attributes"]["source_list_name"] = entities[0]["name"]
-            self.log.debug("Source List is set as '{}'".format(
-                created_list["custom_attributes"]["source_list_name"]))
-
-            for fav in final_assetversions:
-                created_list["items"].append(fav)
-                self.log.debug("Appended version '{} v{}' to created list: {}".format(
-                    fav["asset"]["name"],
-                    fav["version"],
-                    created_list["name"]
-                ))
-
-        session.commit()
+        self.log.debug("Created '{}' named '{}'".format(
+            created_list.entity_type,
+            created_list["name"]
+        ))
 
         return {"success": True, "message": "Creation successful!"}
 
