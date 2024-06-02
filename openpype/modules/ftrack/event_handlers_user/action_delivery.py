@@ -10,6 +10,7 @@ from openpype.client import (
     get_versions,
     get_representations
 )
+from openpype.settings import get_project_settings
 from openpype_modules.ftrack.lib import BaseAction, statics_icon # type: ignore
 from openpype_modules.ftrack.lib.avalon_sync import CUST_ATTR_ID_KEY # type: ignore
 from openpype_modules.ftrack.lib.custom_attributes import ( # type: ignore
@@ -38,9 +39,7 @@ class Delivery(BaseAction):
     def discover(self, session, entities, event):
         is_valid = False
         for entity in entities:
-            if entity.entity_type in (
-                "AssetVersion", "ReviewSession", "AssetVersionList"
-            ):
+            if entity.entity_type.lower() in ("assetversion", "reviewsession", "assetversionlist"):
                 is_valid = True
                 break
 
@@ -55,14 +54,14 @@ class Delivery(BaseAction):
         self.action_settings = self.get_ftrack_settings(
             session, event, entities)["user_handlers"]["delivery_action"]
 
-        title = "Deliver data to Client"
+        title = "Delivery data to Client"
 
         items = []
+        item_splitter = {"type": "label", "value": "---"}
 
         project_entity = self.get_project_from_entity(entities[0])
         project_name = project_entity["full_name"]
         project_doc = get_project(project_name, fields=["name"])
-        
         if not project_doc:
             return {
                 "success": False,
@@ -167,18 +166,6 @@ class Delivery(BaseAction):
         })
 
         items.append({
-            "value": "<br><h3><i>Collect Gathers instead of selected versions if they exist:</i></h3>",
-            "type": "label"
-        })
-
-        items.append({
-            "type": "boolean",
-            "value": True,
-            "label": "Prioritize Gathers",
-            "name": "prioritize_gathers"
-        })
-
-        items.append({
             "value": "<h1>Choose Components</h1>",
             "type": "label"
         })
@@ -215,41 +202,31 @@ class Delivery(BaseAction):
         version_ids = self._get_interest_version_ids(
             project_name, session, entities
         )
-        gather_ids = self._get_interest_version_ids(
-            project_name, session, entities, prioritize_gathers = True
-        )
-        if not version_ids and gather_ids:
+        if not version_ids:
             return []
-        version_ids.extend(gather_ids)
         repre_docs = get_representations(
             project_name,
             version_ids=version_ids,
             fields=["name"]
         )
-        repre_names = [repre_doc["name"] for repre_doc in repre_docs]
-        return list(sorted(set(repre_names)))
+        repre_names = {repre_doc["name"] for repre_doc in repre_docs}
+        return list(sorted(repre_names))
 
-    def _get_interest_version_ids(self, project_name, session, entities, prioritize_gathers = False):
+    def _get_interest_version_ids(self, project_name, session, entities):
         # Extract AssetVersion entities
-        asset_versions = self._extract_asset_versions(session,
-                                                      entities,
-                                                      prioritize_gathers = prioritize_gathers)
-        # Prepare Asset ids, prioritizing gathers if specified
-        if prioritize_gathers:
-            asset_ids = [
-                asset_version["asset_id"]
-                for asset_version in asset_versions if not asset_version["incoming_links"]
-            ]
-            asset_ids.extend([
-                asset_version["incoming_links"][0]["from"]["asset_id"]
-                for asset_version in asset_versions if asset_version["incoming_links"]
-            ])
-        else:
-            asset_ids = [asset_version["asset_id"] for asset_version in asset_versions]
-
+        asset_versions = self._extract_asset_versions(session, entities)
+        # Prepare Asset ids
+        asset_ids = [
+            asset_version["asset_id"]
+            for asset_version in asset_versions if not asset_version["incoming_links"]
+        ]
+        asset_ids.extend([
+            asset_version["incoming_links"][0]["from"]["asset_id"]
+            for asset_version in asset_versions if asset_version["incoming_links"]
+        ])
         asset_ids = set(asset_ids)
         if not asset_ids:
-            raise ValueError("Failed to find asset_ids for versions {}".format([e['id'] for e in entities]))
+            raise ValueError(f"Failed to find asset_ids for versions {[e['id'] for e in entities]}")
         # Query Asset entities
         assets = session.query((
             "select id, name, context_id from Asset where id in ({})"
@@ -294,7 +271,7 @@ class Delivery(BaseAction):
 
         return [version_doc["_id"] for version_doc in version_docs]
 
-    def _extract_asset_versions(self, session, entities, prioritize_gathers = False):
+    def _extract_asset_versions(self, session, entities):
         asset_version_ids = set()
         review_session_ids = set()
         asset_version_list_ids = set()
@@ -323,21 +300,19 @@ class Delivery(BaseAction):
 
         qkeys = self.join_query_keys(asset_version_ids)
         query = "select id, version, asset_id, incoming_links, outgoing_links"
-        query += " from AssetVersion where id in ({})".format(qkeys)
+        query += f" from AssetVersion where id in ({qkeys})"
         asset_versions = session.query(query).all()
 
         filtered_ver = list()
         for version in asset_versions:
-            if prioritize_gathers:
-                if version["outgoing_links"]:
-                    version_ = version["outgoing_links"][0]["to"]
-                    self.log.info("Using gathered version '{}'".format(version_))
-                    version = version_
-            else:
-                self.log.info("Using version '{}'".format(version))
+            if version["outgoing_links"]:
+                version_ = version["outgoing_links"][0]["to"]
+                self.log.info(f"Using delivery version {version_} instead of {version}")
+                version = version_
             filtered_ver.append(version)
 
         return filtered_ver
+
 
     def _get_asset_version_ids_from_review_sessions(
         self, session, review_session_ids
@@ -354,16 +329,18 @@ class Delivery(BaseAction):
             for review_session_object in review_session_objects
         }
 
+
     def _get_asset_version_ids_from_asset_ver_list( self, session, asset_ver_list_ids):
         # this can be static method..
         if not asset_ver_list_ids:
             return set()
 
         ids = ", ".join(asset_ver_list_ids)
-        query_str = "select id from AssetVersion where lists any (id in ({}))".format(ids)
+        query_str = f"select id from AssetVersion where lists any (id in ({ids}))"
         asset_versions = session.query(query_str).all()
 
         return {asset_version["id"] for asset_version in asset_versions}
+
 
     def _get_version_docs(
         self,
@@ -531,7 +508,7 @@ class Delivery(BaseAction):
         if "values" not in event["data"]:
             return {
                 "success": True,
-                "message": "Delivery skipped..."
+                "message": "Nothing to do"
             }
 
         values = event["data"]["values"]
@@ -605,7 +582,7 @@ class Delivery(BaseAction):
         location_path = values.pop("__location_path__")
         anatomy_name = values.pop("__new_anatomies__")
         project_name = values.pop("__project_name__")
-
+        
         # Get anatomy settings to fill up extra info (task["short"] if
         # no task is present and override is specified)
         anatomy_settings = get_anatomy_settings(project_name)
@@ -635,7 +612,7 @@ class Delivery(BaseAction):
 
         self.log.debug("Collecting representations to process.")
         version_ids = self._get_interest_version_ids(
-            project_name, session, entities, prioritize_gathers = values["prioritize_gathers"]
+            project_name, session, entities
         )
         repres_to_deliver = list(get_representations(
             project_name,
@@ -656,13 +633,14 @@ class Delivery(BaseAction):
 
             anatomy_data = copy.deepcopy(repre["context"])
 
+            # add ftrack custom template keys for path resolving
             if ftrack_list_name:
                 anatomy_data.update({
                     "ftrack": {
                         "listname": ftrack_list_name
                     }
                 })
-            
+
             # Add and/or override Anatomy Delivery templates based on
             # Delivery action settings. These settings can also feature more
             # templating patterns coming from ftrack such as '{ftrack[listname]}'
@@ -688,11 +666,6 @@ class Delivery(BaseAction):
 
             if frame:
                 repre["context"]["frame"] = len(str(frame)) * "#"
-
-            # Log if the task is not presend to debug templates
-            repre_task = repre["context"]["task"]
-            if not repre_task.get("type"):
-                self.log.debug("No task found in representation, template may fail to resolve!")
 
             repre_path = get_representation_path_with_anatomy(repre, anatomy)
             # TODO add backup solution where root of path from component
