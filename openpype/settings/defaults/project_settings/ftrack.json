@@ -196,6 +196,7 @@
                 "Project Manager",
                 "Administrator"
             ],
+            "delivery_templates": {},
             "create_list": true,
             "create_client_review": false,
             "use_source_list_name": false,
@@ -203,6 +204,7 @@
             "list_suffix": ""
         },
         "gather_action": {
+            "enabled": true,
             "missing_task_override": [
                 "Roundtrip"
             ],
