@@ -16,9 +16,9 @@ from openpype.client import (
     get_versions,
     get_representations
 )
-from openpype.settings.lib import get_project_settings
 # from openpype.settings import get_project_settings
-from openpype_modules.ftrack.lib import BaseAction, statics_icon # type: ignore
+from openpype.settings import get_project_settings
+from openpype_modules.ftrack.lib import BaseAction, statics_icon, create_list # type: ignore
 from openpype_modules.ftrack.lib.avalon_sync import CUST_ATTR_ID_KEY # type: ignore
 from openpype_modules.ftrack.lib.custom_attributes import ( # type: ignore
     query_custom_attributes
@@ -234,6 +234,18 @@ class Delivery(BaseAction):
             "name": "__location_path__",
             "empty_text": "Type root location path here...(Optional)"
         })
+
+        if entities[0].entity_type.lower() == "assetversionlist":
+            items.append({
+                "value": "<br><h2><i>Create Optional Review Session</i></h2>",
+                "type": "label"
+            })
+            items.append({
+                "type": "boolean",
+                "value": False,
+                "label": "Create ReviewSession",
+                "name": "create_review_session"
+            })
 
         return {
             "items": items,
@@ -661,16 +673,15 @@ class Delivery(BaseAction):
         location_path = values.pop("__location_path__")
         anatomy_name = values.pop("__new_anatomies__")
         project_name = values.pop("__project_name__")
-        
-        # Get anatomy settings to fill up extra info (task["short"] if
-        # no task is present and override is specified)
-        anatomy_settings = get_anatomy_settings(project_name)
 
         # if launched from list retrieve the list name to fill
         # up template values
         ftrack_list_name = None
         if entities[0].entity_type == "AssetVersionList":
             ftrack_list_name = entities[0]["name"]
+
+        collected_paths = []
+        collected_repres = []
 
         repre_names = []
         for key, value in values.items():
@@ -708,6 +719,30 @@ class Delivery(BaseAction):
         assert version_by_repre_id != dict()
 
         anatomy = Anatomy(project_name)
+
+
+        # Add and/or override Anatomy Delivery templates based on
+        # Delivery action settings. These settings can also feature more
+        # templating patterns coming from ftrack such as '{ftrack[listname]}'
+        template_override = self.action_settings["delivery_templates"].get(anatomy_name, None)
+        if template_override:
+            raw_anatomy_templates = get_anatomy_settings(project_name)["templates"]
+            raw_anatomy_templates["delivery"][anatomy_name] = template_override
+            anatomy.templates["delivery"][anatomy_name] = template_override
+            anatomy.templates_obj.set_templates(raw_anatomy_templates)
+        
+        # add ftrack custom template keys for path resolving
+        # TODO: put more data and expand templating items
+        ftrack_template_data = {
+            "ftrack": {
+                "listname": ftrack_list_name,
+                "category": entities[0]["category"]["name"],
+                "username": session.api_user,
+                "first_name": event["user"]["first_name"],
+                "last_name": event["user"]["last_name"]
+            }
+        }
+
         format_dict = get_format_dict(anatomy, location_path)
         datetime_data = get_datetime_data()
 
@@ -722,23 +757,9 @@ class Delivery(BaseAction):
 
             anatomy_data = copy.deepcopy(repre["context"])
 
-            # add ftrack custom template keys for path resolving
+            # update anatomy_data with ftrack template data
             if ftrack_list_name:
-                anatomy_data.update({
-                    "ftrack": {
-                        "listname": ftrack_list_name
-                    }
-                })
-
-            # Add and/or override Anatomy Delivery templates based on
-            # Delivery action settings. These settings can also feature more
-            # templating patterns coming from ftrack such as '{ftrack[listname]}'
-            template_override = self.action_settings["delivery_templates"].get(anatomy_name, None)
-            if template_override:
-                raw_anatomy_templates = get_anatomy_settings(project_name)["templates"]
-                raw_anatomy_templates["delivery"][anatomy_name] = template_override
-                anatomy.templates["delivery"][anatomy_name] = template_override
-                anatomy.templates_obj.set_templates(raw_anatomy_templates)
+                anatomy_data.update(ftrack_template_data)
             
             repre_report_items = check_destination_path(repre["_id"],
                                                         anatomy,
@@ -780,6 +801,13 @@ class Delivery(BaseAction):
                 # print(f"Not success")
                 continue
 
+
+            anatomy_filled = anatomy.format_all(anatomy_data)
+            dest_path = anatomy_filled["delivery"][anatomy_name]
+            
+            collected_repres.append(repre["name"])
+            collected_paths.append(dest_path)
+
             try:
                 version = version_by_repre_id[repre["_id"]]
                 if version["id"] not in attr_by_version:
@@ -795,31 +823,29 @@ class Delivery(BaseAction):
 
 
         for id_, value in attr_by_version.items():
-            value["entity"]["custom_attributes"]["disk_file_location"] = value["attr"]
+            value["entity"]["custom_attributes"]["delivery_name"] = value["attr"]
 
-
-        settings = get_project_settings(project_name)
-        temp_ = settings["ftrack"]["user_handlers"]["delivery_action"]
-        list_template = temp_["list_template"]
-        use_source_list_name = temp_["use_source_list_name"]
-        list_suffix = temp_["list_suffix"]
-
-        # print(list_template, use_source_list_name, list_suffix)
-        # print(anatomy)
-
-        if values.get("create_list"):
-            for entity in entities:
-                if entity.entity_type == "AssetVersionList":
-                    name = list_template if not use_source_list_name else entity["name"]
-                    name += list_suffix
-                    # {yyyy}{mm}{dd}_client_delivery False
-                    # hardcoding for now the resolving of the string
-                    name = datetime.now().strftime("%y%m%d") + list_suffix
-                    # create_rev_session_from_delivery(entity, name, session)
-
-                    break #in theory list are monoselection so it is safe to do this
 
         report_items.pop("created_files") # removes false positive
+        # get final path of repre to be used for attributes
+        # and fill custom attributes on list
+
+            
+        if entities[0].entity_type.lower() == "assetversionlist":
+            entities[0]["custom_attributes"]["delivery_package_name"] = ftrack_list_name
+            entities[0]["custom_attributes"]["delivery_type"] = ", ".join(list(set(collected_repres)))
+            entities[0]["custom_attributes"]["delivery_package_path"] = os.path.commonpath(collected_paths)
+            session.commit()
+            create_list(
+                session,
+                entities,
+                event,
+                client_review = values["create_review_session"],
+                list_name = ftrack_list_name,
+                list_category_name = entities[0]["category"]["name"],
+                log = self.log
+            )
+
         return self.report(report_items)
 
     def report(self, report_items):

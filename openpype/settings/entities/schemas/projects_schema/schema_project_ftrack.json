@@ -632,6 +632,10 @@
                             "type": "separator"
                         },
                         {
+                            "type": "label",
+                            "label": "NOTE: extra template strings from ftrack are: '{ftrack[listname]}, {ftrack[category]}, {ftrack[username]}, {ftrack[first_name]}, {ftrack[last_name]}'"
+                        },
+                        {
                             "type": "dict-modifiable",
                             "key": "delivery_templates",
                             "label": "Delivery Templates",
