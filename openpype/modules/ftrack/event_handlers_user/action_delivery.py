@@ -11,7 +11,7 @@ from openpype.client import (
     get_representations
 )
 from openpype.settings import get_project_settings
-from openpype_modules.ftrack.lib import BaseAction, statics_icon # type: ignore
+from openpype_modules.ftrack.lib import BaseAction, statics_icon, create_list # type: ignore
 from openpype_modules.ftrack.lib.avalon_sync import CUST_ATTR_ID_KEY # type: ignore
 from openpype_modules.ftrack.lib.custom_attributes import ( # type: ignore
     query_custom_attributes
@@ -188,6 +188,18 @@ class Delivery(BaseAction):
             "name": "__location_path__",
             "empty_text": "Type root location path here...(Optional)"
         })
+
+        if entities[0].entity_type.lower() == "assetversionlist":
+            items.append({
+                "value": "<br><h2><i>Create Optional Review Session</i></h2>",
+                "type": "label"
+            })
+            items.append({
+                "type": "boolean",
+                "value": False,
+                "label": "Create ReviewSession",
+                "name": "create_review_session"
+            })
 
         return {
             "items": items,
@@ -701,6 +713,15 @@ class Delivery(BaseAction):
             entities[0]["custom_attributes"]["delivery_type"] = ", ".join(list(set(collected_repres)))
             entities[0]["custom_attributes"]["delivery_package_path"] = os.path.commonpath(collected_paths)
             session.commit()
+            create_list(
+                session,
+                entities,
+                event,
+                client_review = values["create_review_session"],
+                list_name = ftrack_list_name,
+                list_category_name = entities[0]["category"]["name"],
+                log = self.log
+            )
 
         return self.report(report_items)
 
