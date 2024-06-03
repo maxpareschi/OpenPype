@@ -387,7 +387,7 @@ def collect_animation_data(fps=False):
     data["step"] = 1.0
 
     if fps:
-        data["fps"] = mel.eval('currentTimeUnitToFPS()')
+        data["fps"] = truncate(mel.eval('currentTimeUnitToFPS()'), 3)
 
     return data
 
@@ -2105,8 +2105,10 @@ def set_scene_fps(fps, update=True):
     # pull from mapping
     # this should convert float string to float and int to int
     # so 25.0 is converted to 25, but 23.98 will be still float.
-    dec, ipart = math.modf(fps)
-    if dec == 0.0:
+    
+    ipart, dec = [int(d) for d in str(float(fps)).split(".")]
+    fps = truncate(fps, 3)
+    if dec == 0:
         fps = int(ipart)
 
     unit = fps_mapping.get(str(fps), None)
@@ -2255,7 +2257,7 @@ def validate_fps():
     # fps to two decimal places but Maya 2019+ is reporting those fps
     # with much higher resolution. As we currently cannot fix Ftrack
     # rounding, we have to round those numbers coming from Maya.
-    current_fps = float_round(mel.eval('currentTimeUnitToFPS()'), 2)
+    current_fps = truncate(mel.eval('currentTimeUnitToFPS()'), 3)
 
     fps_match = current_fps == fps
     if not fps_match and not IS_HEADLESS:
@@ -2643,7 +2645,7 @@ def get_attr_in_layer(attr, layer):
     attr_type = cmds.getAttr(attr, type=True)
     conversion = None
     if attr_type == "time":
-        conversion = mel.eval('currentTimeUnitToFPS()')  # returns float
+        conversion = truncate(mel.eval('currentTimeUnitToFPS()'), 3)  # returns float
     elif attr_type == "doubleAngle":
         # Radians to Degrees: 180 / pi
         # TODO: This will likely only be correct when Maya units are set
