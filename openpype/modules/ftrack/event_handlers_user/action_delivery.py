@@ -4,6 +4,7 @@ import os
 import copy
 import json
 import collections
+from pathlib import Path
 from logging import getLogger
 from datetime import datetime
 
@@ -38,32 +39,6 @@ from ftrack_api.entity.base import Entity
 
 from openpype.modules.ftrack.event_handlers_user.action_ttd_delete_version import get_op_version_from_ftrack_assetversion
 
-
-def create_rev_session_from_delivery(src_list: Entity, name: str, session: Session):
-
-    # DEPRECATED: USE THE CREATE LIST ACTION INSTEAD
-
-    def sanitize_name(name: str):
-        q = f"select name from AssetVersionList where project.name is {src_list['project']['name']}"
-        existing_names = [l["name"] for l in session.query(q).all()]
-        i = 1
-        temp_name = name
-        while temp_name in existing_names:
-            temp_name = f"{name}_{i:02}"
-            i += 1
-        return temp_name
-
-    final_name = sanitize_name(name)
-    fields = ["category", "owner", "user_id", "system_type", "project", "items"]
-    data = {**{f:src_list[f] for f in fields}, "name":final_name}
-    new_list = session.create("AssetVersionList", data)
-
-    if final_name != name:
-        logger.info(f"The name {name} existed already. The list will be renamed as {final_name}")
-    
-    logger.info(f"Creating list '{new_list}'")
-
-    return new_list
 
 class Delivery(BaseAction):
     identifier = "delivery.action"
@@ -114,15 +89,6 @@ class Delivery(BaseAction):
             "name": "__project_name__",
             "value": project_name
         })
-
-        items.append(
-            {
-                "label": "Create new ftrack review session from submitted items.",
-                "type": "boolean",
-                "value": False,
-                "name": "create_list"
-            }
-        )
 
         # Prepare anatomy data
         anatomy = Anatomy(project_name)
@@ -361,15 +327,17 @@ class Delivery(BaseAction):
         query += f" from AssetVersion where id in ({qkeys})"
         asset_versions = session.query(query).all()
 
-        filtered_ver = list()
-        for version in asset_versions:
-            if version["outgoing_links"]:
-                version_ = version["outgoing_links"][0]["to"]
-                self.log.info(f"Using delivery version {version_} instead of {version}")
-                version = version_
-            filtered_ver.append(version)
+        return asset_versions
 
-        return filtered_ver
+        # filtered_ver = list()
+        # for version in asset_versions:
+        #     if version["outgoing_links"]:
+        #         version_ = version["outgoing_links"][0]["to"]
+        #         self.log.info(f"Using delivery version {version_} instead of {version}")
+        #         version = version_
+        #     filtered_ver.append(version)
+
+        # return filtered_ver
 
 
     def _get_asset_version_ids_from_review_sessions(
@@ -714,7 +682,7 @@ class Delivery(BaseAction):
 
         for v in set(version_by_repre_id.values()):
             print(f"Reseting custom attributes values for version {v}")
-            v["custom_attributes"]["disk_file_location"] = ""
+            v["custom_attributes"]["delivery_name"] = ""
 
         assert version_by_repre_id != dict()
 
@@ -736,12 +704,13 @@ class Delivery(BaseAction):
         ftrack_template_data = {
             "ftrack": {
                 "listname": ftrack_list_name,
-                "category": entities[0]["category"]["name"],
                 "username": session.api_user,
-                "first_name": event["user"]["first_name"],
-                "last_name": event["user"]["last_name"]
+                # "first_name": event["user"]["first_name"],
+                # "last_name": event["user"]["last_name"]
             }
         }
+        if entities[0].entity_type == "AssetVersionList":
+            ftrack_template_data["category"] = entities[0]["category"]["name"]
 
         format_dict = get_format_dict(anatomy, location_path)
         datetime_data = get_datetime_data()
@@ -813,14 +782,19 @@ class Delivery(BaseAction):
                 if version["id"] not in attr_by_version:
                     attr_by_version[version["id"]] = {"attr":"", "entity": version}
 
-                files = "\n".join(r["created_files"][-1:])
+                files = "\n".join([Path(f).name for f in r["created_files"][-1:]])
                 # c_attr = version["custom_attributes"]["disk_file_location"]
                 # print(f"Updating custom attr from {c_attr} to {files}")
                 attr_by_version[version["id"]]["attr"] += files +"\n\n"
+                print(f"Adding files {files}")
             except Exception as e:
                 print(f"Failed to update version for representation {repre['_id']} due to {e}")
                 print(f"valid ids are: {version_by_repre_id.keys()}")
 
+
+        from pprint import pprint
+
+        pprint(attr_by_version.items())
 
         for id_, value in attr_by_version.items():
             value["entity"]["custom_attributes"]["delivery_name"] = value["attr"]
@@ -835,7 +809,6 @@ class Delivery(BaseAction):
             entities[0]["custom_attributes"]["delivery_package_name"] = ftrack_list_name
             entities[0]["custom_attributes"]["delivery_type"] = ", ".join(list(set(collected_repres)))
             entities[0]["custom_attributes"]["delivery_package_path"] = os.path.commonpath(collected_paths)
-            session.commit()
             create_list(
                 session,
                 entities,
@@ -846,6 +819,7 @@ class Delivery(BaseAction):
                 log = self.log
             )
 
+        session.commit()
         return self.report(report_items)
 
     def report(self, report_items):
