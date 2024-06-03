@@ -37,7 +37,9 @@ from ftrack_api.entity.base import Entity
 from openpype.modules.ftrack.event_handlers_user.action_ttd_delete_version import get_op_version_from_ftrack_assetversion
 
 
-def create_list_from_delivery(src_list: Entity, name: str, session: Session):
+def create_rev_session_from_delivery(src_list: Entity, name: str, session: Session):
+
+    # DEPRECATED: USE THE CREATE LIST ACTION INSTEAD
 
     def sanitize_name(name: str):
         q = f"select name from AssetVersionList where project.name is {src_list['project']['name']}"
@@ -110,7 +112,7 @@ class Delivery(BaseAction):
 
         items.append(
             {
-                "label": "Create new ftrack list from submitted items.",
+                "label": "Create new ftrack review session from submitted items.",
                 "type": "boolean",
                 "value": False,
                 "name": "create_list"
@@ -353,6 +355,7 @@ class Delivery(BaseAction):
 
         return filtered_ver
 
+
     def _get_asset_version_ids_from_review_sessions(
         self, session, review_session_ids
     ):
@@ -368,6 +371,7 @@ class Delivery(BaseAction):
             for review_session_object in review_session_objects
         }
 
+
     def _get_asset_version_ids_from_asset_ver_list( self, session, asset_ver_list_ids):
         # this can be static method..
         if not asset_ver_list_ids:
@@ -378,6 +382,7 @@ class Delivery(BaseAction):
         asset_versions = session.query(query_str).all()
 
         return {asset_version["id"] for asset_version in asset_versions}
+
 
     def _get_version_docs(
         self,
@@ -777,7 +782,10 @@ class Delivery(BaseAction):
                     # {yyyy}{mm}{dd}_client_delivery False
                     # hardcoding for now the resolving of the string
                     name = datetime.now().strftime("%y%m%d") + list_suffix
-                    create_list_from_delivery(entity, name, session)
+                    # create_rev_session_from_delivery(entity, name, session)
+
+                    break #in theory list are monoselection so it is safe to do this
+
         report_items.pop("created_files") # removes false positive
         return self.report(report_items)
 
