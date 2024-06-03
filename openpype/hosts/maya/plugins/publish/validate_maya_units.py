@@ -1,4 +1,5 @@
 import maya.cmds as cmds
+import math
 
 import pyblish.api
 
@@ -13,6 +14,17 @@ from openpype.pipeline.publish import (
 
 def float_round(num, places=0, direction=ceil):
     return direction(num * (10**places)) / float(10**places)
+
+def truncate(number, digits) -> float:
+    # Improve accuracy with floating point operations, to avoid truncate(16.4, 2) = 16.39 or truncate(-1.13, 2) = -1.12
+    try:
+        nbDecimals = len(str(number).split('.')[1])
+    except:
+        nbDecimals = 0
+    if nbDecimals <= digits:
+        return number
+    stepper = 10.0 ** digits
+    return math.trunc(stepper * number) / stepper
 
 
 class ValidateMayaUnits(pyblish.api.ContextPlugin):
@@ -43,7 +55,8 @@ class ValidateMayaUnits(pyblish.api.ContextPlugin):
         # rounding, we have to round those numbers coming from Maya.
         # NOTE: this must be revisited yet again as it seems that Ftrack is
         # now flooring the value?
-        fps = float_round(context.data.get('fps'), 2, ceil)
+        # fps = float_round(context.data.get('fps'), 3, ceil)
+        fps = truncate(context.data.get('fps'), 3)
 
         # TODO repace query with using 'context.data["assetEntity"]'
         asset_doc = get_current_project_asset()
