@@ -556,8 +556,8 @@
                 },
                 {
                     "type": "dict",
-                    "key": "create_lists_action",
-                    "label": "Create Lists Action",
+                    "key": "create_derived_list_action",
+                    "label": "Create Derived List",
                     "checkbox_key": "enabled",
                     "children": [
                         {
@@ -632,36 +632,15 @@
                             "type": "separator"
                         },
                         {
-                            "type": "boolean",
-                            "key": "create_list",
-                            "label": "Create delivery list"
+                            "type": "dict-modifiable",
+                            "key": "delivery_templates",
+                            "label": "Delivery Templates",
+                            "object_type": "text"
                         },
                         {
                             "type": "boolean",
                             "key": "create_client_review",
-                            "label": "Create client review"
-                        },
-                        {
-                            "type": "boolean",
-                            "key": "use_source_list_name",
-                            "label": "Use source list name (if present)"
-                        },
-                        {
-                            "type": "separator"
-                        },
-                        {
-                            "key": "list_template",
-                            "label": "Template name for lists",
-                            "type": "text"
-                        },
-                        {
-                            "type": "label",
-                            "label": "NOTE: Template will be ignored if \"Use source list name\" option is checked"
-                        },
-                        {
-                            "key": "list_suffix",
-                            "label": "Optional suffix on created lists",
-                            "type": "text"
+                            "label": "Create client review with same name as delivery list"
                         }
                     ]
                 },
@@ -669,7 +648,13 @@
                     "type": "dict",
                     "key": "gather_action",
                     "label": "Gather",
+                    "checkbox_key": "enabled",
                     "children": [
+                        {
+                            "type": "boolean",
+                            "key": "enabled",
+                            "label": "Enabled"
+                        },
                         {
                             "type": "task-types-enum",
                             "key": "missing_task_override",
@@ -690,6 +675,11 @@
                         {
                             "key": "gather_asset_suffix",
                             "label": "Suffix for asset in ftrack for Delivery/Gather",
+                            "type": "text"
+                        },
+                        {
+                            "key": "gather_note_label_name",
+                            "label": "Note label to gather slate info against",
                             "type": "text"
                         },
                         {

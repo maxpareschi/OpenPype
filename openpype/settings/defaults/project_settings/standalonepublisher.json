@@ -113,6 +113,19 @@
             ],
             "help": "Rendered images or video files"
         },
+        "create_playblast": {
+            "name": "playblast",
+            "label": "Playblast",
+            "family": "preview",
+            "icon": "image",
+            "defaults": [
+                "Animation",
+                "Lighting",
+                "Lookdev",
+                "Compositing"
+            ],
+            "help": "Rendered images or video files"
+        },
         "create_mov_batch": {
             "name": "mov_batch",
             "label": "Batch Mov",

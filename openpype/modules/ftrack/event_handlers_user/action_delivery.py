@@ -17,6 +17,7 @@ from openpype.client import (
     get_representations
 )
 from openpype.settings.lib import get_project_settings
+# from openpype.settings import get_project_settings
 from openpype_modules.ftrack.lib import BaseAction, statics_icon # type: ignore
 from openpype_modules.ftrack.lib.avalon_sync import CUST_ATTR_ID_KEY # type: ignore
 from openpype_modules.ftrack.lib.custom_attributes import ( # type: ignore
@@ -24,6 +25,7 @@ from openpype_modules.ftrack.lib.custom_attributes import ( # type: ignore
 )
 from openpype.lib.dateutils import get_datetime_data
 from openpype.pipeline import Anatomy
+from openpype.settings import get_anatomy_settings
 from openpype.pipeline.load import get_representation_path_with_anatomy
 from openpype.pipeline.delivery import (
     get_format_dict,
@@ -85,6 +87,9 @@ class Delivery(BaseAction):
     def interface(self, session, entities, event):
         if event["data"].get("values", {}):
             return
+        
+        self.action_settings = self.get_ftrack_settings(
+            session, event, entities)["user_handlers"]["delivery_action"]
 
         title = "Delivery data to Client"
 
@@ -123,15 +128,29 @@ class Delivery(BaseAction):
         anatomy = Anatomy(project_name)
         new_anatomies = []
         first = None
+        # get delivery templates from delivery settings
+        for key, template in (self.action_settings.get("delivery_templates") or {}).items():
+            # Use only keys with `{root}` or `{root[*]}` in value
+            if isinstance(template, str) and "{root" in template:
+                new_anatomies.append(key)
+                if first is None:
+                    first = key
+        # get delivery templates from anatomy
         for key, template in (anatomy.templates.get("delivery") or {}).items():
             # Use only keys with `{root}` or `{root[*]}` in value
             if isinstance(template, str) and "{root" in template:
-                new_anatomies.append({
-                    "label": key,
-                    "value": key
-                })
+                new_anatomies.append(key)
                 if first is None:
                     first = key
+
+        # prune duplicate names
+        new_anatomies = list(sorted(set(new_anatomies)))
+        # convert list items into dicts for interface use 
+        for idx, key in enumerate(copy.deepcopy(new_anatomies)):
+            new_anatomies[idx] = {
+                "label": key,
+                "value": key
+            }
 
         skipped = False
         # Add message if there are any common components
@@ -181,7 +200,19 @@ class Delivery(BaseAction):
             }
 
         items.append({
-            "value": "<h1>Choose Components to deliver</h1>",
+            "value": "<h1>Choose Delivery Template</h1>",
+            "type": "label"
+        })
+
+        items.append({
+            "type": "enumerator",
+            "name": "__new_anatomies__",
+            "data": new_anatomies,
+            "value": first
+        })
+
+        items.append({
+            "value": "<h1>Choose Components</h1>",
             "type": "label"
         })
 
@@ -193,51 +224,24 @@ class Delivery(BaseAction):
                 "name": repre_name
             })
 
-        items.append(item_splitter)
-
         items.append({
-            "value": "<h2>Location for delivery</h2>",
+            "value": "<br><h2><i>Override root location</i></h2>",
             "type": "label"
-        })
-
-        items.append({
-            "type": "label",
-            "value": (
-                "<i>NOTE: It is possible to replace `root` key in anatomy.</i>"
-            )
         })
 
         items.append({
             "type": "text",
             "name": "__location_path__",
-            "empty_text": "Type location path here...(Optional)"
-        })
-
-        items.append(item_splitter)
-
-        items.append({
-            "value": "<h2>Anatomy of delivery files</h2>",
-            "type": "label"
-        })
-
-        items.append({
-            "type": "label",
-            "value": (
-                "<p><i>NOTE: These can be set in Anatomy.yaml"
-                " within `delivery` key.</i></p>"
-            )
-        })
-
-        items.append({
-            "type": "enumerator",
-            "name": "__new_anatomies__",
-            "data": new_anatomies,
-            "value": first
+            "empty_text": "Type root location path here...(Optional)"
         })
 
         return {
             "items": items,
-            "title": title
+            "title": title,
+            "type": "form",
+            "submit_button_label": "Deliver",
+            "width": 500,
+            "height": 750
         }
 
     def _get_repre_names(self, project_name, session, entities):
@@ -657,6 +661,16 @@ class Delivery(BaseAction):
         location_path = values.pop("__location_path__")
         anatomy_name = values.pop("__new_anatomies__")
         project_name = values.pop("__project_name__")
+        
+        # Get anatomy settings to fill up extra info (task["short"] if
+        # no task is present and override is specified)
+        anatomy_settings = get_anatomy_settings(project_name)
+
+        # if launched from list retrieve the list name to fill
+        # up template values
+        ftrack_list_name = None
+        if entities[0].entity_type == "AssetVersionList":
+            ftrack_list_name = entities[0]["name"]
 
         repre_names = []
         for key, value in values.items():
@@ -707,6 +721,25 @@ class Delivery(BaseAction):
             self.log.debug(debug_msg)
 
             anatomy_data = copy.deepcopy(repre["context"])
+
+            # add ftrack custom template keys for path resolving
+            if ftrack_list_name:
+                anatomy_data.update({
+                    "ftrack": {
+                        "listname": ftrack_list_name
+                    }
+                })
+
+            # Add and/or override Anatomy Delivery templates based on
+            # Delivery action settings. These settings can also feature more
+            # templating patterns coming from ftrack such as '{ftrack[listname]}'
+            template_override = self.action_settings["delivery_templates"].get(anatomy_name, None)
+            if template_override:
+                raw_anatomy_templates = get_anatomy_settings(project_name)["templates"]
+                raw_anatomy_templates["delivery"][anatomy_name] = template_override
+                anatomy.templates["delivery"][anatomy_name] = template_override
+                anatomy.templates_obj.set_templates(raw_anatomy_templates)
+            
             repre_report_items = check_destination_path(repre["_id"],
                                                         anatomy,
                                                         anatomy_data,

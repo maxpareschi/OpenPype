@@ -14,6 +14,16 @@ def default_custom_attributes_definition():
     return data
 
 
+def default_custom_attributes_extra_definition():
+    json_file_path = os.path.join(
+        os.path.dirname(os.path.abspath(__file__)),
+        "custom_attributes_extra.json"
+    )
+    with open(json_file_path, "r") as json_stream:
+        data = json.load(json_stream)
+    return data
+
+
 def app_definitions_from_app_manager(app_manager):
     _app_definitions = []
     for app_name, app in app_manager.applications.items():

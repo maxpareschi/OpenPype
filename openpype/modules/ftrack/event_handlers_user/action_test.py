@@ -11,7 +11,7 @@ class TestAction(BaseAction):
     description = 'Test action'
     priority = 10000
     role_list = ['Pypeclub']
-    icon = statics_icon("ftrack", "action_icons", "TestAction.svg")
+    icon = statics_icon("ftrack", "action_icons", "TestAction.png")
 
     def discover(self, session, entities, event):
         return True

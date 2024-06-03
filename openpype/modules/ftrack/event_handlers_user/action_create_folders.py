@@ -8,7 +8,7 @@ from openpype_modules.ftrack.lib import BaseAction, statics_icon
 class CreateFolders(BaseAction):
     identifier = "create.folders"
     label = "Create Folders"
-    icon = statics_icon("ftrack", "action_icons", "CreateFolders.svg")
+    icon = statics_icon("ftrack", "action_icons", "CreateFolders.png")
 
     def discover(self, session, entities, event):
         for entity_item in event["data"]["selection"]:

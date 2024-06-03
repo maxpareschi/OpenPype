@@ -15,7 +15,7 @@ class SeedDebugProject(BaseAction):
     #: priority
     priority = 100
     #: roles that are allowed to register this action
-    icon = statics_icon("ftrack", "action_icons", "SeedProject.svg")
+    icon = statics_icon("ftrack", "action_icons", "SeedProject.png")
 
     # Asset names which will be created in `Assets` entity
     assets = [

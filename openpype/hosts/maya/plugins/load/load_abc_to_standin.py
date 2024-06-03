@@ -1,4 +1,5 @@
 import os
+import math
 
 from openpype.pipeline import (
     legacy_io,
@@ -6,6 +7,18 @@ from openpype.pipeline import (
     get_representation_path
 )
 from openpype.settings import get_project_settings
+
+
+def truncate(number, digits) -> float:
+    # Improve accuracy with floating point operations, to avoid truncate(16.4, 2) = 16.39 or truncate(-1.13, 2) = -1.12
+    try:
+        nbDecimals = len(str(number).split('.')[1])
+    except:
+        nbDecimals = 0
+    if nbDecimals <= digits:
+        return number
+    stepper = 10.0 ** digits
+    return math.trunc(stepper * number) / stepper
 
 
 class AlembicStandinLoader(load.LoaderPlugin):
@@ -46,7 +59,7 @@ class AlembicStandinLoader(load.LoaderPlugin):
 
         settings = get_project_settings(os.environ['AVALON_PROJECT'])
         colors = settings["maya"]["load"]["colors"]
-        fps = legacy_io.Session["AVALON_FPS"]
+        fps = truncate(legacy_io.Session["AVALON_FPS"], 3)
         c = colors.get(family[0])
         if c is not None:
             r = (float(c[0]) / 255)
@@ -94,7 +107,7 @@ class AlembicStandinLoader(load.LoaderPlugin):
         import pymel.core as pm
 
         path = get_representation_path(representation)
-        fps = legacy_io.Session["AVALON_FPS"]
+        fps = truncate(legacy_io.Session["AVALON_FPS"], 3)
         # Update the standin
         standins = list()
         members = pm.sets(container['objectName'], query=True)

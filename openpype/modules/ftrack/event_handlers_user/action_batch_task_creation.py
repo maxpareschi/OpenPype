@@ -17,7 +17,7 @@ class BatchTasksAction(BaseAction):
     variant = None
     identifier = "batch-tasks"
     description = None
-    icon = statics_icon("ftrack", "action_icons", "BatchTasks.svg")
+    icon = statics_icon("ftrack", "action_icons", "BatchTasks.png   ")
 
     def discover(self, session, entities, event):
         '''Return true if we can handle the selected entities.

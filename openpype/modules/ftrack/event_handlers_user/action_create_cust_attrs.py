@@ -1,4 +1,5 @@
 import collections
+from random import randint
 import json
 import arrow
 import ftrack_api
@@ -14,6 +15,7 @@ from openpype_modules.ftrack.lib import (
     FPS_KEYS,
 
     default_custom_attributes_definition,
+    default_custom_attributes_extra_definition,
     app_definitions_from_app_manager,
     tool_definitions_from_app_manager
 )
@@ -190,6 +192,11 @@ class CustomAttributes(BaseAction):
             self.tools_attribute(event)
             self.intent_attribute(event)
             self.custom_attributes_from_file(event)
+            self.custom_attibute_groups_from_file(session)
+            self.custom_asset_types_from_file(session)
+            self.custom_attribute_links_from_file(session)
+            self.intent_attribute_as_note_labels(session)
+            self.custom_list_categories_from_file(session)
 
             job['status'] = 'done'
             session.commit()
@@ -437,6 +444,58 @@ class CustomAttributes(BaseAction):
         }
         self.process_attr_data(intent_custom_attr_data, event)
 
+    def intent_attribute_as_note_labels(self, session):
+        intent_key_values = self.ftrack_settings["intent"]["items"]
+        note_labels_file = default_custom_attributes_extra_definition()["NoteLabels"]
+        for item in intent_key_values.keys():
+            try:
+                note_label = session.query("NoteLabel where name is '{}'".format(
+                    item
+                )).one()
+            except:
+                note_label = None
+        if not note_label:
+            self.log.debug(
+                "Creating Note Label \"{}\"".format(item)
+            )
+            session.create("NoteLabel", {
+                "color": "#{:06x}".format(randint(0, 256**3)).upper(),
+                "name": item
+            })
+            session.commit()
+            self.log.debug(
+                "Note Label \"{}\" created".format(item)
+            )
+        for label in note_labels_file:
+            try:
+                note_label = session.query("NoteLabel where name is '{}'".format(
+                    label["name"]
+                )).one()
+            except:
+                note_label = None
+        if not note_label:
+            self.log.debug(
+                "Creating Note Label \"{}\"".format(label["name"])
+            )
+            session.create("NoteLabel", label)
+            session.commit()
+            self.log.debug(
+                "Note Label \"{}\" created".format(label["name"])
+            )
+        else:
+            self.log.debug(
+                "Updating Note Label \"{}\"".format(label["name"])
+            )
+            for key in label.keys():
+                try:
+                    note_label[key] = label[key]
+                except:
+                    continue
+            session.commit()
+            self.log.debug(
+                "Note Label \"{}\" updated".format(label["name"])
+            )
+
     def custom_attributes_from_file(self, event):
         # Load json with custom attributes configurations
         cust_attr_def = default_custom_attributes_definition()
@@ -471,6 +530,118 @@ class CustomAttributes(BaseAction):
             # Add group
             cust_attr_data["group"] = CUST_ATTR_GROUP
             self.process_attr_data(cust_attr_data, event)
+
+    def custom_attribute_links_from_file(self, session):
+        link_attrs = default_custom_attributes_extra_definition()["CustomAttributeLinkConfiguration"] 
+        for attr in link_attrs:
+            try:
+                cust_link = session.query("CustomAttributeLinkConfiguration where key is '{}'".format(
+                    attr["key"]
+                )).one()
+            except:
+                cust_link = None
+
+            if not attr.get("config"):
+                attr["config"] = json.dumps({})
+            attr.update(self.get_optional(attr))
+
+            if not cust_link:
+                self.log.debug(
+                    "Creating Custom attribute Link \"{}\"".format(attr["label"])
+                )
+                session.create("CustomAttributeLinkConfiguration", attr)
+                self.session.commit()
+                self.log.debug(
+                    "Custom attribute Link \"{}\" created with config {}".format(
+                        attr["label"],
+                        attr["config"]
+                    )
+                )
+            else:
+                self.log.debug(
+                    "Updating Custom attribute Link \"{}\"".format(attr["label"])
+                )
+                for key in attr.keys():
+                    if key not in ["key", "config", "entity_type_to"]:
+                        cust_link[key] = attr[key]
+                self.log.debug(
+                    "Custom attribute Link \"{}\" updated with config {}".format(
+                        attr["label"],
+                        attr["config"]
+                    )
+                )
+                
+            session.commit()
+
+    def custom_attibute_groups_from_file(self, session):
+        group_attrs = default_custom_attributes_extra_definition()["CustomAttributeGroup"]
+        for attr in group_attrs:
+            try:
+                cust_group = session.query("CustomAttributeGroup where name is '{}'".format(
+                    attr["name"]
+                )).one()
+            except:
+                cust_group = None
+            if not cust_group:
+                self.log.debug(
+                    "Creating Custom attribute Group \"{}\"".format(attr["name"])
+                )
+                session.create("CustomAttributeGroup", attr)
+                session.commit()
+                self.log.debug(
+                    "Custom attribute Group \"{}\" created".format(attr["name"])
+                )
+
+    def custom_asset_types_from_file(self, session):
+        attrs = default_custom_attributes_extra_definition()["AssetType"]
+        for attr in attrs:
+            try:
+                orig = session.query("AssetType where name is '{}'".format(
+                    attr["name"]
+                )).one()
+            except:
+                orig = None
+            if not orig:
+                self.log.debug(
+                    "Creating Asset Type \"{}\"".format(attr["name"])
+                )
+                session.create("AssetType", attr)
+                session.commit()
+                self.log.debug(
+                    "Asset Type \"{}\" created".format(attr["name"])
+                )
+            else:
+                self.log.debug(
+                    "Updating Asset Type \"{}\"".format(attr["name"])
+                )
+                for key in attr.keys():
+                    try:
+                        orig[key] = attr[key]
+                    except:
+                        continue
+                session.commit()
+                self.log.debug(
+                    "Asset Type \"{}\" updated".format(attr["name"])
+                )
+
+    def custom_list_categories_from_file(self, session):
+        attrs = default_custom_attributes_extra_definition()["ListCategory"]
+        for attr in attrs:
+            try:
+                orig = session.query("ListCategory where name is '{}'".format(
+                    attr["name"]
+                )).one()
+            except:
+                orig = None
+            if not orig:
+                self.log.debug(
+                    "Creating List Category \"{}\"".format(attr["name"])
+                )
+                session.create("ListCategory", attr)
+                session.commit()
+                self.log.debug(
+                    "List Category \"{}\" created".format(attr["name"])
+                )
 
     def presets_for_attr_data(self, attr_data):
         output = {}
@@ -552,11 +723,20 @@ class CustomAttributes(BaseAction):
                 if attr["entity_type"] == data["entity_type"]:
                     matching.append(attr)
 
+        if not data.get("config"):
+            data["config"] = json.dumps({})
+
         if len(matching) == 0:
             self.session.create("CustomAttributeConfiguration", data)
+            self.log.debug(
+                "Creating Custom attribute \"{}\"".format(data["label"])
+            )
             self.session.commit()
             self.log.debug(
-                "Custom attribute \"{}\" created".format(data["label"])
+                "Custom attribute \"{}\" created with config {}".format(
+                    data["label"],
+                    data["config"]
+                )
             )
 
         elif len(matching) == 1:
@@ -566,10 +746,15 @@ class CustomAttributes(BaseAction):
                     "is_hierarchical", "entity_type", "object_type_id"
                 ):
                     attr_update[key] = data[key]
-
+            self.log.debug(
+                "Updating Custom attribute \"{}\"".format(data["label"])
+            )
             self.session.commit()
             self.log.debug(
-                "Custom attribute \"{}\" updated".format(data["label"])
+                "Custom attribute \"{}\" updated with config {}".format(
+                    data["label"],
+                    data["config"]
+                )
             )
 
         else:
@@ -604,18 +789,28 @@ class CustomAttributes(BaseAction):
         elif type_name == 'enumerator':
             config = self.get_enumerator_config(attr)
 
-        if config is not None:
+        if config:
             output['config'] = config
 
         return output
 
     def get_number_config(self, attr):
+        precision = None
+        isdecimal = False
         if 'config' in attr and 'isdecimal' in attr['config']:
             isdecimal = attr['config']['isdecimal']
-        else:
-            isdecimal = False
+            if "precision" in attr["config"]:
+                precision = int(attr['config']['precision'])
+        
+        config_dict = {
+            "isdecimal": isdecimal
+        }
+        if precision:
+            config_dict.update({
+                "precision": precision
+            })
 
-        config = json.dumps({'isdecimal': isdecimal})
+        config = json.dumps(config_dict)
 
         return config
 

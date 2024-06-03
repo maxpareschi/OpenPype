@@ -1,59 +1,23 @@
-import threading
-import datetime
-import copy
-import collections
 import ftrack_api
-
-from openpype.lib import get_datetime_data
 from datetime import date
-from openpype.settings.lib import (
-    get_project_settings,
-    get_default_project_settings
-)
-import os
-import copy
-import json
-import collections
 
-from openpype.client import (
-    get_project,
-    get_assets,
-    get_subsets,
-    get_versions,
-    get_representations
-)
-from openpype_modules.ftrack.lib import BaseAction, statics_icon # type: ignore
-from openpype_modules.ftrack.lib.avalon_sync import CUST_ATTR_ID_KEY # type: ignore
-from openpype_modules.ftrack.lib.custom_attributes import ( # type: ignore
-    query_custom_attributes
-)
-from openpype.lib.dateutils import get_datetime_data
-from openpype.pipeline import Anatomy
-from openpype.pipeline.load import get_representation_path_with_anatomy
-from openpype.pipeline.delivery import (
-    get_format_dict,
-    check_destination_path,
-    deliver_single_file,
-    deliver_sequence,
-)
+from openpype_modules.ftrack.lib import BaseAction, statics_icon, create_list # type: ignore
 
 
-class CreateListsAction(BaseAction):
+class CreateDerivedListAction(BaseAction):
     """Create daily review session object per project.
     """
-    identifier = "ttd.create.lists"
-    label = "Create Lists"
-    description = "Manually create lists from other lists or selected assetversions"
+    identifier = "ttd.create.derived.list"
+    label = "Create Derived List"
+    description = "Manually create a derived list from other lists"
     role_list = ["Pypeclub", "Administrator", "Project manager"]
-    icon = statics_icon("ftrack", "action_icons", "CreateLists.png")
-    settings_key = "create_lists_action"
+    icon = statics_icon("ftrack", "action_icons", "CreateList.png")
+    settings_key = "create_derived_list_action"
 
     def discover(self, session, entities, event):
         is_valid = False
-        for entity in entities:
-            if entity.entity_type.lower() in ("assetversion", "assetversionlist"):
-                is_valid = True
-                break
+        if entities[0].entity_type == "AssetVersionList":
+            is_valid = True
 
         if is_valid:
             is_valid = self.valid_roles(session, entities, event)
@@ -69,9 +33,6 @@ class CreateListsAction(BaseAction):
         for listcat in session.query("select name, id from ListCategory").all():
             self.list_types.append({"id": listcat["id"], "name": listcat["name"]})
 
-        today = date.today()
-        formatted_date = today.strftime("%Y%m%d")
-
         items = [{
             "type": "label",
             "value": "<h1><b>Lists Options:</b></h1>"
@@ -84,13 +45,15 @@ class CreateListsAction(BaseAction):
                 "value": list_type["name"]
             })
 
-        list_name = formatted_date + "_delivery_submission_list"
-        category_name = enum_data[0]["value"]
+        list_name = None
+        category_name = None
 
-        if entity_type == "AssetVersion":
-            entity_list_name = entities[0]["lists"][-1]["name"]
-            entity_list_category = entities[0]["lists"][-1]["category"]["name"]
-        elif entity_type == "AssetVersionList":
+        category_name = enum_data[0]["value"]
+        for lt in self.list_types:
+            if lt["name"] == "Delivery":
+                category_name = "Delivery"
+        
+        if entity_type == "AssetVersionList":
             entity_list_name = entities[0]["name"]
             entity_list_category = entities[0]["category"]["name"]
 
@@ -99,6 +62,9 @@ class CreateListsAction(BaseAction):
 
         if entity_list_category:
             category_name = entity_list_category
+
+        if not list_name or not category_name:
+            return {"success": False, "message": "No list name or category found!"}
         
         items.extend(
             [   
@@ -146,10 +112,10 @@ class CreateListsAction(BaseAction):
                 },
                 {
                     "type": "label",
-                    "value": "Classic list category if not client review"
+                    "value": "'Category' for classic lists or 'Folder' for client review lists."
                 },
                 {
-                    "label": "List Category",
+                    "label": "List Category/Folder",
                     "type": "enumerator",
                     "name": "list_category",
                     "data": enum_data,
@@ -175,13 +141,27 @@ class CreateListsAction(BaseAction):
             return
         
         self.log.info("Sumbitted choices: {}".format(user_values))
-        self.project_name = self.assetversions[0]["project"]["full_name"]
 
+        created_list = create_list(
+            session,
+            entities,
+            event,
+            client_review = user_values["client_review"],
+            list_name = user_values["list_name"],
+            list_category_name = user_values["list_category"],
+            prioritize_gathers = user_values["prioritize_gathers"],
+            log = self.log
+        )
 
-        return True
+        self.log.debug("Created '{}' named '{}'".format(
+            created_list.entity_type,
+            created_list["name"]
+        ))
+
+        return {"success": True, "message": "Creation successful!"}
 
 
 def register(session):
     '''Register plugin. Called when used as an plugin.'''
 
-    CreateListsAction(session).register()
+    CreateDerivedListAction(session).register()

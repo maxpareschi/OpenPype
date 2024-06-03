@@ -171,7 +171,7 @@ class GatherAction(BaseAction):
         
         window = openpype.tools.traypublisher.window.TrayPublishWindow()
         window._overlay_widget._set_project(self.project_name)
-        # window.set_context_label("{} - GATHER DELIVERIES".format(self.project_name))
+        window.set_context_label("{} - GATHER VERSIONS".format(self.project_name))
         window.show()
         app_instance.exec_()
 
@@ -234,11 +234,10 @@ class GatherAction(BaseAction):
         
         return result
 
-    def get_comment_from_notes(self, session, entity):
-        client_tag = "For Client"
+    def get_comment_from_notes(self, session, entity, label_name):
         notes = []
         query = "select content, date, note_label_links.label.name from Note where parent_id is '{0}' and note_label_links.label.name is '{1}'".format(entity["id"],
-                                                                                                                                           client_tag)
+                                                                                                                                           label_name)
         for note in session.query(query).all():
             notes.append(note)
 
@@ -255,7 +254,7 @@ class GatherAction(BaseAction):
             }
         }
         for label in notes_sorted[-1]["note_label_links"]:
-            if label["label"]["name"] != client_tag:
+            if label["label"]["name"] != label_name:
                 intent_value = label["label"]["name"]
         
         if intent_value:
@@ -341,13 +340,13 @@ class GatherAction(BaseAction):
             "short": anatomy["tasks"][avail_tasks[detected_task_name]]["short_name"]
         }
 
-        computed_variant = repre_doc["context"]["subset"].lower().replace(
+        computed_variant = repre_doc["context"]["subset"].replace(
             repre_doc["context"]["family"],
             ""
         ).replace(
-            detected_task_name.lower(),
+            detected_task_name.capitalize(),
             ""
-        ).capitalize()
+        )
         self.log.debug("Computed variant is '{}'".format(computed_variant))
 
         subset_format_data = {
@@ -361,7 +360,7 @@ class GatherAction(BaseAction):
         computed_assetversion_name = settings["ftrack_name_template"].format_map(subset_format_data)
         self.log.debug("Computed subset is '{}'".format(computed_subset))
 
-        computed_name = "({}) - {}".format(computed_asset, computed_subset)
+        computed_name = "{} ({})".format(computed_subset, computed_asset)
         self.log.debug("Computed instance name is '{}'".format(computed_name))
 
 
@@ -372,7 +371,7 @@ class GatherAction(BaseAction):
             if gather_suffix:
                 gather_suffix = "_" + gather_suffix
             else:
-                gather_suffix = "_gather"
+                gather_suffix = "_"
         else:
             gather_root = asset_doc["data"]["parents"][-1]
             gather_suffix = ""
@@ -385,7 +384,7 @@ class GatherAction(BaseAction):
             "variant": avail_tasks[detected_task_name] + computed_variant,
             "asset": repre_doc["context"]["asset"],
             "task": detected_task_name,
-            "name": computed_name,
+            "name": computed_name.replace(" ", "_").replace("(", "").replace(")", ""),
             "label": computed_name,
             "gather_root_name": gather_root,
             "gather_project_name": project_name,
@@ -399,7 +398,8 @@ class GatherAction(BaseAction):
             "gather_ftrack_source_id": version["id"]
         }
 
-        note = self.get_comment_from_notes(session, version)
+        note = self.get_comment_from_notes(
+            session, version, settings["gather_note_label_name"].strip())
         if note:
             gather_instance.update(note)
 

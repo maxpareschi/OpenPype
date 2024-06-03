@@ -252,7 +252,7 @@
                             },
                             {
                                 "key": "extensions",
-                                "label": "Estensions",
+                                "label": "Extensions",
                                 "type": "list",
                                 "object_type": "text"
                             },
@@ -376,17 +376,26 @@
                                                 {
                                                     "type": "boolean",
                                                     "key": "enabled",
-                                                    "label": "Enabled"
+                                                    "label": "Enabled",
+                                                    "default": false
                                                 },
                                                 {
                                                     "key": "reformat_width",
                                                     "label": "Width",
-                                                    "type": "number"
+                                                    "type": "number",
+                                                    "default": 1920
                                                 },
                                                 {
                                                     "key": "reformat_height",
                                                     "label": "height",
-                                                    "type": "number"
+                                                    "type": "number",
+                                                    "default": 1980
+                                                },
+                                                {
+                                                    "key": "reformat_black_outside",
+                                                    "label": "black outside",
+                                                    "type": "boolean",
+                                                    "default": false
                                                 },
                                                 {
                                                     "type": "enum",

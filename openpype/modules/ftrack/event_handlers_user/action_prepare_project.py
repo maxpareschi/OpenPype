@@ -18,7 +18,7 @@ class PrepareProjectLocal(BaseAction):
     identifier = "prepare.project.local"
     label = "Prepare Project"
     description = "Set basic attributes on the project"
-    icon = statics_icon("ftrack", "action_icons", "PrepareProject.svg")
+    icon = statics_icon("ftrack", "action_icons", "PrepareProject.png")
 
     role_list = ["Pypeclub", "Administrator", "Project Manager"]
 

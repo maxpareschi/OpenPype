@@ -113,6 +113,16 @@ FLOAT_FPS = {23.98, 23.976, 29.97, 47.952, 59.94}
 
 RENDERLIKE_INSTANCE_FAMILIES = ["rendering", "vrayscene"]
 
+def truncate(number, digits) -> float:
+    # Improve accuracy with floating point operations, to avoid truncate(16.4, 2) = 16.39 or truncate(-1.13, 2) = -1.12
+    try:
+        nbDecimals = len(str(number).split('.')[1])
+    except:
+        nbDecimals = 0
+    if nbDecimals <= digits:
+        return number
+    stepper = 10.0 ** digits
+    return math.trunc(stepper * number) / stepper
 
 def get_main_window():
     """Acquire Maya's main window"""
@@ -2217,8 +2227,8 @@ def set_context_settings():
     asset_data = asset_doc.get("data", {})
 
     # Set project fps
-    fps = asset_data.get("fps", project_data.get("fps", 25))
-    legacy_io.Session["AVALON_FPS"] = str(fps)
+    fps = asset_data.get("fps", project_data.get("fps", 24))
+    legacy_io.Session["AVALON_FPS"] = str(truncate(fps, 3))
     set_scene_fps(fps)
 
     reset_scene_resolution()

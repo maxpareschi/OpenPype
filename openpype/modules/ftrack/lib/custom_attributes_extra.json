@@ -1,0 +1,56 @@
+{
+    "CustomAttributeLinkConfiguration": [
+        {
+            "entity_type": "asset_version",
+            "entity_type_to": "asset_version",
+            "key": "client_version_link",
+            "label": "Version Link",
+            "one_to_one": true,
+            "group": "openpype"
+        }
+    ],
+    "CustomAttributeGroup": [
+        {
+            "name": "ttd"
+        }
+    ],
+    "AssetType": [
+        {
+            "name": "Workfile",
+            "short": "workfile"
+        },
+        {
+            "name": "Effect",
+            "short": "effect"
+        },
+        {
+            "name": "Gather",
+            "short": "gather"
+        }
+    ],
+    "NoteLabels": [
+        {
+            "name": "Client feedback",
+            "color": "#3498DB"
+        },
+        {
+            "name": "For Client",
+            "color": "#FFCC00"
+        },
+        {
+            "name": "Submission Note",
+            "color": "#77CCEE"
+        }
+    ],
+    "ListCategory": [
+        {
+            "name": "Submission"
+        },
+        {
+            "name": "Delivery"
+        },
+        {
+            "name": "Dailies"
+        }
+    ]
+}

@@ -50,7 +50,7 @@ class ClientReviewSort(BaseAction):
     #: Action label.
     label = 'Sort Review'
 
-    icon = statics_icon("ftrack", "action_icons", "SortReview.svg")
+    icon = statics_icon("ftrack", "action_icons", "SortReview.png")
 
     def discover(self, session, entities, event):
         ''' Validation '''

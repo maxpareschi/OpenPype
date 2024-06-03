@@ -19,7 +19,7 @@ class DeleteAssetSubset(BaseAction):
     label = "Delete Asset/Subsets"
     # Action description.
     description = "Removes from Avalon with all childs and asset from Ftrack"
-    icon = statics_icon("ftrack", "action_icons", "DeleteAsset.svg")
+    icon = statics_icon("ftrack", "action_icons", "DeleteAsset.png")
 
     settings_key = "delete_asset_subset"
     # Db connection

@@ -3,7 +3,7 @@ import json
 import collections
 import copy
 import numbers
-
+import math
 import six
 
 from openpype.client import (
@@ -33,6 +33,17 @@ import ftrack_api
 
 log = Logger.get_logger(__name__)
 
+
+def truncate(number, digits) -> float:
+    # Improve accuracy with floating point operations, to avoid truncate(16.4, 2) = 16.39 or truncate(-1.13, 2) = -1.12
+    try:
+        nbDecimals = len(str(number).split('.')[1])
+    except:
+        nbDecimals = 0
+    if nbDecimals <= digits:
+        return number
+    stepper = 10.0 ** digits
+    return math.trunc(stepper * number) / stepper
 
 class InvalidFpsValue(Exception):
     pass
@@ -1090,7 +1101,8 @@ class SyncEntitiesFactory:
 
             if key in FPS_KEYS:
                 try:
-                    value = convert_to_fps(value)
+                    value = truncate(convert_to_fps(value), 3)
+                    print(value)
                 except InvalidFpsValue:
                     invalid_fps_items.append((entity_id, value))
             self.entities_dict[entity_id][store_key][key] = value
@@ -1140,7 +1152,8 @@ class SyncEntitiesFactory:
             default_value = attr["default"]
             if key in FPS_KEYS:
                 try:
-                    default_value = convert_to_fps(default_value)
+                    default_value = truncate(convert_to_fps(default_value), 3)
+                    print(default_value)
                 except InvalidFpsValue:
                     pass
 
@@ -1209,7 +1222,8 @@ class SyncEntitiesFactory:
             key = attribute_key_by_id[attr_id]
             if key in FPS_KEYS:
                 try:
-                    value = convert_to_fps(value)
+                    value = truncate(convert_to_fps(value), 3)
+                    print(value)
                 except InvalidFpsValue:
                     invalid_fps_items.append((entity_id, value))
                     continue

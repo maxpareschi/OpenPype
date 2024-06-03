@@ -165,7 +165,7 @@
                 "Project manager"
             ]
         },
-        "create_lists_action": {
+        "create_derived_list_action": {
             "enabled": true,
             "role_list": [
                 "Pypeclub",
@@ -196,18 +196,17 @@
                 "Project Manager",
                 "Administrator"
             ],
-            "create_list": true,
-            "create_client_review": false,
-            "use_source_list_name": false,
-            "list_template": "{yyyy}{mm}{dd}_client_delivery",
-            "list_suffix": ""
+            "delivery_templates": {},
+            "create_client_review": false
         },
         "gather_action": {
+            "enabled": true,
             "missing_task_override": [
                 "Roundtrip"
             ],
             "gather_root": "to_client",
             "gather_asset_suffix": "gather",
+            "gather_note_label_name": "For Client",
             "subset_name_template": "{family}{task[type]}{variant}",
             "ftrack_name_template": "{asset}_{task[short]}",
             "min_gather_version": 1,
