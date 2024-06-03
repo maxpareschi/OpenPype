@@ -646,7 +646,11 @@ class Delivery(BaseAction):
         # TODO: put more data and expand templating items
         ftrack_template_data = {
             "ftrack": {
-                "listname": ftrack_list_name
+                "listname": ftrack_list_name,
+                "category": entities[0]["category"]["name"],
+                "username": session.api_user,
+                "first_name": event["user"]["first_name"],
+                "last_name": event["user"]["last_name"]
             }
         }
 
