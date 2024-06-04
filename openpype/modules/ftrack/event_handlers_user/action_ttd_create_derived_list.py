@@ -141,6 +141,25 @@ class CreateDerivedListAction(BaseAction):
             return
         
         self.log.info("Sumbitted choices: {}".format(user_values))
+        list_name = user_values["list_name"]
+        all_asset_version_lists = session.query(
+            "select name from AssetVersionList "
+            f"where project.id is {entities[0]['project']['id']}").all()
+        all_review_sessions = session.query(
+            "select name from ReviewSession "
+            f"where project.id is {entities[0]['project']['id']}").all()
+
+
+
+        existing_names = [l["name"] for l in all_asset_version_lists]
+
+        if user_values["client_review"]:
+            existing_names = [l["name"] for l in all_review_sessions]
+
+        if list_name in existing_names:
+            return {
+                "success": False,
+                "message": f"Error: List name '{list_name}' exists already."}
 
         created_list = create_list(
             session,
