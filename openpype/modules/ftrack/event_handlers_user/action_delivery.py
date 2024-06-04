@@ -69,7 +69,6 @@ class Delivery(BaseAction):
         title = "Delivery data to Client"
 
         items = []
-        item_splitter = {"type": "label", "value": "---"}
 
         project_entity = self.get_project_from_entity(entities[0])
         project_name = project_entity["full_name"]
@@ -328,17 +327,6 @@ class Delivery(BaseAction):
         asset_versions = session.query(query).all()
 
         return asset_versions
-
-        # filtered_ver = list()
-        # for version in asset_versions:
-        #     if version["outgoing_links"]:
-        #         version_ = version["outgoing_links"][0]["to"]
-        #         self.log.info(f"Using delivery version {version_} instead of {version}")
-        #         version = version_
-        #     filtered_ver.append(version)
-
-        # return filtered_ver
-
 
     def _get_asset_version_ids_from_review_sessions(
         self, session, review_session_ids
@@ -604,7 +592,7 @@ class Delivery(BaseAction):
         version_by_repre_id = dict()
         ftrack_asset_versions = self._extract_asset_versions(session, entities)
         for v in ftrack_asset_versions:
-            print(f"Looking for repre mapping for version {v}")
+            self.log.info(f"Looking for repre mapping for version {v}")
             project_name = v["project"]["full_name"]
             asset_mongo_id = v["asset"]["parent"]["custom_attributes"]["avalon_mongo_id"]
             in_links = list(v["incoming_links"])
@@ -619,16 +607,16 @@ class Delivery(BaseAction):
             op_v = get_op_version_from_ftrack_assetversion(
                 project_name, asset_mongo_id, subset_name, version_number)
             if not op_v:
-                print(f"Failed to find OP version for v {v}")
+                self.log.info(f"Failed to find OP version for v {v}")
                 continue
 
             version_id = op_v["_id"]
             representations = list(get_representations(
                 project_name, version_ids=[version_id]))
     
-            for r in representations:
-                print(f"Adding {r['_id']}{v} for repre-version dict")
-                version_by_repre_id[r["_id"]] = v
+            for repre in representations:
+                self.log.info(f"Adding {repre['_id']}{v} for repre-version dict")
+                version_by_repre_id[repre["_id"]] = v
         
         return version_by_repre_id
 
@@ -681,7 +669,7 @@ class Delivery(BaseAction):
         version_by_repre_id = self.generate_version_by_repre_id_dict(session, entities)
 
         for v in set(version_by_repre_id.values()):
-            print(f"Reseting custom attributes values for version {v}")
+            self.log.info(f"Reseting custom attribute 'delivery_name' for version {v}")
             v["custom_attributes"]["delivery_name"] = ""
 
         assert version_by_repre_id != dict()
@@ -760,14 +748,11 @@ class Delivery(BaseAction):
                 self.log
             )
             if not frame:
-                r, success = deliver_single_file(*args)
+                report, success = deliver_single_file(*args)
             else:
-                r, success = deliver_sequence(*args)
-
-            # print(r, success)
+                report, success = deliver_sequence(*args)
 
             if not success:
-                # print(f"Not success")
                 continue
 
 
@@ -782,19 +767,13 @@ class Delivery(BaseAction):
                 if version["id"] not in attr_by_version:
                     attr_by_version[version["id"]] = {"attr":"", "entity": version}
 
-                files = "\n".join([Path(f).name for f in r["created_files"][-1:]])
-                # c_attr = version["custom_attributes"]["disk_file_location"]
-                # print(f"Updating custom attr from {c_attr} to {files}")
+                files = "\n".join([Path(f).name for f in report["created_files"][-1:]])
                 attr_by_version[version["id"]]["attr"] += files +"\n\n"
-                print(f"Adding files {files}")
+                self.log.info(f"Adding files {files}")
             except Exception as e:
-                print(f"Failed to update version for representation {repre['_id']} due to {e}")
-                print(f"valid ids are: {version_by_repre_id.keys()}")
-
-
-        from pprint import pprint
-
-        pprint(attr_by_version.items())
+                self.log.info(
+                    f"Failed to update version for representation {repre['_id']} due to {e}"
+                )
 
         for id_, value in attr_by_version.items():
             value["entity"]["custom_attributes"]["delivery_name"] = value["attr"]
