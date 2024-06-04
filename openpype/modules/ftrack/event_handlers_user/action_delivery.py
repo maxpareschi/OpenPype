@@ -6,7 +6,6 @@ import json
 import collections
 from pathlib import Path
 from logging import getLogger
-from datetime import datetime
 
 logger = getLogger(__name__)
 
@@ -17,8 +16,6 @@ from openpype.client import (
     get_versions,
     get_representations
 )
-# from openpype.settings import get_project_settings
-from openpype.settings import get_project_settings
 from openpype_modules.ftrack.lib import BaseAction, statics_icon, create_list # type: ignore
 from openpype_modules.ftrack.lib.avalon_sync import CUST_ATTR_ID_KEY # type: ignore
 from openpype_modules.ftrack.lib.custom_attributes import ( # type: ignore
