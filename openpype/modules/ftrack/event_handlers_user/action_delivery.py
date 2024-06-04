@@ -824,7 +824,7 @@ class Delivery(BaseAction):
                 "value": '<p>{}</p>'.format("<br>".join(__items))
             })
 
-        if not items:
+        if not items or list(report_items.keys()) == ["created_files"]:
             return {
                 "success": True,
                 "message": "Delivery Finished"
