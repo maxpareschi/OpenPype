@@ -165,6 +165,11 @@ def deliver_single_file(
     log.debug("Copying single: {} -> {}".format(src_path, delivery_path))
     _copy_file(src_path, delivery_path)
 
+    # TODO: use defaultdict instead?
+    if not "created_files" in report_items:
+        report_items["created_files"] = list()
+    report_items["created_files"].append(delivery_path)
+
     return report_items, 1
 
 
@@ -294,6 +299,12 @@ def deliver_sequence(
     src_head = src_collection.head
     src_tail = src_collection.tail
     uploaded = 0
+
+    # TODO: use defaultdict instead?
+    if not "created_files" in report_items:
+        report_items["created_files"] = list()
+
+
     for index in src_collection.indexes:
         src_padding = src_collection.format("{padding}") % index
         src_file_name = "{}{}{}".format(src_head, src_padding, src_tail)
@@ -306,5 +317,6 @@ def deliver_sequence(
         log.debug("Copying single: {} -> {}".format(src, dst))
         _copy_file(src, dst)
         uploaded += 1
+        report_items["created_files"].append(dst)
 
     return report_items, uploaded

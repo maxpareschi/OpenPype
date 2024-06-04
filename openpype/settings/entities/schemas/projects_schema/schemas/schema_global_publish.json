@@ -166,6 +166,59 @@
         },
         {
             "type": "dict",
+            "label": "Validate Comment",
+            "key": "ValidateComment",
+            "is_group": true,
+            "checkbox_key": "enabled",
+            "children": [
+                {
+                    "type": "boolean",
+                    "key": "enabled",
+                    "label": "Enabled"
+                },
+                {
+                    "type": "label",
+                    "label": "Validate if Publishing Comment was set up. It is possible to disable validation for specific publishing context with profiles."
+                },
+                {
+                    "type": "list",
+                    "collapsible": true,
+                    "key": "profiles",
+                    "object_type": {
+                        "type": "dict",
+                        "children": [
+                            {
+                                "key": "hosts",
+                                "label": "Host names",
+                                "type": "hosts-enum",
+                                "multiselection": true
+                            },
+                            {
+                                "key": "task_types",
+                                "label": "Task types",
+                                "type": "task-types-enum"
+                            },
+                            {
+                                "key": "tasks",
+                                "label": "Task names",
+                                "type": "list",
+                                "object_type": "text"
+                            },
+                            {
+                                "type": "separator"
+                            },
+                            {
+                                "key": "validate",
+                                "label": "Validate",
+                                "type": "boolean"
+                            }
+                        ]
+                    }
+                }
+            ]
+        },
+        {
+            "type": "dict",
             "collapsible": true,
             "checkbox_key": "enabled",
             "key": "ExtractThumbnail",

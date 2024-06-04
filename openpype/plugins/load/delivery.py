@@ -306,7 +306,7 @@ class DeliveryOptionsDialog(QtWidgets.QDialog):
     def _format_report(self, report_items):
         """Format final result and error details as html."""
         msg = "Delivery finished"
-        if not report_items:
+        if not report_items or list(report_items.keys()) == ["created_files"]:
             msg += " successfully"
         else:
             msg += " with errors"

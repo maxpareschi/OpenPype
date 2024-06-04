@@ -8,7 +8,6 @@ from pathlib import Path
 import ftrack_api
 from ftrack_api import Session
 from ftrack_api.entity.asset_version import AssetVersion
-from ftrack_api.entity.location import Location
 from openpype_modules.ftrack.lib import BaseAction, statics_icon # type: ignore
 
 
@@ -339,6 +338,23 @@ class ORVAction(BaseAction):
         # NOTE: get_path_list2 is a generator, it needs to be turned into a list
         comp_locations = [c for c in comp_locs + (prev_comp_locs or []) if c is not None]
 
+        def return_ttd_envs():
+            return {**os.environ,
+                "TTD_STUDIO_RESOURCES":"R:",
+                "TTD_STUDIO_LOCAL_SOFTWARE":'"C:/Program Files"',
+                "TTD_STUDIO_COMMON_SOFTWARE":"R:/shared_software/common",
+                "TTD_STUDIO_SHARED_SOFTWARE":"R:/shared_software/windows",
+                "OCIO":"R:/ocioconfigs/aces_1.2/config.ocio",
+                "solidangle_LICENSE":"5053@appserver",
+                "peregrinel_LICENSE":"5080@appserver",
+                "MAYA_VERSION":"2022",
+                "MTOA_VERSION":"5.0.0.1",
+                "YETI_VERSION":"4.1.0",
+                "MTOA":"%TTD_STUDIO_SHARED_SOFTWARE%/MtoA/%MTOA_VERSION%",
+                "YETI":"%TTD_STUDIO_SHARED_SOFTWARE%/Yeti/Yeti-v%YETI_VERSION%_Maya%MAYA_VERSION%-windows",
+                "MAYA_MODULE_PATH":"%MAYA_MODULE_PATH%;%MTOA%;%YETI%",
+            }
+
         def order_lambda(comp_loc):
             from difflib import SequenceMatcher
             # order the list of all components so the selected one goes first
@@ -367,7 +383,7 @@ class ORVAction(BaseAction):
 
         cmd = [self.orvpush_path, "-tag", prj, "py-exec", src]
         self.log.debug(f"Running ORVPUSH: {cmd}")
-        rv_push_process = subprocess.Popen(cmd)
+        rv_push_process = subprocess.Popen(cmd, env=return_ttd_envs())
         msg = f"ORV Launching: {fps} FPS with {'no' if no_slate else ''} slate."
         return {"success": True, "message": msg}
 
