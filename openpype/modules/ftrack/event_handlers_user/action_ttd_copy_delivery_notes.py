@@ -3,6 +3,9 @@ from tempfile import gettempdir
 from urllib.request import urlopen
 from shutil import copyfileobj
 from os import environ
+from logging import Logger, getLogger
+
+logger = getLogger(__name__)
 
 from openpype_modules.ftrack.lib import BaseAction, statics_icon # type: ignore
 from ftrack_api import Session, symbol
@@ -13,7 +16,13 @@ from ftrack_api.entity.note import Note
 from ftrack_api.event.base import Event
 from ftrack_api.entity.location import Location
 
-
+matching_fields = [
+    "content",
+    "project_id",
+    "parent_type",
+    "category_id",
+    "user_id",
+    ]
 
 def duplicate_ftrack_server_component(comp: Component, session: Session):
 
@@ -59,19 +68,48 @@ def transfer_note_components(note_src: Note, note_target: Note, session: Session
         session.create("NoteComponent", {"component_id":new_component["id"], "note_id": note_target["id"]})
 
 
+def create_notes(
+    session: Session, src_note: Note, target: Note, notes_in_target: List[Note]
+    ):
+    msg = ""
+    # REMOVE ALREADY MATCHING NOTES IN TARGET
+    for target_note in notes_in_target:
+        if  all(src_note[f] == target_note[f] for f in matching_fields):
 
+            logger.info(
+                f"Note already copied. {src_note} -> {target_note}, "
+                f"removing it. Content is: {src_note['content']}"
+            )
+            session.delete(target_note)
+    else:
+        replies = [
+            session.create(
+                "Note",
+                {tag: reply[tag] for tag in matching_fields}
+                ) for reply in src_note["replies"]
+            ]
 
+        logger.info("Note components are:", list(src_note["note_components"]))
+
+        r = session.create("Note", {
+            **{tag: src_note[tag] for tag in matching_fields},
+            "parent_id": target["id"],
+            "replies": replies,
+            # "note_label_links" : note_label_links,
+            })
+        
+        transfer_note_components(src_note, r, session)
+
+        for i, reply in enumerate(src_note["replies"]):
+            transfer_note_components(reply, r["replies"][i], session)
+
+        logger.info(f"Updated client notes for version_id {target['id']}")
+        msg += f"Updated client notes for version {target['id']}"
+    return msg
 
 class CopyDeliveryNotes(BaseAction):
     """Action for forwarding client notes from delivery version into source."""
 
-    matching_fields = [
-        "content",
-        "project_id",
-        "parent_type",
-        "category_id",
-        "user_id",
-        ]
     identifier = 'ttd.copy.notes.action'
     label = 'Forward Delivery Notes'
     description = 'Forward client notes from delivery to source.'
@@ -133,37 +171,8 @@ class CopyDeliveryNotes(BaseAction):
     
             self.log.info(f"Target notes are: {notes_in_target}")
 
-            for target_note in notes_in_target:
-                if  all(note[f] == target_note[f] for f in self.matching_fields):
-                    self.log.info(f"Note already copied. {note} -> {target_note}, "
-                        "removing it. Content is: {note['content']}")
-                    session.delete(target_note)
-                    # check content
-                    # break
-            else:
-                replies = [
-                    session.create(
-                        "Note",
-                        {tag: reply[tag] for tag in self.matching_fields}
-                        ) for reply in note["replies"]
-                    ]
+            msg += create_notes(session, note, target, notes_in_target)
 
-                print("Note components are:", list(note["note_components"]))
-
-                r = session.create("Note", {
-                    **{tag: note[tag] for tag in self.matching_fields},
-                    "parent_id": target["id"],
-                    "replies": replies,
-                    # "note_label_links" : note_label_links,
-                    })
-                
-                transfer_note_components(note, r, session)
-
-                for i, reply in enumerate(note["replies"]):
-                    transfer_note_components(reply, r["replies"][i], session)
-
-                self.log.info(f"Updated client notes for version_id {target['id']}")
-                msg += f"Updated client notes for version {target['id']}"
         session.commit()
         return msg
 
