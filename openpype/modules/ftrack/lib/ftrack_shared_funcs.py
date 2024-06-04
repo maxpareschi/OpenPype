@@ -67,7 +67,6 @@ def transfer_note_components(note_src: Note, note_target: Note, session: Session
             logger.info(f"No new component was returned")
             continue
         session.create("NoteComponent", {"component_id":new_component["id"], "note_id": note_target["id"]})
-        session.commit()
 
 
 def create_notes(
@@ -91,7 +90,7 @@ def create_notes(
                 ) for reply in src_note["replies"]
             ]
 
-        logger.info("Note components are:", list(src_note["note_components"]))
+        logger.info(f"Note components are: {list(src_note['note_components'])}")
 
         r = session.create("Note", {
             **{tag: src_note[tag] for tag in matching_fields},
