@@ -153,10 +153,11 @@ class CreateDerivedListAction(BaseAction):
             log = self.log
         )
 
-        self.log.debug("Created '{}' named '{}'".format(
-            created_list.entity_type,
-            created_list["name"]
-        ))
+        if create_list:
+            self.log.debug("Created '{}' named '{}'".format(
+                created_list.entity_type,
+                created_list["name"]
+            ))
 
         return {"success": True, "message": "Creation successful!"}
 

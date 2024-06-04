@@ -1,5 +1,5 @@
 from logging import getLogger
-from typing import List
+from typing import List, Optional
 from tempfile import gettempdir
 from urllib.request import urlopen
 from shutil import copyfileobj
@@ -12,12 +12,13 @@ from ftrack_api.entity.note import Note
 from ftrack_api.entity.location import Location
 from ftrack_api import Session
 from ftrack_api.entity.base import Entity
+from ftrack_api.event.base import Event
 
 
 matching_fields = [
     "content",
     "project_id",
-    "parent_type",
+    # "parent_type",
     "category_id",
     "user_id",
     ]
@@ -59,11 +60,14 @@ def transfer_note_components(note_src: Note, note_target: Note, session: Session
         try:
             new_component = duplicate_ftrack_server_component(comp, session)
         except Exception as e:
+            session.rollback()
             logger.info(f"Failed to copy component {comp} due to {e}")
             continue
         if new_component is None:
+            logger.info(f"No new component was returned")
             continue
         session.create("NoteComponent", {"component_id":new_component["id"], "note_id": note_target["id"]})
+        session.commit()
 
 
 def create_notes(
@@ -92,6 +96,7 @@ def create_notes(
         r = session.create("Note", {
             **{tag: src_note[tag] for tag in matching_fields},
             "parent_id": target["id"],
+            "parent_type": target.entity_type,
             "replies": replies,
             # "note_label_links" : note_label_links,
             })
@@ -103,24 +108,30 @@ def create_notes(
 
         logger.info(f"Updated client notes for version_id {target['id']}")
         msg += f"Updated client notes for version {target['id']}"
+        session.commit()
     return msg
 
 
 def copy_client_notes(session: Session, review_items: List[Entity]):
-    
+    # session = Session(plugin_paths=[])
     sources = [rev["asset_version"] for rev in review_items]
+    logger.info(f"Source versions are: {sources}")
+    logger.info(f"Review versions are: {review_items}")
     versions_ids = f"({', '.join([v['id'] for v in sources])})"
     versions_by_id = {v["id"]: v for v in sources}
+
+    logger.info(f"versions_by_id dict is {versions_by_id}")
 
     select = "select author, category, content, in_reply_to, category.name, parent_id"
     where = f"where parent_id in {versions_ids} and in_reply_to is None and category.name is \"For Client\""
 
     notes = session.query(f"{select} from Note {where}").all()
 
+    logger.info(f"Notes are {notes}")
+
     msg = ""
-
     for note in notes:
-
+        logger.info(f"Working on note {note}")
         source = versions_by_id[note["parent_id"]]
         target = next(r for r in review_items if r["asset_version"] == source)
 
@@ -130,23 +141,28 @@ def copy_client_notes(session: Session, review_items: List[Entity]):
         logger.info(f"Target notes are: {notes_in_target}")
         msg += create_notes(session, note, target, notes_in_target)
 
-    session.commit()
+        session.commit()
+
     return msg
 
 
 
-def create_list(session,
-                entities,
-                event,
-                client_review = False,
-                list_name = None,
-                list_category_name = None,
-                prioritize_gathers = False,
-                log = None
-                ):
+def create_list(
+    session: Session,
+    entities: List[Entity],
+    event: Event,
+    client_review: bool = False,
+    list_name: Optional[str] = None,
+    list_category_name = None,
+    prioritize_gathers: bool = False,
+    log = None
+    ):
     
-    if not log:
-        log = getLogger("Create List")
+    global logger
+    if log:
+        logger=log
+    else:
+        log = logger
 
     review_session = None
     created_list = None
@@ -241,7 +257,8 @@ def create_list(session,
                 fav["version"],
                 created_review_object["name"]
             ))
-        copy_client_notes(session, review_items)
+        session.commit()
+        copy_client_notes(Session(plugin_paths=[]), review_items)
 
     else:
         list_data = {
