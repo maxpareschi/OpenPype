@@ -1,7 +1,13 @@
+from __future__ import annotations
+from typing import List
 import os
 import copy
 import json
 import collections
+from pathlib import Path
+from logging import getLogger
+
+logger = getLogger(__name__)
 
 from openpype.client import (
     get_project,
@@ -10,7 +16,6 @@ from openpype.client import (
     get_versions,
     get_representations
 )
-from openpype.settings import get_project_settings
 from openpype_modules.ftrack.lib import BaseAction, statics_icon, create_list # type: ignore
 from openpype_modules.ftrack.lib.avalon_sync import CUST_ATTR_ID_KEY # type: ignore
 from openpype_modules.ftrack.lib.custom_attributes import ( # type: ignore
@@ -26,6 +31,10 @@ from openpype.pipeline.delivery import (
     deliver_single_file,
     deliver_sequence,
 )
+from ftrack_api import Session
+from ftrack_api.entity.base import Entity
+
+from openpype.modules.ftrack.event_handlers_user.action_ttd_delete_version import get_op_version_from_ftrack_assetversion
 
 
 class Delivery(BaseAction):
@@ -57,7 +66,6 @@ class Delivery(BaseAction):
         title = "Delivery data to Client"
 
         items = []
-        item_splitter = {"type": "label", "value": "---"}
 
         project_entity = self.get_project_from_entity(entities[0])
         project_name = project_entity["full_name"]
@@ -315,16 +323,7 @@ class Delivery(BaseAction):
         query += f" from AssetVersion where id in ({qkeys})"
         asset_versions = session.query(query).all()
 
-        filtered_ver = list()
-        for version in asset_versions:
-            if version["outgoing_links"]:
-                version_ = version["outgoing_links"][0]["to"]
-                self.log.info(f"Using delivery version {version_} instead of {version}")
-                version = version_
-            filtered_ver.append(version)
-
-        return filtered_ver
-
+        return asset_versions
 
     def _get_asset_version_ids_from_review_sessions(
         self, session, review_session_ids
@@ -585,11 +584,44 @@ class Delivery(BaseAction):
 
         return report
 
+    def generate_version_by_repre_id_dict(self, session: Session, entities: List[Entity]):
+        # reset "AssetVersion" custom attribute "disk_file_location"
+        version_by_repre_id = dict()
+        ftrack_asset_versions = self._extract_asset_versions(session, entities)
+        for v in ftrack_asset_versions:
+            self.log.info(f"Looking for repre mapping for version {v}")
+            project_name = v["project"]["full_name"]
+            asset_mongo_id = v["asset"]["parent"]["custom_attributes"]["avalon_mongo_id"]
+            in_links = list(v["incoming_links"])
+
+            if in_links:
+                # v = in_links[0]
+                version_parent = in_links[0]["from"]["asset"]["parent"]
+                asset_mongo_id = version_parent["custom_attributes"]["avalon_mongo_id"]
+
+            subset_name = v["asset"]["name"]
+            version_number = v["version"]
+            op_v = get_op_version_from_ftrack_assetversion(
+                project_name, asset_mongo_id, subset_name, version_number)
+            if not op_v:
+                self.log.info(f"Failed to find OP version for v {v}")
+                continue
+
+            version_id = op_v["_id"]
+            representations = list(get_representations(
+                project_name, version_ids=[version_id]))
+    
+            for repre in representations:
+                self.log.info(f"Adding {repre['_id']}{v} for repre-version dict")
+                version_by_repre_id[repre["_id"]] = v
+        
+        return version_by_repre_id
+
     def real_launch(self, session, entities, event):
         self.log.info("Delivery action just started.")
         report_items = collections.defaultdict(list)
 
-        values = event["data"]["values"]
+        values: dict = event["data"]["values"]
 
         location_path = values.pop("__location_path__")
         anatomy_name = values.pop("__new_anatomies__")
@@ -630,7 +662,17 @@ class Delivery(BaseAction):
             representation_names=repre_names,
             version_ids=version_ids
         ))
+
+        version_by_repre_id = self.generate_version_by_repre_id_dict(session, entities)
+
+        for v in set(version_by_repre_id.values()):
+            self.log.info(f"Reseting custom attribute 'delivery_name' for version {v}")
+            v["custom_attributes"]["delivery_name"] = ""
+
+        assert version_by_repre_id != dict()
+
         anatomy = Anatomy(project_name)
+
 
         # Add and/or override Anatomy Delivery templates based on
         # Delivery action settings. These settings can also feature more
@@ -647,16 +689,19 @@ class Delivery(BaseAction):
         ftrack_template_data = {
             "ftrack": {
                 "listname": ftrack_list_name,
-                "category": entities[0]["category"]["name"],
                 "username": session.api_user,
-                "first_name": event["user"]["first_name"],
-                "last_name": event["user"]["last_name"]
+                # "first_name": event["user"]["first_name"],
+                # "last_name": event["user"]["last_name"]
             }
         }
+        if entities[0].entity_type == "AssetVersionList":
+            ftrack_template_data["category"] = entities[0]["category"]["name"]
 
         format_dict = get_format_dict(anatomy, location_path)
-
         datetime_data = get_datetime_data()
+
+        attr_by_version = dict()
+
         for repre in repres_to_deliver:
             source_path = repre.get("data", {}).get("path")
             debug_msg = "Processing representation {}".format(repre["_id"])
@@ -700,23 +745,46 @@ class Delivery(BaseAction):
                 self.log
             )
             if not frame:
-                deliver_single_file(*args)
+                report, success = deliver_single_file(*args)
             else:
-                deliver_sequence(*args)
+                report, success = deliver_sequence(*args)
 
-            # get final path of repre to be used for attributes
-            # and fill custom attributes on list
+            if not success:
+                continue
+
+
             anatomy_filled = anatomy.format_all(anatomy_data)
             dest_path = anatomy_filled["delivery"][anatomy_name]
             
             collected_repres.append(repre["name"])
             collected_paths.append(dest_path)
+
+            try:
+                version = version_by_repre_id[repre["_id"]]
+                if version["id"] not in attr_by_version:
+                    attr_by_version[version["id"]] = {"attr":"", "entity": version}
+
+                files = "\n".join([Path(f).name for f in report["created_files"][-1:]])
+                attr_by_version[version["id"]]["attr"] += files +"\n\n"
+                self.log.info(f"Adding files {files}")
+            except Exception as e:
+                self.log.info(
+                    f"Failed to update version for representation {repre['_id']} due to {e}"
+                )
+
+        for id_, value in attr_by_version.items():
+            value["entity"]["custom_attributes"]["delivery_name"] = value["attr"]
+
+
+        report_items.pop("created_files") # removes false positive
+        # get final path of repre to be used for attributes
+        # and fill custom attributes on list
+
             
         if entities[0].entity_type.lower() == "assetversionlist":
             entities[0]["custom_attributes"]["delivery_package_name"] = ftrack_list_name
             entities[0]["custom_attributes"]["delivery_type"] = ", ".join(list(set(collected_repres)))
             entities[0]["custom_attributes"]["delivery_package_path"] = os.path.commonpath(collected_paths)
-            session.commit()
             create_list(
                 session,
                 entities,
@@ -727,6 +795,7 @@ class Delivery(BaseAction):
                 log = self.log
             )
 
+        session.commit()
         return self.report(report_items)
 
     def report(self, report_items):
@@ -755,7 +824,7 @@ class Delivery(BaseAction):
                 "value": '<p>{}</p>'.format("<br>".join(__items))
             })
 
-        if not items:
+        if not items or list(report_items.keys()) == ["created_files"]:
             return {
                 "success": True,
                 "message": "Delivery Finished"

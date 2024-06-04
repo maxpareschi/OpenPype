@@ -1,3 +1,4 @@
+from __future__ import annotations
 from typing import List
 from tempfile import gettempdir
 from urllib.request import urlopen
