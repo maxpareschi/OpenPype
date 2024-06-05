@@ -147,11 +147,15 @@ class ExtractTemplatedTranscode(publish.Extractor):
                 elif transcoding_type == "color_conversion":
                     if output_colorspace == "":
                         raise ValueError("Error on Representation: missing output color profile!")
+                    
+                self.log.debug("Source staging dir is set as '{}'".format(repre["stagingDir"]))
 
                 new_staging_dir = self._get_transcode_temp_dir(
-                    self.staging_dir(instance),
+                    self.temp_staging_dir(),
                     profile_name)
                 new_repre["stagingDir"] = new_staging_dir
+
+                self.log.debug("Destination staging dir is set as '{}'".format(new_repre["stagingDir"]))
 
                 orig_file_list = list(set(copy.deepcopy(new_repre["files"])))
 
@@ -189,7 +193,7 @@ class ExtractTemplatedTranscode(publish.Extractor):
                     input_is_sequence = False
 
                 repre_in = self._translate_to_sequence(repre)
-                repre_out = self._translate_to_sequence(new_repre)
+                repre_out = self._translate_to_sequence(new_repre, new_repre["stagingDir"])
 
                 nuke_script_save_path = os.path.join(
                     new_repre["stagingDir"],
@@ -324,7 +328,9 @@ class ExtractTemplatedTranscode(publish.Extractor):
             json.dumps(instance.data["representations"], indent=4, default=str)
         ))
                     
-    def _translate_to_sequence(self, repre):
+    def _translate_to_sequence(self, repre, staging_dir=None):
+        if not staging_dir:
+            staging_dir = repre["stagingDir"]
         pattern = [clique.PATTERNS["frames"]]
         collections, remainder = clique.assemble(
             repre["files"], patterns=pattern,
@@ -340,7 +346,7 @@ class ExtractTemplatedTranscode(publish.Extractor):
             padding = len(str(frames[0]))
             frame_str = "".join(["#" for i in range(padding)])
             file_name = os.path.join(
-                repre["stagingDir"],
+                staging_dir,
                 "{}{}{}".format(
                     collection.head,
                     frame_str,
@@ -351,7 +357,7 @@ class ExtractTemplatedTranscode(publish.Extractor):
             self.log.debug("Repre is not a sequence, single name output: '{}'".format(repre["files"]))
             head, tail = os.path.splitext(repre["files"])
             return os.path.join(
-                repre["stagingDir"], repre["files"]).replace("\\", "/"), head, "", tail, None
+                staging_dir, repre["files"]).replace("\\", "/"), head, "", tail, None
 
         return file_name, collection.head, frame_str, collection.tail, frames
 
