@@ -6,11 +6,12 @@ import re
 import shutil
 import clique
 import subprocess
-import pyblish.api
+import uuid
 import platform
-
 if platform.system().lower() == "windows":
     from ctypes import create_unicode_buffer, windll
+
+import pyblish.api
 
 from openpype.pipeline import (
     anatomy,
@@ -22,16 +23,7 @@ from openpype.lib.applications import ApplicationManager
 from openpype.lib.profiles_filtering import filter_profiles
 
 
-def sanitize_path(path):
-    final_path = path.replace("\\", "/")
-    if platform.system().lower() == "windows":
-        BUFFER_SIZE = 512
-        windows_path = final_path.replace("/", "\\")
-        buffer = create_unicode_buffer(BUFFER_SIZE)
-        GetLongPathName = windll.kernel32.GetLongPathNameW
-        GetLongPathName(windows_path, buffer, BUFFER_SIZE)
-        final_head = buffer.value
-    return final_path.replace("\\", "/")
+
         
 
 class ExtractTemplatedTranscode(publish.Extractor):
@@ -166,11 +158,13 @@ class ExtractTemplatedTranscode(publish.Extractor):
                     
                 self.log.debug("Source staging dir is set as '{}'".format(repre["stagingDir"]))
 
-                temp_staging_dir = sanitize_path(self.temp_staging_dir())
+                temp_staging_dir = self._get_temp_staging_dir()
+                self.log.debug("Temporary staging is set as '{}'".format(temp_staging_dir))
+
                 new_staging_dir = self._get_transcode_temp_dir(
                     temp_staging_dir,
                     profile_name)
-                new_repre["stagingDir"] = new_staging_dir
+                new_repre["stagingDir"] = self._sanitize_path(new_staging_dir)
 
                 self.log.debug("Destination staging dir is set as '{}'".format(new_repre["stagingDir"]))
 
@@ -248,7 +242,6 @@ class ExtractTemplatedTranscode(publish.Extractor):
                     "color_config": color_config,
                     "profile_data": profile_def
                 }
-                self.log.debug(json.dumps(processed_data, indent=4, default=str))
 
                 if transcoding_type == "template":
                     processed_data["profile_data"]["template_path"]["template"] = template_original_path.format(**template_format_data)
@@ -361,7 +354,9 @@ class ExtractTemplatedTranscode(publish.Extractor):
 
             collection = collections[0]
             frames = list(collection.indexes)
-            padding = len(str(frames[0]))
+            clique_padding = int(collection.padding)
+            last_padding = len(str(frames[-1]))
+            padding = max(clique_padding, last_padding)
             frame_str = "".join(["#" for i in range(padding)])
             file_name = os.path.join(
                 staging_dir,
@@ -471,6 +466,43 @@ class ExtractTemplatedTranscode(publish.Extractor):
         shutil.rmtree(new_dir, ignore_errors=True)
         os.makedirs(new_dir, exist_ok=True)
         return new_dir
+    
+    def _sanitize_path(self, path):
+        final_path = path.replace("\\", "/")
+        if platform.system().lower() == "windows":
+            BUFFER_SIZE = 512
+            windows_path = final_path.replace("/", "\\")
+            buffer = create_unicode_buffer(BUFFER_SIZE)
+            GetLongPathName = windll.kernel32.GetLongPathNameW
+            GetLongPathName(windows_path, buffer, BUFFER_SIZE)
+            final_path = buffer.value
+            return final_path.replace("\\", "/")
+    
+    def _get_temp_staging_dir(self, subdir=None):
+        temp_dir = os.environ.get(
+            "TMP",
+            os.environ.get(
+                "TEMP",
+                os.environ.get(
+                    "TMPDIR",
+                    None
+                )
+            )
+        )
+        if temp_dir:
+            temp_dir = os.path.join(
+                temp_dir,
+                "pyblish_tmp_" + str(uuid.uuid4()).replace("-", "")[0:15]
+            ).replace("\\", "/")
+            if subdir:
+                temp_dir = os.path.join(
+                    temp_dir,
+                    subdir
+                ).replace("\\", "/")
+            os.makedirs(temp_dir, exist_ok=True)
+            return self._sanitize_path(temp_dir)
+        else:
+            raise AttributeError("staging dir was not created, wrong parameters!")
 
     def _get_template_data_format(self):
         ana = anatomy.Anatomy(os.environ["AVALON_PROJECT"])
@@ -530,22 +562,25 @@ class ExtractTemplatedTranscode(publish.Extractor):
             os.path.abspath(script_path),
             os.path.abspath(json_args)
         ]
-        
+
+        save_log_path = os.path.splitext(data["save_path"])[0] + ".log"
+        self.log.debug("Log file for Nuke python process written to: {}".format(save_log_path))
+        with open(save_log_path, "w") as log:
+            log.write("")
         self.log.debug("Json exchange file written to: {}".format(json_args))
         self.log.debug("Launcing suprocess: {}".format(" ".join(cmd)))
 
         process = subprocess.Popen(
             cmd,
-            universal_newlines=True,
+            # universal_newlines=True,
             creationflags=subprocess.CREATE_NEW_CONSOLE,
-            bufsize=1,
+            # bufsize=1,
             start_new_session=True,
             env=env
         )
-
         return_code = process.wait()
 
-        with open(os.path.splitext(data["save_path"])[0] + ".log", "r") as log:
+        with open(save_log_path, "r") as log:
             self.log.debug(log.read())
 
         self.log.debug("TRANSCODE >>> END (return code: {})\n".format(return_code))
