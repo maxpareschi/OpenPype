@@ -739,6 +739,14 @@
                                             "type": "separator"
                                         },
                                         {
+                                            "type": "text",
+                                            "key": "force_fps",
+                                            "label": "Force FPS for this review"
+                                        },
+                                        {
+                                            "type": "separator"
+                                        },
+                                        {
                                             "type": "label",
                                             "label": "Crop input overscan. See the documentation for more information."
                                         },

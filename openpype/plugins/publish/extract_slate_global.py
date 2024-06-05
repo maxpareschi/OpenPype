@@ -561,7 +561,7 @@ class SlateCreator:
             tc = tc.replace("\"", "")
         except:
             self.log.debug("OIIO process failed, switching to default tc...")
-            tc = "00:00:41:17"
+            tc = "01:00:00:00"
         
         self.log.debug("{0}: New starting timecode Found: {1}".format(name, tc))
         tc = self.offset_timecode(tc, offset)
@@ -601,7 +601,7 @@ class SlateCreator:
             self.log.debug("{0}: New starting timecode Found: {1}".format(name, tc))
         except:
             self.log.debug("FFPROBE process failed, switching to default tc...")
-            tc = "00:00:41:17"
+            tc = "01:00:00:00"
         tc = self.offset_timecode(tc, offset)
         self.log.debug("{0}: New timecode for slate: {1}".format(name, tc))
         self.data["timecode"] = tc
@@ -774,14 +774,14 @@ class ExtractSlateGlobal(publish.Extractor):
             instance.data["timecode"] = instance_timecode
             self.log.debug("instance timecode is set to: {}".format(instance.data["timecode"]))
         else:
-            instance.data["timecode"] = "00:00:41:07"
-            instance_timecode = "00:00:41:07"
+            instance.data["timecode"] = "01:00:00:00"
+            instance_timecode = "01:00:00:00"
             self.log.debug("instance timecode was not found, defaulted to: {}".format(instance.data["timecode"]))
         
         if slate_timecode:
             self.log.debug("Slate timecode is set to: {}".format(slate_timecode))
         else:
-            slate_timecode = "00:00:41:07"
+            slate_timecode = "01:00:00:00"
             self.log.debug("Slate timecode was not found, defaulted to: {}".format(slate_timecode))
 
 

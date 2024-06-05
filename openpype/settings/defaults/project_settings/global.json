@@ -325,6 +325,7 @@
                                 "custom_tags": [],
                                 "single_frame_filter": "single_frame"
                             },
+                            "force_fps": 23.976,
                             "overscan_crop": "",
                             "overscan_color": [
                                 0,
