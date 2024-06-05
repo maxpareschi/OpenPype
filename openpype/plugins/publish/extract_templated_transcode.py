@@ -117,6 +117,11 @@ class ExtractTemplatedTranscode(publish.Extractor):
                     if repre_name_override:
                         new_repre["name"] = repre["name"] + "_" + repre_name_override
                         new_repre["outputName"] = repre_name_override
+                    new_repre_files = self._translate_to_sequence(new_repre)
+                    if not new_repre.get("frameStart", None):
+                        new_repre["frameStart"] = new_repre_files[4][0]
+                    if not new_repre.get("frameEnd", None):
+                        new_repre["frameEnd"] = new_repre_files[4][-1]
                     instance.data["representations"].append(new_repre)
                     self.log.debug("profile is in passthrough mode, skipping transcode, adding tags and and pushing as representation: {}".format(
                         json.dumps(new_repre, indent=4, default=str)))
@@ -280,12 +285,13 @@ class ExtractTemplatedTranscode(publish.Extractor):
 
                 # If there is only 1 file outputted then convert list to
                 # string, cause that'll indicate that its not a sequence.
-                # else set frameStart property which traypublished does not
+                # else set frameStart and frameEnd property which traypublished does not
                 # fill for some reason
                 if len(new_repre["files"]) == 1:
                     new_repre["files"] = new_repre["files"][0]
                 else:
                     new_repre["frameStart"] = repre_out[4][0]
+                    new_repre["frameEnd"] = repre_out[4][-1]
 
                 self.log.debug("Adding new representation: {}".format(
                     json.dumps(new_repre, indent=4, default=str)))
