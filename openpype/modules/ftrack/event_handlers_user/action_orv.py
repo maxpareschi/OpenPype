@@ -379,7 +379,12 @@ class ORVAction(BaseAction):
         src = "from openrv_tools_22dogs import orvpush_inputs_callback\n"
         signature = f"({', '.join([str(i) for i in [paths, no_slate, fps]])})"
         src += "orvpush_inputs_callback" + signature
-        prj = entities[0]["project"]["full_name"]
+        try:
+            prj = entities[0]["project"]["full_name"]
+        except KeyError as e:
+            self.log.critical(f"Failed to find project attr for entity {entities[0]}")
+            self.log.critical("Please report this to pipeline.")
+            prj = "error_project"
 
         cmd = [self.orvpush_path, "-tag", prj, "py-exec", src]
         self.log.debug(f"Running ORVPUSH: {cmd}")
