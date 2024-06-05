@@ -7,6 +7,10 @@ import shutil
 import clique
 import subprocess
 import pyblish.api
+import platform
+
+if platform.system().lower() == "windows":
+    from ctypes import create_unicode_buffer, windll
 
 from openpype.pipeline import (
     anatomy,
@@ -17,6 +21,18 @@ from openpype.pipeline.template_data import get_template_data_with_names
 from openpype.lib.applications import ApplicationManager
 from openpype.lib.profiles_filtering import filter_profiles
 
+
+def sanitize_path(path):
+    final_path = path.replace("\\", "/")
+    if platform.system().lower() == "windows":
+        BUFFER_SIZE = 512
+        windows_path = final_path.replace("/", "\\")
+        buffer = create_unicode_buffer(BUFFER_SIZE)
+        GetLongPathName = windll.kernel32.GetLongPathNameW
+        GetLongPathName(windows_path, buffer, BUFFER_SIZE)
+        final_head = buffer.value
+    return final_path.replace("\\", "/")
+        
 
 class ExtractTemplatedTranscode(publish.Extractor):
     """
@@ -150,8 +166,9 @@ class ExtractTemplatedTranscode(publish.Extractor):
                     
                 self.log.debug("Source staging dir is set as '{}'".format(repre["stagingDir"]))
 
+                temp_staging_dir = sanitize_path(self.temp_staging_dir())
                 new_staging_dir = self._get_transcode_temp_dir(
-                    self.temp_staging_dir(),
+                    temp_staging_dir,
                     profile_name)
                 new_repre["stagingDir"] = new_staging_dir
 
@@ -231,6 +248,7 @@ class ExtractTemplatedTranscode(publish.Extractor):
                     "color_config": color_config,
                     "profile_data": profile_def
                 }
+                self.log.debug(json.dumps(processed_data, indent=4, default=str))
 
                 if transcoding_type == "template":
                     processed_data["profile_data"]["template_path"]["template"] = template_original_path.format(**template_format_data)
@@ -263,7 +281,7 @@ class ExtractTemplatedTranscode(publish.Extractor):
 
                 # cleanup temporary transcoded files
                 instance.context.data["cleanupFullPaths"].append(
-                    new_staging_dir)
+                    new_repre["stagingDir"])
 
                 new_repre["files"] = sorted(new_repre["files"])
 
