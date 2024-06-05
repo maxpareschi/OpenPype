@@ -570,6 +570,11 @@
                             "key": "role_list",
                             "label": "Roles",
                             "object_type": "text"
+                        },
+                        {
+                            "type": "text",
+                            "key": "review_session_template_name",
+                            "label": "ReviewSession template name"
                         }
                     ]
                 },

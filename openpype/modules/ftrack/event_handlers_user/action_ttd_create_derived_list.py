@@ -1,8 +1,9 @@
 import ftrack_api
-from datetime import date
+from datetime import date, datetime
 
 from openpype_modules.ftrack.lib import BaseAction, statics_icon, create_list # type: ignore
-
+from ftrack_api import Session
+from ftrack_api.event.base import Event
 
 class CreateDerivedListAction(BaseAction):
     """Create daily review session object per project.
@@ -13,6 +14,7 @@ class CreateDerivedListAction(BaseAction):
     role_list = ["Pypeclub", "Administrator", "Project manager"]
     icon = statics_icon("ftrack", "action_icons", "CreateList.png")
     settings_key = "create_derived_list_action"
+       
 
     def discover(self, session, entities, event):
         is_valid = False
@@ -24,6 +26,10 @@ class CreateDerivedListAction(BaseAction):
         return is_valid
     
     def interface(self, session, entities, event):
+
+        settings = self.get_ftrack_settings(session, event, entities)["user_handlers"]
+        template_name = settings["create_derived_list_action"]["review_session_template_name"]
+
         if event['data'].get('values', {}):
             return
         
@@ -54,11 +60,8 @@ class CreateDerivedListAction(BaseAction):
                 category_name = "Delivery"
         
         if entity_type == "AssetVersionList":
-            entity_list_name = entities[0]["name"]
+            list_name = entities[0]["name"]
             entity_list_category = entities[0]["category"]["name"]
-
-        if entity_list_name:
-            list_name = entity_list_name
 
         if entity_list_category:
             category_name = entity_list_category
@@ -108,6 +111,22 @@ class CreateDerivedListAction(BaseAction):
                 },
                 {
                     "type": "label",
+                    "value": "<b>Review Template</b><br>"
+                    "This is only applicable if 'Client Review' is turned on. "
+                    "Must be the name of an existting Client Review in the project."
+                },
+                {
+                    "label": "Review Template Name",
+                    "type": "text",
+                    "name": "template_name",
+                    "value": template_name,
+                },
+                {
+                    "type": "label",
+                    "value": "---"
+                },
+                {
+                    "type": "label",
                     "value": "---"
                 },
                 {
@@ -147,6 +166,7 @@ class CreateDerivedListAction(BaseAction):
             entities,
             event,
             client_review = user_values["client_review"],
+            template_name=user_values["template_name"],
             list_name = user_values["list_name"],
             list_category_name = user_values["list_category"],
             prioritize_gathers = user_values["prioritize_gathers"],

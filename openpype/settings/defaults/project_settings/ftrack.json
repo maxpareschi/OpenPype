@@ -171,7 +171,8 @@
                 "Pypeclub",
                 "Project Manager",
                 "Administrator"
-            ]
+            ],
+            "review_session_template_name": "ReviewSessionTemplate"
         },
         "delete_asset_subset": {
             "enabled": true,
