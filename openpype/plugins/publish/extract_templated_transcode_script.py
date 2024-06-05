@@ -148,7 +148,8 @@ def transcode_template(data):
     if data["profile_data"]["write_options"].get("knobs"):
         for option in data["profile_data"]["write_options"]["knobs"]:
             write[option["name"]].setValue(option["value"])
-        
+    
+    reformat = None
     if data["profile_data"]["reformat_options"]["enabled"]:
         reformat = nuke.nodes.Reformat()
         reformat["type"].setValue("to box")
@@ -161,6 +162,23 @@ def transcode_template(data):
         reformat["clamp"].setValue(True)
         reformat["center"].setValue(True)
         reformat.setInput(0, output_node.input(0))
+    
+    tcnode = None
+    if data.get("timecode", None):
+        tcnode = nuke.nodes.AddTimeCode()
+        tcnode["startcode"].setValue(data["timecode"])
+        tcnode["metafps"].setValue(False)
+        tcnode["useFrame"].setValue(True)
+        tcnode["fps"].setValue(data["fps"])
+        tcnode["frame"].setValue(data["frameStart"])
+        if reformat:
+            tcnode.setInput(0, reformat)
+        else:
+            tcnode.setInput(0, output_node.input(0))
+    
+    if tcnode:
+        write.setInput(0, tcnode)
+    elif reformat:
         write.setInput(0, reformat)
     else:
         write.setInput(0, output_node.input(0))
@@ -227,6 +245,15 @@ def transcode_subsetchain(data):
         reformat["center"].setValue(True)
         node_list.append(reformat)
         print("'{}' node created.".format(node_list[-1].name()))
+    
+    if data.get("timecode", None):
+        tcnode = nuke.nodes.AddTimeCode()
+        tcnode["startcode"].setValue(data["timecode"])
+        tcnode["metafps"].setValue(False)
+        tcnode["useFrame"].setValue(True)
+        tcnode["fps"].setValue(data["fps"])
+        tcnode["frame"].setValue(data["frameStart"])
+        node_list.append(tcnode)
     
     write = nuke.nodes.Write(file = data["output_path"])
     write["name"].setValue("WRITE_TRANSCODE")
@@ -298,6 +325,15 @@ def transcode_color_conversion(data):
         reformat["center"].setValue(True)
         node_list.append(reformat)
         print("'{}' node created.".format(node_list[-1].name()))
+
+    if data.get("timecode", None):
+        tcnode = nuke.nodes.AddTimeCode()
+        tcnode["startcode"].setValue(data["timecode"])
+        tcnode["metafps"].setValue(False)
+        tcnode["useFrame"].setValue(True)
+        tcnode["fps"].setValue(data["fps"])
+        tcnode["frame"].setValue(data["frameStart"])
+        node_list.append(tcnode)
 
     write = nuke.nodes.Write(file = data["output_path"])
     write["name"].setValue("WRITE_TRANSCODE")

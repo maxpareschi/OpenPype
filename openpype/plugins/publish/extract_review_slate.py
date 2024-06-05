@@ -110,10 +110,8 @@ class ExtractReviewSlate(publish.Extractor):
             if instance.data.get("timecode"):
                 input_timecode = instance.data["timecode"]
 
-            if not input_timecode or \
-                   input_timecode == "" or \
-                   input_timecode == "01:00:00:00":
-                input_timecode = video_data["format"]["tags"].get("timecode") or ""
+            if not input_timecode:
+                input_timecode = video_data["format"]["tags"].get("timecode") or "01:00:00:00"
 
             # Raise exception of any stream didn't define input resolution
             if input_width is None:

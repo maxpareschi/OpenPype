@@ -5,6 +5,7 @@ import subprocess
 import json
 import platform
 import tempfile
+import copy
 
 import opentimelineio as otio
 
@@ -76,6 +77,9 @@ class SlateCreator:
             self.template_path,
             self.template_res_path
         )
+        if not self.data.get("timecode"):
+            self.set_timecode("01:00:00:00")
+        
         self.task_filter = []
 
     def set_logger(self, logger=None):
@@ -176,7 +180,7 @@ class SlateCreator:
         for further use.
         """
 
-        self.data = data.copy()
+        self.data = copy.deepcopy(data)
 
         self.log.debug(
             "Data: '{}'".format(json.dumps(self.data, indent=4, default=str))
@@ -192,6 +196,9 @@ class SlateCreator:
         self.log.debug(
             "New Resolution set up: '{}x{}'".format(width, height)
         )
+
+    def set_timecode(self, tc):
+        self.data["timecode"] = tc
 
     def set_env(self, env=dict()):
         """
@@ -535,9 +542,9 @@ class SlateCreator:
         cmd.append("iinfo{}".format(self.exec_ext))
         cmd.append("-v")
         cmd.append(input)
+        tc = self.data["timecode"]
         self.log.debug("{}: cmd>{}".format(name, " ".join(cmd)))
-        tc = self.frames_to_timecode(int(tc_frame), self.data["fps"])
-        self.log.debug("{0}: Starting timecode set at: {1}".format(name, tc))
+        self.log.debug("{0}: Starting timecode set at: {1}".format(name, self.data["timecode"]))
         self.log.debug("detected fps: {}".format(self.data["fps"]))
         try:
             res = subprocess.run(
@@ -559,11 +566,10 @@ class SlateCreator:
                     tc = ":".join(nums)
                     break
             tc = tc.replace("\"", "")
+            self.log.debug("{0}: New starting timecode Found: {1}".format(name, tc))
         except:
             self.log.debug("OIIO process failed, switching to default tc...")
-            tc = "01:00:00:00"
-        
-        self.log.debug("{0}: New starting timecode Found: {1}".format(name, tc))
+
         tc = self.offset_timecode(tc, offset)
         self.log.debug("{0}: New timecode for slate: {1}".format(name, tc))
 
@@ -588,6 +594,10 @@ class SlateCreator:
             "-of",
             "compact=print_section=0:nokey=1"
         ]
+        tc = self.data["timecode"]
+        self.log.debug("{}: cmd>{}".format(name, " ".join(cmd)))
+        self.log.debug("{0}: Starting timecode set at: {1}".format(name, self.data["timecode"]))
+        self.log.debug("detected fps: {}".format(self.data["fps"]))
         cmd.append(input)
         try:
             tc = subprocess.run(
@@ -601,9 +611,10 @@ class SlateCreator:
             self.log.debug("{0}: New starting timecode Found: {1}".format(name, tc))
         except:
             self.log.debug("FFPROBE process failed, switching to default tc...")
-            tc = "01:00:00:00"
+        
         tc = self.offset_timecode(tc, offset)
         self.log.debug("{0}: New timecode for slate: {1}".format(name, tc))
+
         self.data["timecode"] = tc
         return tc
 
@@ -746,7 +757,7 @@ class ExtractSlateGlobal(publish.Extractor):
 
         instance_timecode = None
         slate_timecode = None
-
+        
         for repre in instance.data["representations"]:
             self.log.debug("processing repre: {}".format(json.dumps(repre, indent=4, default=str)))
             if "thumbnail" in repre.get("tags") or repre["name"] == "thumbnail" or "review" in repre.get("tags"):
@@ -762,15 +773,22 @@ class ExtractSlateGlobal(publish.Extractor):
                     offset=0)
                 slate_timecode = slate.offset_timecode(instance_timecode, offset=-1)
             except:
-                self.log.debug("iinfo coudn't process file, probably due to format not being compatible. Proceeding with ffprobe..")
-                instance_timecode  = slate.get_timecode_ffprobe(file_path,
-                    tc_frame=int(repre["frameStart"]),
-                    offset=0)
-                slate_timecode = slate.offset_timecode(instance_timecode, offset=-1)
+                pass
+            if not instance_timecode:
+                try:
+                    self.log.debug("iinfo coudn't process file, probably due to format not being compatible. Proceeding with ffprobe..")
+                    instance_timecode  = slate.get_timecode_ffprobe(file_path,
+                        tc_frame=int(repre["frameStart"]),
+                        offset=0)
+                    slate_timecode = slate.offset_timecode(instance_timecode, offset=-1)
+                except:
+                    pass
             break
-                
-
-        if instance_timecode:
+        
+        if instance.data.get("timecode"):
+            instance_timecode = instance.data["timecode"]
+            self.log.debug("instance timecode was already set at: {}".format(instance.data["timecode"]))
+        elif instance_timecode:
             instance.data["timecode"] = instance_timecode
             self.log.debug("instance timecode is set to: {}".format(instance.data["timecode"]))
         else:

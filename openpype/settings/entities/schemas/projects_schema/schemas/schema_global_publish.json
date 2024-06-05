@@ -318,6 +318,21 @@
                                 "type": "splitter"
                             },
                             {
+                                "type": "number",
+                                "key": "force_fps",
+                                "label": "Force FPS in instance",
+                                "decimal": 3,
+                                "minimum": 0
+                            },
+                            {
+                                "type": "text",
+                                "key": "force_tc",
+                                "label": "Force TIMECODE in instance"
+                            },
+                            {
+                                "type": "splitter"
+                            },
+                            {
                                 "key": "outputs",
                                 "label": "Output Definitions",
                                 "type": "dict-modifiable",
@@ -734,14 +749,6 @@
                                                     ]
                                                 }
                                             ]
-                                        },
-                                        {
-                                            "type": "separator"
-                                        },
-                                        {
-                                            "type": "text",
-                                            "key": "force_fps",
-                                            "label": "Force FPS for this review"
                                         },
                                         {
                                             "type": "separator"

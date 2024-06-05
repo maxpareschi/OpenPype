@@ -67,6 +67,8 @@
                     "subsets": [],
                     "extensions": [],
                     "delete_original": true,
+                    "force_fps": 23.976,
+                    "force_tc": "01:00:00:00",
                     "outputs": {
                         "proxy": {
                             "extension": "jpg",
@@ -325,7 +327,6 @@
                                 "custom_tags": [],
                                 "single_frame_filter": "single_frame"
                             },
-                            "force_fps": 23.976,
                             "overscan_crop": "",
                             "overscan_color": [
                                 0,

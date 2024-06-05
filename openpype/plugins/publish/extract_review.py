@@ -506,13 +506,6 @@ class ExtractReview(pyblish.api.InstancePlugin):
             if ext.lower() in self.alpha_exts:
                 input_allow_bg = True
 
-        forced_fps = None
-        if output_def.get("force_fps", ""):
-            forced_fps = float(output_def["force_fps"])
-
-        if forced_fps:
-            instance.data["fps"] = forced_fps
-
         return {
             "fps": float(instance.data["fps"]),
             "frame_start": frame_start,

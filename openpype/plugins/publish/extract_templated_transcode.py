@@ -59,6 +59,25 @@ class ExtractTemplatedTranscode(publish.Extractor):
 
         template_format_data = self._get_template_data_format()
 
+        force_tc = profile.get("force_tc", None).strip()
+        force_fps = profile.get("force_fps", None)
+        if force_fps:
+            instance.data["fps"] = float(force_fps)
+            try:
+                instance.data["anatomyData"]["fps"] = force_fps
+            except:
+                pass
+            try:
+                instance.data["assetEntity"]["data"]["fps"] = force_fps
+            except:
+                pass
+            try:
+                instance.data["slateGlobal"]["slate_common_data"]["fps"] = force_fps
+            except:
+                pass
+        if force_tc:
+            instance.data["timecode"] = force_tc
+
         new_representations = []
         repres = instance.data["representations"]
 
@@ -247,6 +266,10 @@ class ExtractTemplatedTranscode(publish.Extractor):
                     "color_config": color_config,
                     "profile_data": profile_def
                 }
+                if instance.data.get("timecode", None):
+                    processed_data.update({
+                        "timecode": instance.data["timecode"]
+                    })
 
                 if transcoding_type == "template":
                     processed_data["profile_data"]["template_path"]["template"] = template_original_path.format(**template_format_data)
