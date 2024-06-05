@@ -1,4 +1,6 @@
 import inspect
+import tempfile
+import os
 from abc import ABCMeta
 
 import pyblish.api
@@ -278,5 +280,12 @@ class Extractor(pyblish.api.InstancePlugin):
         Upon calling this method the staging directory is stored inside
         the instance.data['stagingDir']
         """
-
+        
         return get_instance_staging_dir(instance)
+    
+    def temp_staging_dir(self):
+        staging_dir = os.path.normpath(
+            tempfile.mkdtemp(prefix="pyblish_tmp_")
+        )
+        return staging_dir
+        

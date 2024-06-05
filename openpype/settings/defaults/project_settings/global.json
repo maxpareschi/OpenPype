@@ -41,6 +41,10 @@
             "enabled": false,
             "profiles": []
         },
+        "ValidateComment": {
+            "enabled": true,
+            "profiles": []
+        },
         "ExtractThumbnail": {
             "enabled": true,
             "ffmpeg_args": {

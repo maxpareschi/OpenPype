@@ -1,78 +1,18 @@
 from __future__ import annotations
 from typing import List
-from tempfile import gettempdir
-from urllib.request import urlopen
-from shutil import copyfileobj
-from os import environ
+from logging import getLogger
 
-from openpype_modules.ftrack.lib import BaseAction, statics_icon # type: ignore
-from ftrack_api import Session, symbol
+logger = getLogger(__name__)
+
+from openpype_modules.ftrack.lib import BaseAction, statics_icon, create_notes # type: ignore
+from ftrack_api import Session
 from ftrack_api.entity.base import Entity
 from ftrack_api.entity.asset_version import AssetVersion
-from ftrack_api.entity.component import Component
-from ftrack_api.entity.note import Note
 from ftrack_api.event.base import Event
-from ftrack_api.entity.location import Location
-
-
-
-def duplicate_ftrack_server_component(comp: Component, session: Session):
-
-    # server_location: Location = Session().get('Location', symbol.SERVER_LOCATION_ID)
-
-    for cloc in comp["component_locations"]:
-
-        if cloc["location"]["name"] == "ftrack.server":
-            server_location: Location = cloc['location']
-            print(f"Fetching component from location {cloc['location']}")
-            try:
-                url = server_location.get_url(comp)
-            except Exception as e:
-                print(f"Failed to retrieve url for {comp} in {server_location} due to {e}")
-                raise (e)
-            name = comp["name"] + comp["file_type"]
-            f = gettempdir() + "/" + name
-            print(f"Creating component from temp file: {f}")
-
-            with urlopen(url) as response, open(f, 'wb') as out_file:
-                copyfileobj(response, out_file)
-        else:
-            print(f"Ignoring location {cloc['location']['name']}")
-            # it is unmanaged, maybe the source is locally and thus inaccesible
-            continue
-        return session.create_component(f, {"name":name}, location=cloc["location"])
-
-
-def transfer_note_components(note_src: Note, note_target: Note, session: Session):
-    for note_comp in note_src["note_components"]:
-        print(f"Working on component {note_comp}")
-        comp = note_comp["component"]
-        if any(comp["name"] != c["component"] for c in note_target["note_components"]):
-            print(f"This component was already copied {comp['name']}")
-            continue
-        try:
-            new_component = duplicate_ftrack_server_component(comp, session)
-        except Exception as e:
-            print(f"Failed to copy component {comp} due to {e}")
-            continue
-        if new_component is None:
-            continue
-        session.create("NoteComponent", {"component_id":new_component["id"], "note_id": note_target["id"]})
-
-
-
-
 
 class CopyDeliveryNotes(BaseAction):
     """Action for forwarding client notes from delivery version into source."""
 
-    matching_fields = [
-        "content",
-        "project_id",
-        "parent_type",
-        "category_id",
-        "user_id",
-        ]
     identifier = 'ttd.copy.notes.action'
     label = 'Forward Delivery Notes'
     description = 'Forward client notes from delivery to source.'
@@ -90,8 +30,6 @@ class CopyDeliveryNotes(BaseAction):
         if is_valid:
             is_valid = self.valid_roles(session, entities, event)
         return is_valid
-
-
 
     def copy_client_notes(self, session: Session, versions: List[AssetVersion]):
         
@@ -134,37 +72,8 @@ class CopyDeliveryNotes(BaseAction):
     
             self.log.info(f"Target notes are: {notes_in_target}")
 
-            for target_note in notes_in_target:
-                if  all(note[f] == target_note[f] for f in self.matching_fields):
-                    self.log.info(f"Note already copied. {note} -> {target_note}, "
-                        "removing it. Content is: {note['content']}")
-                    session.delete(target_note)
-                    # check content
-                    # break
-            else:
-                replies = [
-                    session.create(
-                        "Note",
-                        {tag: reply[tag] for tag in self.matching_fields}
-                        ) for reply in note["replies"]
-                    ]
+            msg += create_notes(session, note, target, notes_in_target)
 
-                print("Note components are:", list(note["note_components"]))
-
-                r = session.create("Note", {
-                    **{tag: note[tag] for tag in self.matching_fields},
-                    "parent_id": target["id"],
-                    "replies": replies,
-                    # "note_label_links" : note_label_links,
-                    })
-                
-                transfer_note_components(note, r, session)
-
-                for i, reply in enumerate(note["replies"]):
-                    transfer_note_components(reply, r["replies"][i], session)
-
-                self.log.info(f"Updated client notes for version_id {target['id']}")
-                msg += f"Updated client notes for version {target['id']}"
         session.commit()
         return msg
 

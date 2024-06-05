@@ -43,7 +43,7 @@
                                     {
                                         "type": "text",
                                         "key": "label",
-                                        "label": "Name"
+                                        "label": "Label"
                                     },
                                     {
                                         "type": "path",
