@@ -1,18 +1,9 @@
 import json
 import os
 import re
-import platform
+import tempfile
 import traceback
 
-import openpype.lib
-
-import openpype.hosts
-import openpype.hosts.traypublisher
-import openpype.hosts.traypublisher.api
-from qtpy import QtWidgets
-
-import openpype.modules
-from openpype.pipeline import install_host
 from openpype.modules.ftrack.lib import BaseAction, statics_icon
 
 from openpype.client import (
@@ -22,17 +13,16 @@ from openpype.client import (
     get_version_by_name
 )
 
-import openpype.pipeline
+from openpype.lib import (
+    get_openpype_execute_args,
+    run_detached_process,
+)
 
 from openpype.settings.lib import (
     get_system_settings,
     get_project_settings,
     get_anatomy_settings
 )
-
-import openpype
-import openpype.tools
-import openpype.tools.traypublisher
 
 
 class GatherAction(BaseAction):
@@ -129,53 +119,32 @@ class GatherAction(BaseAction):
 
         self.project_name = self.assetversions[0]["project"]["full_name"]
 
-        host = openpype.hosts.traypublisher.api.TrayPublisherHost()
-        install_host(host)
-        host.set_project_name(self.project_name)
-        self.log.info("Project Name: was set: '{}'".format(self.project_name))
-
-        create_context = openpype.pipeline.create.CreateContext(host,
-                                                                headless=True,
-                                                                discover_publish_plugins=True,
-                                                                reset=True)
-
-        for instance in list(create_context.instances):
-            create_plugin = create_context.creators.get(
-                instance.creator_identifier
-            )
-            create_plugin.remove_instances([instance])
+        forwarding_data = []
 
         for version in self.assetversions:
             current_links = len(version["outgoing_links"])
             if current_links > 0:
                 self.log.debug("This asset has already linked gather versions attached, skipping gather for now...")
                 continue
-            self.publisher_start(session, create_context, version, user_values)
+            instance_data = self.publisher_start(session, version, user_values)
+            forwarding_data.append(instance_data)
 
-        if not create_context.instances:
-            msg = "No valid instances could be gathered, aborting..."
-            self.log.debug(msg)
-            return {
-                "success": False,
-                "message": msg
-            }
+        exchange_file = tempfile.mktemp(prefix="traypublisher_gather_", suffix=".json")
+        with open(exchange_file, "w") as exf:
+            exf.write(json.dumps(forwarding_data, indent=4, default=str))
 
-        app_instance = QtWidgets.QApplication.instance()
-        if app_instance is None:
-            app_instance = QtWidgets.QApplication([])
-        if platform.system().lower() == "windows":
-            import ctypes
-            ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(
-                u"traypublisher"
-            )
-        
-        window = openpype.tools.traypublisher.window.TrayPublishWindow()
-        window._overlay_widget._set_project(self.project_name)
-        window.set_context_label("{} - GATHER VERSIONS".format(self.project_name))
-        window.show()
-        app_instance.exec_()
-
-        return True
+        args = get_openpype_execute_args(
+            "module",
+            "traypublisher",
+            "gather",
+            exchange_file
+        )
+        run_detached_process(args)
+                
+        return {
+            "success": True,
+            "message": "Saved intermediate data, opening publisher..."
+        }
 
     def get_all_available_components_for_assetversion(self, session, assetversion):
         component_list = []
@@ -276,7 +245,7 @@ class GatherAction(BaseAction):
             tasks.update({ task["name"]: task["type"]["name"] })
         return tasks
      
-    def publisher_start(self, session, create_context, version, user_values):
+    def publisher_start(self, session, version, user_values):
         family = "gather"
         project_name = self.project_name
         project_id = version["project_id"]
@@ -406,18 +375,7 @@ class GatherAction(BaseAction):
         self.log.debug("Instance data to be created: {}".format(
             json.dumps(gather_instance, indent=4, default=str)))
 
-        publish_file_list = [item.to_dict() for item in openpype.lib.FileDefItem.from_paths(
-            repre_files, allow_sequences=True)]
-        
-        create_context.create(
-            "settings_{}".format(family),
-            computed_subset,
-            gather_instance,
-            pre_create_data={
-                "representation_files": publish_file_list,
-                "reviewable": publish_file_list[0],
-            }
-        )
+        return gather_instance
 
     
 def register(session):

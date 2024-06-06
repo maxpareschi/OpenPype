@@ -63,8 +63,72 @@ def launch():
     traypublisher.main()
 
 
-@cli_main.command()
-def delivery(data):
+@click.command()
+@click.argument('input', type=str)
+def gather(input):
+    import json
+    import platform
+    from openpype.tools.traypublisher.window import TrayPublishWindow
+    from openpype.pipeline.create import CreateContext
     from openpype.tools import traypublisher
-    traypublisher.init_host()
-    traypublisher.show_window()
+    from openpype.lib import FileDefItem
+    from qtpy import QtWidgets
+
+    data = None
+    with open(input, "r") as djf:
+        data = json.loads(djf.read())
+    
+    host = traypublisher.init_host()
+    project_name = data[0]["project"]
+    host.set_project_name(project_name)
+    print("Project Name: was set: '{}'".format(project_name))
+
+    create_context = CreateContext(host,
+                                   headless=True,
+                                   discover_publish_plugins=True,
+                                   reset=True)
+    
+    for instance in list(create_context.instances):
+        create_plugin = create_context.creators.get(
+            instance.creator_identifier
+        )
+        create_plugin.remove_instances([instance])
+
+    for instance in data:
+        publish_file_list = [item.to_dict() for item in FileDefItem.from_paths(
+            instance["gather_representation_files"], allow_sequences=True)]
+        
+        create_context.create(
+            "settings_{}".format(instance["family"]),
+            instance["subset"],
+            instance,
+            pre_create_data={
+                "representation_files": publish_file_list,
+                "reviewable": publish_file_list[0],
+            }
+        )
+    
+    if not create_context.instances:
+        msg = "No valid instances could be gathered, aborting..."
+        print(msg)
+        return False
+    
+    app_instance = QtWidgets.QApplication.instance()
+    if app_instance is None:
+        app_instance = QtWidgets.QApplication([])
+    if platform.system().lower() == "windows":
+        import ctypes
+        ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(
+            u"traypublisher"
+        )
+    
+    window = TrayPublishWindow()
+    window._overlay_widget._set_project(project_name)
+    window.set_context_label("{} - GATHER VERSIONS".format(project_name))
+    window.show()
+    app_instance.exec_()
+
+    return True
+
+
+cli_main.add_command(gather)
