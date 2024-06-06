@@ -45,13 +45,16 @@ class CollectGatherData(pyblish.api.InstancePlugin):
             json.dumps(gather_options, indent=4, default=str)))
         
         if gather_options["gather_on_farm"]:
-            instance.data["families"].append("gather.farm")
-            instance.data["publish_on_farm"] = True
+            instance.data["families"].extend([
+                "gather.farm",
+                "publish_on_farm"
+            ])
+            instance.data["farm"] = True
             self.log.debug("Instance 'families': '{}'".format(
                 instance.data["families"]
             ))
             self.log.debug("Instance 'publish_on_farm': '{}'".format(
-                instance.data["publish_on_farm"]
+                instance.data["farm"]
             ))
 
         gather_settings = context.data["project_settings"]["ftrack"]["user_handlers"]["gather_action"]
