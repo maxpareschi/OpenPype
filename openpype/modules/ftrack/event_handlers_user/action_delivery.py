@@ -777,7 +777,7 @@ class Delivery(BaseAction):
             value["entity"]["custom_attributes"]["delivery_name"] = value["attr"]
 
 
-        report_items.pop("created_files") # removes false positive
+        report_items.pop("created_files", "") # removes false positive
         # get final path of repre to be used for attributes
         # and fill custom attributes on list
 
