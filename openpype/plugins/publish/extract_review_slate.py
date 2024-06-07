@@ -54,12 +54,12 @@ class ExtractReviewSlate(publish.Extractor):
             raise RuntimeError("Burnin needs already created mov to work on.")
 
         # get slates frame from upstream
-        slates_data = inst_data.get("slateFrames")
+        slates_data = inst_data.get("slateFrames", None)
         if not slates_data:
             # make it backward compatible and open for slates generator
             # premium plugin
             slates_data = {
-                "*": inst_data["slateFrame"]
+                "*": inst_data["slateFrames"]
             }
 
         self.log.info("_ slates_data: {}".format(pformat(slates_data)))
