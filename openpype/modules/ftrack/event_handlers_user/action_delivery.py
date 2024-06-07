@@ -593,13 +593,16 @@ class Delivery(BaseAction):
             project_name = v["project"]["full_name"]
             asset_mongo_id = v["asset"]["parent"]["custom_attributes"]["avalon_mongo_id"]
             in_links = list(v["incoming_links"])
+            subset_name = v["asset"]["name"]
 
             if in_links:
                 # v = in_links[0]
+                subset_name = in_links[0]["from"]["custom_attributes"]["subset"]
+                if not subset_name:
+                    subset_name = in_links[0]["from"]["asset"]["name"]
                 version_parent = in_links[0]["from"]["asset"]["parent"]
                 asset_mongo_id = version_parent["custom_attributes"]["avalon_mongo_id"]
 
-            subset_name = v["asset"]["name"]
             version_number = v["version"]
             op_v = get_op_version_from_ftrack_assetversion(
                 project_name, asset_mongo_id, subset_name, version_number)
@@ -759,18 +762,26 @@ class Delivery(BaseAction):
             collected_repres.append(repre["name"])
             collected_paths.append(dest_path)
 
-            try:
-                version = version_by_repre_id[repre["_id"]]
-                if version["id"] not in attr_by_version:
-                    attr_by_version[version["id"]] = {"attr":"", "entity": version}
 
-                files = "\n".join([Path(f).name for f in report["created_files"][-1:]])
-                attr_by_version[version["id"]]["attr"] += files +"\n\n"
-                self.log.info(f"Adding files {files}")
-            except Exception as e:
-                self.log.info(
-                    f"Failed to update version for representation {repre['_id']} due to {e}"
-                )
+
+            version = version_by_repre_id.get(repre["_id"])
+            if version is None:
+                try:
+                    version = version_by_repre_id[repre["parent"]]
+                except KeyError as e:
+                    self.log.error(f"Repre {repre['_id']} was not updated due to {e}")
+                    from pprint import pprint
+                    pprint(version_by_repre_id)
+                    pprint(repre)
+                    continue
+
+            if version["id"] not in attr_by_version:
+                attr_by_version[version["id"]] = {"attr":"", "entity": version}
+
+            files = "\n".join([Path(f).name for f in report["created_files"][-1:]])
+            attr_by_version[version["id"]]["attr"] += files +"\n\n"
+            self.log.info(f"Adding files {files}")
+
 
         for id_, value in attr_by_version.items():
             value["entity"]["custom_attributes"]["delivery_name"] = value["attr"]
