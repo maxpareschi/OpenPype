@@ -768,7 +768,7 @@ class Delivery(BaseAction):
             if version["id"] not in attr_by_version:
                 attr_by_version[version["id"]] = {"attr":"", "entity": version}
 
-            files = "\n".join([Path(f).name for f in report["created_files"][-1:]])
+            files = "\n".join([Path(f).name for f in report.get("created_files", [])[-1:]])
             attr_by_version[version["id"]]["attr"] += files +"\n\n"
             self.log.info(f"Adding files {files}")
 
