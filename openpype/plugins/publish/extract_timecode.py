@@ -1,7 +1,5 @@
 import os
 import subprocess
-import json
-import opentimelineio as otio
 import pyblish.api
 
 from openpype.pipeline import publish
@@ -17,8 +15,8 @@ class ExtractTimecode(publish.Extractor):
     """
 
     label = "Extract Timecode"
-    order = order = pyblish.api.ExtractorOrder + 0.018999
-    families = ["render", "review"]
+    order = order = pyblish.api.ExtractorOrder + 0.01899
+    families = ["render", "review", "preview"]
     allowed_extensions = ["mov", "mp4", "dpx", "cin", "exr"]
 
     def get_timecode_oiio(self, input):
@@ -78,7 +76,7 @@ class ExtractTimecode(publish.Extractor):
                     try:
                         tc = self.get_timecode_oiio(file)
                     except:
-                        self.log.debug("No timecode found using iinfo...")
+                        self.log.debug("No timecode found using iinfo, trying ffprobe...")
                         try:
                             tc = self.get_timecode_ffprobe(file)
                         except:
@@ -88,8 +86,9 @@ class ExtractTimecode(publish.Extractor):
         final_tc = None
         self.log.debug("Default timecode set to: '{}'".format(default_tc))
         final_tc_list = list(set(tc_list))
+        self.log.debug("Timecodes : '{}'".format(final_tc_list))
         for tc in final_tc_list:
-            if tc != default_tc:
+            if tc and tc != default_tc:
                 self.log.debug("New timecode found: '{}'".format(tc))
                 final_tc = tc
         if not final_tc:

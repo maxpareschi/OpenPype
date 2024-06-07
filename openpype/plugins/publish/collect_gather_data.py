@@ -53,7 +53,7 @@ class CollectGatherData(pyblish.api.InstancePlugin):
             self.log.debug("Instance 'families': '{}'".format(
                 instance.data["families"]
             ))
-            self.log.debug("Instance 'publish_on_farm': '{}'".format(
+            self.log.debug("Instance 'farm': '{}'".format(
                 instance.data["farm"]
             ))
 
