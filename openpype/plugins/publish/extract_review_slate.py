@@ -55,12 +55,18 @@ class ExtractReviewSlate(publish.Extractor):
 
         # get slates frame from upstream
         slates_data = inst_data.get("slateFrames", None)
+        slate_data = inst_data.get("slateFrame", None)
         if not slates_data:
             # make it backward compatible and open for slates generator
             # premium plugin
-            slates_data = {
-                "*": inst_data["slateFrames"]
-            }
+            if slate_data:
+                slates_data = {
+                    "*": inst_data["slateFrame"]
+                }
+        
+        if not slates_data:
+            self.log.info("No slate frames found, skipping...")
+            return
 
         self.log.info("_ slates_data: {}".format(pformat(slates_data)))
 
