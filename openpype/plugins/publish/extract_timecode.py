@@ -13,11 +13,11 @@ from openpype.lib import (
 
 class ExtractTimecode(publish.Extractor):
     """
-    Extractor export OTIO file
+    Extractor for general timecode
     """
 
     label = "Extract Timecode"
-    order = pyblish.api.ExtractorOrder - 0.499999
+    order = order = pyblish.api.ExtractorOrder + 0.018999
     families = ["render", "review"]
     allowed_extensions = ["mov", "mp4", "dpx", "cin", "exr"]
 
@@ -66,23 +66,24 @@ class ExtractTimecode(publish.Extractor):
     def process(self, instance):
         default_tc = "01:00:00:00"
         tc_list = []
-        for repre in instance.data["representations"]:
-            if repre["ext"] in self.allowed_extensions:
-                tc = default_tc
-                file = os.path.join(
-                    repre["stagingDir"],
-                    repre["files"][0] if isinstance(repre["files"], list) else repre["files"]
-                )
-                self.log.debug("Extracting timecode on file: '{}'".format(file))
-                try:
-                    tc = self.get_timecode_oiio(file)
-                except:
-                    self.log.debug("No timecode found using iinfo...")
+        if instance.data.get("representations", None):
+            for repre in instance.data["representations"]:
+                if repre["ext"] in self.allowed_extensions:
+                    tc = default_tc
+                    file = os.path.join(
+                        repre["stagingDir"],
+                        repre["files"][0] if isinstance(repre["files"], list) else repre["files"]
+                    )
+                    self.log.debug("Extracting timecode on file: '{}'".format(file))
                     try:
-                        tc = self.get_timecode_ffprobe(file)
+                        tc = self.get_timecode_oiio(file)
                     except:
-                         self.log.debug("No timecode found using ffprobe...")
-                tc_list.append(tc)
+                        self.log.debug("No timecode found using iinfo...")
+                        try:
+                            tc = self.get_timecode_ffprobe(file)
+                        except:
+                            self.log.debug("No timecode found using ffprobe...")
+                    tc_list.append(tc)
         
         final_tc = None
         self.log.debug("Default timecode set to: '{}'".format(default_tc))
