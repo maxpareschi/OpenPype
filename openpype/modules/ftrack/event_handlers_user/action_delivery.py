@@ -1,7 +1,6 @@
 from __future__ import annotations
 from typing import List
 import os
-from pprint import pprint
 import copy
 import json
 import collections
@@ -619,7 +618,6 @@ class Delivery(BaseAction):
 
             for repre in representations:
                 key = repre["_id"]
-                pprint(repre)
                 self.log.info(f"Adding {key} {v} for repre-version dict")
                 version_by_repre_id[key] = v
         
@@ -770,14 +768,6 @@ class Delivery(BaseAction):
 
 
             version = version_by_repre_id.get(repre["_id"])
-            if version is None:
-                try:
-                    version = version_by_repre_id[repre["parent"]]
-                except KeyError as e:
-                    self.log.error(f"Repre {repre['_id']} was not updated due to {e}")
-                    pprint(version_by_repre_id)
-                    pprint(repre)
-                    continue
 
             if version["id"] not in attr_by_version:
                 attr_by_version[version["id"]] = {"attr":"", "entity": version}
