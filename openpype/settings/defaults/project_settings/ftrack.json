@@ -198,7 +198,13 @@
                 "Administrator"
             ],
             "delivery_templates": {},
-            "create_client_review": false
+            "create_client_review_default": false,
+            "delivery_csv_items": {
+                "studio": "22Dogs",
+                "shot": "{asset}",
+                "task": "{task[name]}",
+                "date": "{yyyy}{mm}{dd}"
+            }
         },
         "gather_action": {
             "enabled": true,
