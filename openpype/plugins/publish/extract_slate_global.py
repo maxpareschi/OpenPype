@@ -683,16 +683,10 @@ class ExtractSlateGlobal(publish.Extractor):
 
     label = "Extract Slate Global"
     order = pyblish.api.ExtractorOrder + 0.0305
-    families = ["slate"]
-    hosts = [
-        "nuke",
-        "maya",
-        "shell",
-        "houdini"
-        "hiero",
-        "traypublisher",
-        "standalonepublisher",
-        "webpublisher"
+    families = [
+        "review", "review.farm",
+        "gather", "gather.farm",
+        "render", "render.farm",
     ]
 
     _slate_data_name = "slateGlobal"
@@ -811,7 +805,7 @@ class ExtractSlateGlobal(publish.Extractor):
                 ))
                 continue
 
-            if "slate-frame" not in repre["tags"]:
+            if "slate-frame" not in repre.get("tags", []):
                 self.log.debug("Skipping representation {} as it's not tagged for slate extraction...".format(repre["name"]))
                 continue
 

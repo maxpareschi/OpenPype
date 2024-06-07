@@ -117,6 +117,8 @@ class ExtractTemplatedTranscode(publish.Extractor):
                 
                 # remove slate from tags, lets the slate plugin process it in the collect phase
                 # and overrides it with values in the tags here
+                if "slate-frame" in new_repre.get("tags", []):
+                    new_repre["tags"].remove("slate-frame")
                 if "slate" in new_repre.get("tags", []):
                     new_repre["tags"].remove("slate")
 
@@ -355,7 +357,7 @@ class ExtractTemplatedTranscode(publish.Extractor):
         for repre in tuple(instance.data["representations"]):
             tags = repre.get("tags") or []
             if "delete_original" in tags:
-                instance.data["representations"].remove(repre)     
+                instance.data["representations"].remove(repre)
         
         instance.data["representations"].extend(new_representations)
         self.log.debug("Final Representations list: \n{}\nFull Representations dump: {}\n".format(

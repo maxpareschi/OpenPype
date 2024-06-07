@@ -23,7 +23,7 @@ class ExtractReviewSlate(publish.Extractor):
 
     label = "Review with Slate frame"
     order = pyblish.api.ExtractorOrder + 0.031
-    families = ["slate", "review"]
+    families = ["review"]
     match = pyblish.api.Subset
 
     SUFFIX = "_slate"
@@ -31,6 +31,7 @@ class ExtractReviewSlate(publish.Extractor):
     hosts = [
         "nuke",
         "maya",
+        "houdini",
         "shell",
         # "hiero",
         # "premiere",
