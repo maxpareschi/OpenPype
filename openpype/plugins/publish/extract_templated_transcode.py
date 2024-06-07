@@ -53,6 +53,19 @@ class ExtractTemplatedTranscode(publish.Extractor):
             self.log.debug("No representations, skipping.")
             return
 
+        extensions = []
+        for repre in instance.data.get("representations"):
+            if self._repre_is_valid(repre, instance):
+                extensions.append(repre["ext"])
+
+        if extensions:
+            if not instance.data.get("gather_representation_ext"):
+                instance.data["gather_representation_ext"] = extensions[-1]
+        
+        self.log.debug("Computed extension for profile matching: '{}'".format(
+            instance.data.get("gather_representation_ext"))
+        )
+
         profile = self._get_profile(instance)
         if not profile:
             return
