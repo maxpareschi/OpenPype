@@ -130,9 +130,6 @@ def delete_versions(versions: List[AssetVersion]):
 
         in_links = list(version["incoming_links"])
         if in_links:
-            subset_name = in_links[0]["from"]["custom_attributes"]["subset"]
-            if not subset_name:
-                subset_name = in_links[0]["from"]["asset"]["name"]
             version_parent = in_links[0]["from"]["asset"]["parent"]
             asset_mongo_id = version_parent["custom_attributes"]["avalon_mongo_id"]
         op_version = get_op_version_from_ftrack_assetversion(

@@ -1,6 +1,7 @@
 from __future__ import annotations
 from typing import List
 import os
+from pprint import pprint
 import copy
 import json
 import collections
@@ -593,13 +594,15 @@ class Delivery(BaseAction):
             project_name = v["project"]["full_name"]
             asset_mongo_id = v["asset"]["parent"]["custom_attributes"]["avalon_mongo_id"]
             in_links = list(v["incoming_links"])
-            subset_name = v["asset"]["name"]
+            subset_name = v["custom_attributes"]["subset"]
+            if not subset_name:
+                subset_name = v["asset"]["name"]
 
             if in_links:
                 # v = in_links[0]
-                subset_name = in_links[0]["from"]["custom_attributes"]["subset"]
-                if not subset_name:
-                    subset_name = in_links[0]["from"]["asset"]["name"]
+                # subset_name = in_links[0]["from"]["custom_attributes"]["subset"]
+                # if not subset_name:
+                #     subset_name = in_links[0]["from"]["asset"]["name"]
                 version_parent = in_links[0]["from"]["asset"]["parent"]
                 asset_mongo_id = version_parent["custom_attributes"]["avalon_mongo_id"]
 
@@ -613,10 +616,12 @@ class Delivery(BaseAction):
             version_id = op_v["_id"]
             representations = list(get_representations(
                 project_name, version_ids=[version_id]))
-    
+
             for repre in representations:
-                self.log.info(f"Adding {repre['_id']}{v} for repre-version dict")
-                version_by_repre_id[repre["_id"]] = v
+                key = repre["_id"]
+                pprint(repre)
+                self.log.info(f"Adding {key} {v} for repre-version dict")
+                version_by_repre_id[key] = v
         
         return version_by_repre_id
 
@@ -770,7 +775,6 @@ class Delivery(BaseAction):
                     version = version_by_repre_id[repre["parent"]]
                 except KeyError as e:
                     self.log.error(f"Repre {repre['_id']} was not updated due to {e}")
-                    from pprint import pprint
                     pprint(version_by_repre_id)
                     pprint(repre)
                     continue
