@@ -309,6 +309,27 @@
                     "type": "dict",
                     "collapsible": true,
                     "checkbox_key": "enabled",
+                    "key": "ExtractOCIOEffects",
+                    "label": "Extract OCIO with effects",
+                    "is_group": true,
+                    "children": [
+                        {
+                            "type": "boolean",
+                            "key": "enabled",
+                            "label": "Enabled"
+                        },
+                        {
+                            "type": "list",
+                            "object_type": "text",
+                            "key": "active_views",
+                            "label": "Enabled OCIO active views"
+                        }
+                    ]
+                },
+                {
+                    "type": "dict",
+                    "collapsible": true,
+                    "checkbox_key": "enabled",
                     "key": "ExtractReviewCutUpVideo",
                     "label": "Extract Review Cut Up Video",
                     "is_group": true,
