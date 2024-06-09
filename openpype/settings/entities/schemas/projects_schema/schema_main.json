@@ -47,6 +47,10 @@
                 {
                     "type": "schema",
                     "name": "schema_anatomy_imageio"
+                },
+                {
+                    "type": "schema",
+                    "name": "schema_anatomy_ociosettings"
                 }
             ]
         },
