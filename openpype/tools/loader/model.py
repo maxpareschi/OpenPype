@@ -361,7 +361,7 @@ class SubsetsModel(TreeModel, BaseRepresentationModel):
         if approved_version:
             approved_version_name = "v" + str(int(approved_version["name"])).zfill(3)
         else:
-            approved_version_name = "-"
+            approved_version_name = ""
          
         # Compute frame ranges (if data is present)
         frame_start = version_data.get(
