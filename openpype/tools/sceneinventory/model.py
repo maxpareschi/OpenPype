@@ -12,6 +12,7 @@ from openpype.client import (
     get_subset_by_id,
     get_version_by_id,
     get_last_version_by_subset_id,
+    get_approved_version_by_subset_id,
     get_representation_by_id,
 )
 from openpype.pipeline import (
@@ -34,7 +35,7 @@ from .lib import (
 class InventoryModel(TreeModel):
     """The model for the inventory"""
 
-    Columns = ["Name", "version", "count", "family",
+    Columns = ["Name", "version", "approved", "count", "family",
                "group", "loader", "objectName"]
 
     OUTDATED_COLOR = QtGui.QColor(235, 30, 30)
@@ -416,6 +417,13 @@ class InventoryModel(TreeModel):
             highest_version = get_last_version_by_subset_id(
                 project_name, version["parent"]
             )
+            approved_version = get_approved_version_by_subset_id(
+                project_name, version["parent"]
+            )
+            if approved_version:
+                approved_version_name = "v" + str(int(approved_version["name"])).zfill(3)
+            else:
+                approved_version_name = ""
 
             # create the group header
             group_node = Item()
@@ -424,6 +432,7 @@ class InventoryModel(TreeModel):
                                                   representation["name"])
             group_node["representation"] = repre_id
             group_node["version"] = version["name"]
+            group_node["approved"] = approved_version_name
             group_node["highest_version"] = highest_version["name"]
             group_node["family"] = family
             group_node["familyIcon"] = family_icon
@@ -450,6 +459,7 @@ class InventoryModel(TreeModel):
 
                 # store the current version on the item
                 item_node["version"] = version["name"]
+                item_node["approved"] = approved_version_name
 
                 # Remapping namespace to item name.
                 # Noted that the name key is capital "N", by doing this, we
