@@ -73,7 +73,7 @@ class HierarchyView(QtWidgets.QTreeView):
         "type": TypeDef(),
         "frameStart": NumberDef(1),
         "frameEnd": NumberDef(1),
-        "fps": NumberDef(1, decimals=2),
+        "fps": NumberDef(1, decimals=3),
         "resolutionWidth": NumberDef(0),
         "resolutionHeight": NumberDef(0),
         "handleStart": NumberDef(0),
