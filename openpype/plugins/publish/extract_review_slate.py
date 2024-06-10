@@ -23,7 +23,7 @@ class ExtractReviewSlate(publish.Extractor):
 
     label = "Review with Slate frame"
     order = pyblish.api.ExtractorOrder + 0.031
-    families = ["slate", "review"]
+    families = ["review"]
     match = pyblish.api.Subset
 
     SUFFIX = "_slate"
@@ -31,6 +31,7 @@ class ExtractReviewSlate(publish.Extractor):
     hosts = [
         "nuke",
         "maya",
+        "houdini",
         "shell",
         # "hiero",
         # "premiere",
@@ -53,13 +54,19 @@ class ExtractReviewSlate(publish.Extractor):
             raise RuntimeError("Burnin needs already created mov to work on.")
 
         # get slates frame from upstream
-        slates_data = inst_data.get("slateFrames")
+        slates_data = inst_data.get("slateFrames", None)
+        slate_data = inst_data.get("slateFrame", None)
         if not slates_data:
             # make it backward compatible and open for slates generator
             # premium plugin
-            slates_data = {
-                "*": inst_data["slateFrame"]
-            }
+            if slate_data:
+                slates_data = {
+                    "*": inst_data["slateFrame"]
+                }
+        
+        if not slates_data:
+            self.log.info("No slate frames found, skipping...")
+            return
 
         self.log.info("_ slates_data: {}".format(pformat(slates_data)))
 

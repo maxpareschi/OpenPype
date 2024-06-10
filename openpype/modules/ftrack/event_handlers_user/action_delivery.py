@@ -593,13 +593,14 @@ class Delivery(BaseAction):
             project_name = v["project"]["full_name"]
             asset_mongo_id = v["asset"]["parent"]["custom_attributes"]["avalon_mongo_id"]
             in_links = list(v["incoming_links"])
+            subset_name = v["custom_attributes"]["subset"]
+            if not subset_name:
+                subset_name = v["asset"]["name"]
 
             if in_links:
-                # v = in_links[0]
                 version_parent = in_links[0]["from"]["asset"]["parent"]
                 asset_mongo_id = version_parent["custom_attributes"]["avalon_mongo_id"]
 
-            subset_name = v["asset"]["name"]
             version_number = v["version"]
             op_v = get_op_version_from_ftrack_assetversion(
                 project_name, asset_mongo_id, subset_name, version_number)
@@ -610,12 +611,14 @@ class Delivery(BaseAction):
             version_id = op_v["_id"]
             representations = list(get_representations(
                 project_name, version_ids=[version_id]))
-    
+
             for repre in representations:
-                self.log.info(f"Adding {repre['_id']}{v} for repre-version dict")
-                version_by_repre_id[repre["_id"]] = v
+                key = repre["_id"]
+                self.log.info(f"Adding {key} {v} for repre-version dict")
+                version_by_repre_id[key] = v
         
         return version_by_repre_id
+
 
     def real_launch(self, session, entities, event):
         self.log.info("Delivery action just started.")
@@ -680,6 +683,7 @@ class Delivery(BaseAction):
         template_override = self.action_settings["delivery_templates"].get(anatomy_name, None)
         if template_override:
             raw_anatomy_templates = get_anatomy_settings(project_name)["templates"]
+            original_template = raw_anatomy_templates["delivery"].get(anatomy_name)
             raw_anatomy_templates["delivery"][anatomy_name] = template_override
             anatomy.templates["delivery"][anatomy_name] = template_override
             anatomy.templates_obj.set_templates(raw_anatomy_templates)
@@ -721,6 +725,29 @@ class Delivery(BaseAction):
                                                         datetime_data,
                                                         anatomy_name)
 
+            if template_override and repre_report_items and original_template:
+                raw_anatomy_templates = get_anatomy_settings(project_name)["templates"]
+                raw_anatomy_templates["delivery"][anatomy_name] = original_template
+                anatomy.templates["delivery"][anatomy_name] = original_template
+                anatomy.templates_obj.set_templates(raw_anatomy_templates)
+                format_dict = get_format_dict(anatomy, location_path)
+                new_repre_report_items = check_destination_path(repre["_id"],
+                                                            anatomy,
+                                                            anatomy_data,
+                                                            datetime_data,
+                                                            anatomy_name)
+
+                if not new_repre_report_items:
+                    resolved = anatomy.format_all({**anatomy_data, **datetime_data})
+                    resolved = Path(resolved["delivery"][anatomy_name]).parent.parent
+                    msg = f"Delivery was successfull but the template override "\
+                    f"\"{anatomy_name}\" failed: delivery used the default config."
+                    submsg = f"The delivery was done but the template used"\
+                    f" for \"{anatomy_name}\" is <br><br>{resolved}<br><br>"\
+                    f"The original error was: <br><br>{repre_report_items}"
+                    report_items[msg] = submsg
+                    repre_report_items = dict()
+
             if repre_report_items:
                 report_items.update(repre_report_items)
                 continue
@@ -759,24 +786,23 @@ class Delivery(BaseAction):
             collected_repres.append(repre["name"])
             collected_paths.append(dest_path)
 
-            try:
-                version = version_by_repre_id[repre["_id"]]
-                if version["id"] not in attr_by_version:
-                    attr_by_version[version["id"]] = {"attr":"", "entity": version}
 
-                files = "\n".join([Path(f).name for f in report["created_files"][-1:]])
-                attr_by_version[version["id"]]["attr"] += files +"\n\n"
-                self.log.info(f"Adding files {files}")
-            except Exception as e:
-                self.log.info(
-                    f"Failed to update version for representation {repre['_id']} due to {e}"
-                )
+
+            version = version_by_repre_id.get(repre["_id"])
+
+            if version["id"] not in attr_by_version:
+                attr_by_version[version["id"]] = {"attr":"", "entity": version}
+
+            files = "\n".join([Path(f).name for f in report.get("created_files", [])[-1:]])
+            attr_by_version[version["id"]]["attr"] += files +"\n\n"
+            self.log.info(f"Adding files {files}")
+
 
         for id_, value in attr_by_version.items():
             value["entity"]["custom_attributes"]["delivery_name"] = value["attr"]
 
 
-        report_items.pop("created_files") # removes false positive
+        report_items.pop("created_files", "") # removes false positive
         # get final path of repre to be used for attributes
         # and fill custom attributes on list
 

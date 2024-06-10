@@ -12,13 +12,13 @@ class CollectSlateGlobal(pyblish.api.InstancePlugin):
     Check if slate global is active and enable slate workflow for
     selected families
     """
-    label = "Collect for Slate Global workflow"
+    label = "Collect Slate Global data"
     order = pyblish.api.CollectorOrder + 0.499
-    families = [
-        "review",
-        # "render",
-        "gather"
-    ]
+    # families = [
+    #     "review",
+    #     # "render",
+    #     "gather"
+    # ]
 
     _slate_settings_name = "ExtractSlateGlobal"
 
@@ -67,8 +67,7 @@ class CollectSlateGlobal(pyblish.api.InstancePlugin):
                 "slate_common_data": {},
                 "slate_env": _env,
                 "slate_thumbnail": "",
-                "slate_repre_data": {},
-                "slate_task_types": settings["integrate_task_types"]
+                "slate_repre_data": {}
             })
 
             slate_data = slate_global["slate_common_data"]
@@ -93,49 +92,38 @@ class CollectSlateGlobal(pyblish.api.InstancePlugin):
             if "customData" in instance.data:
                 slate_data.update(instance.data["customData"])
 
-            if "families" not in instance.data:
-                instance.data["families"] = list()
+            # if "families" not in instance.data:
+            #     instance.data["families"] = list()
+            # 
+            # if not "versionData" in instance.data:
+            #     instance.data["versionData"] = dict()
+            # 
+            # if "families" not in instance.data["versionData"]:
+            #     instance.data["versionData"]["families"] = list()
+            # if not task:
+            #     default_task = {
+            #         "name": settings["missing_task_type"][0].lower(),
+            #         "type": settings["missing_task_type"][0],
+            #         "short": instance.context.data["projectEntity"]["config"]\
+            #             ["tasks"][settings["missing_task_type"][0]]["short_name"]
+            #     }
+            #     instance.data["anatomyData"]["task"] = default_task
+            #     slate_data["task"] = default_task
+            # self.log.debug("Task: {} is enabled for Extract "
+            #     "Slate Global workflow, tagging for slate "
+            #     "extraction on review families...".format(
+            #         task
+            # ))
+            # instance.data["slate"] = True
+            # instance.data["families"].append("slate")
+            # instance.data["versionData"]["families"].append("slate")
 
-            if not "versionData" in instance.data:
-                instance.data["versionData"] = dict()
-
-            if "families" not in instance.data["versionData"]:
-                instance.data["versionData"]["families"] = list()
-
-            if task in settings["integrate_task_types"] or not task:
-
-                if not task:
-                    default_task = {
-                        "name": settings["missing_task_type"][0].lower(),
-                        "type": settings["missing_task_type"][0],
-                        "short": instance.context.data["projectEntity"]["config"]\
-                            ["tasks"][settings["missing_task_type"][0]]["short_name"]
-                    }
-                    instance.data["anatomyData"]["task"] = default_task
-                    slate_data["task"] = default_task
-
-                self.log.debug("Task: {} is enabled for Extract "
-                    "Slate Global workflow, tagging for slate "
-                    "extraction on review families...".format(
-                        task
-                ))
-
-                instance.data["slate"] = True
-                instance.data["families"].append("slate")
-                instance.data["versionData"]["families"].append("slate")
-
-                self.log.debug(
-                    "SlateGlobal Data: {}".format(
-                        json.dumps(
-                            instance.data["slateGlobal"],
-                            indent=4,
-                            default=str
-                        )
+            self.log.debug(
+                "SlateGlobal Data: {}".format(
+                    json.dumps(
+                        instance.data["slateGlobal"],
+                        indent=4,
+                        default=str
                     )
                 )
-            else:
-                self.log.debug("Task: {} is disabled for Extract "
-                    "Slate Global workflow, skipping slate "
-                    "extraction on review families...".format(
-                        task
-                ))
+            )

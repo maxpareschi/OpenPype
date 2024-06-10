@@ -1,0 +1,66 @@
+{
+    "type": "dict",
+    "key": "ociosettings",
+    "label": "Global OCIO Settings",
+    "is_file": true,
+    "is_group": true,
+    "checkbox_key": "enabled",
+    "children": [
+        {
+            "type": "boolean",
+            "key": "enabled",
+            "label": "Enabled"
+        },
+        {
+            "key": "subsets_group",
+            "label": "PRIORITY 01: Search OCIO config in subsets",
+            "type": "dict",
+            "highlight_content": true,
+            "use_label_wrap": true,
+            "children": [
+                {
+                    "type": "boolean",
+                    "key": "hierarchy_search",
+                    "label": "Recursively search in hierarchy"
+                },
+                {
+                    "key": "subsets",
+                    "type": "list",
+                    "highlight_content": true,
+                    "use_label_wrap": false,
+                    "object_type": {
+                        "type": "dict",
+                        "children": [
+                            {
+                                "key": "subset",
+                                "label": "Subset name",
+                                "type": "text"
+                            },
+                            {
+                                "key": "representation",
+                                "label": "Representation name",
+                                "type": "text"
+                            }
+                        ]
+                    }
+                }
+            ]
+        },
+        {
+            "key": "configs",
+            "label": "PRIORITY 02: Search OCIO config in paths",
+            "type": "dict",
+            "highlight_content": true,
+            "use_label_wrap": true,
+            "children": [
+                {
+                    "type": "path",
+                    "key": "paths",
+                    "label": "Custom OCIO config paths",
+                    "multiplatform": false,
+                    "multipath": true
+                }
+            ]
+        }
+    ]
+}

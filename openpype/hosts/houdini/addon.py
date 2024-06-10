@@ -9,6 +9,7 @@ class HoudiniAddon(OpenPypeModule, IHostAddon):
     host_name = "houdini"
 
     def initialize(self, module_settings):
+        os.system("color")
         self.enabled = True
 
     def add_implementation_envs(self, env, _app):

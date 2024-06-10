@@ -3,8 +3,12 @@ import os
 import json
 import pyblish.api
 
+from openpype.settings import get_current_project_settings
 from openpype.pipeline import publish
-
+from lablib import (
+    EffectsFileProcessor,
+    ColorProcessor,
+)
 
 class ExtractClipEffects(publish.Extractor):
     """Extract clip effects instances."""
@@ -14,6 +18,9 @@ class ExtractClipEffects(publish.Extractor):
     families = ["effect"]
 
     def process(self, instance):
+
+        settings = get_current_project_settings()[
+            "hiero"]["publish"]["ExtractOCIOEffects"]
         item = instance.data["item"]
         effects = instance.data.get("effects")
 
@@ -75,21 +82,69 @@ class ExtractClipEffects(publish.Extractor):
         instance.data["versionData"] = version_data
 
         representation = {
-            'files': file,
-            'stagingDir': staging_dir,
-            'name': family + ext.title(),
-            'ext': ext
+            "files": file,
+            "stagingDir": staging_dir,
+            "name": family + ext.title(),
+            "ext": ext
         }
         instance.data["representations"].append(representation)
+        
+        effect_file = os.path.join(staging_dir, file).replace("\\", "/")
+
+        with open(effect_file, "w") as outfile:
+            outfile.write(json.dumps(effects, indent=4, sort_keys=True))
+
+        self.log.debug("Processing effect stack file: '{}'".format(
+            effect_file
+        ))
+
+        current_ocio_config = instance.data["versionData"]["colorspaceScript"]["ocioConfigPath"]
+
+        if current_ocio_config and settings["enabled"]:
+            self.log.debug("Computing OCIO with base config: '{}'".format(
+                current_ocio_config
+            ))
+            epr = EffectsFileProcessor(effect_file)
+            if epr.color_operators:
+                self.log.debug("Found color operators: '{}'".format(
+                    json.dumps(epr.color_operators, indent=4, default=str)))
+                
+                cpr = ColorProcessor(
+                    operators=epr.color_operators,
+                    config_path = current_ocio_config,
+                    staging_dir = staging_dir,
+                    context = instance.data["asset"],
+                    family = instance.data["anatomyData"]["project"]["code"],
+                    log = self.log
+                )
+                if settings["active_views"]:
+                    cpr.set_views(settings["active_views"])
+
+                self.log.debug("Colorprocessor with data: {}".format(cpr))
+            
+                config_path = os.path.join(
+                    staging_dir,
+                    os.path.splitext(file)[0] + ".ocio"
+                ).replace("\\", "/")
+                
+                self.log.debug("Writing ocio config at: '{}'".format(config_path))
+                cpr.create_config(dest=config_path)
+            
+                ocio_representation = {
+                    "files": os.path.basename(config_path),
+                    "stagingDir": staging_dir,
+                    "name": family + "Ocio",
+                    "ext": "ocio"
+                }
+                instance.data["representations"].append(ocio_representation)
+            else:
+                self.log.debug("No color operators found, skipping effect stack...")
 
         self.log.debug("_ representations: `{}`".format(
             instance.data["representations"]))
 
         self.log.debug("_ version_data: `{}`".format(
             instance.data["versionData"]))
-
-        with open(os.path.join(staging_dir, file), "w") as outfile:
-            outfile.write(json.dumps(effects, indent=4, sort_keys=True))
 
     def copy_linked_files(self, effect, dst_dir):
         for k, v in effect["node"].items():

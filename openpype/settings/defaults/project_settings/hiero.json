@@ -72,6 +72,15 @@
         "CollectEffectsByLayers": {
             "enabled": true
         },
+        "ExtractOCIOEffects": {
+            "enabled": true,
+            "active_views": [
+                "sRGB",
+                "Rec.709",
+                "Log",
+                "Raw"
+            ]
+        },
         "ExtractReviewCutUpVideo": {
             "enabled": true,
             "tags_addition": [

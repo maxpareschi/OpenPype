@@ -208,14 +208,14 @@ def deliver_sequence(
 
     src_path = os.path.normpath(src_path.replace("\\", "/"))
 
-    def hash_path_exist(myPath):
+    def hash_path_exist(myPath, repre):
         res = myPath.replace('#', '*')
         glob_search_results = glob.glob(res)
-        if len(glob_search_results) > 0:
+        if len(glob_search_results) == len(repre["files"]):
             return True
         return False
 
-    if not hash_path_exist(src_path):
+    if not hash_path_exist(src_path, repre):
         msg = "{} doesn't exist for {}".format(
             src_path, repre["_id"])
         report_items["Source file was not found"].append(msg)
