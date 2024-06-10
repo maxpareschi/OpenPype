@@ -99,6 +99,7 @@ class NumberDelegate(QtWidgets.QStyledItemDelegate):
         # Set min/max
         editor.setMinimum(self.minimum)
         editor.setMaximum(self.maximum)
+        editor.setDecimals(self.decimals)
         # Hide spinbox buttons
         editor.setButtonSymbols(QtWidgets.QSpinBox.NoButtons)
 
