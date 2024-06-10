@@ -619,6 +619,7 @@ class Delivery(BaseAction):
         
         return version_by_repre_id
 
+
     def real_launch(self, session, entities, event):
         self.log.info("Delivery action just started.")
         report_items = collections.defaultdict(list)
@@ -682,6 +683,7 @@ class Delivery(BaseAction):
         template_override = self.action_settings["delivery_templates"].get(anatomy_name, None)
         if template_override:
             raw_anatomy_templates = get_anatomy_settings(project_name)["templates"]
+            original_template = raw_anatomy_templates["delivery"].get(anatomy_name)
             raw_anatomy_templates["delivery"][anatomy_name] = template_override
             anatomy.templates["delivery"][anatomy_name] = template_override
             anatomy.templates_obj.set_templates(raw_anatomy_templates)
@@ -722,6 +724,25 @@ class Delivery(BaseAction):
                                                         anatomy_data,
                                                         datetime_data,
                                                         anatomy_name)
+
+            if template_override and repre_report_items and original_template:
+                raw_anatomy_templates = get_anatomy_settings(project_name)["templates"]
+                raw_anatomy_templates["delivery"][anatomy_name] = original_template
+                anatomy.templates["delivery"][anatomy_name] = original_template
+                anatomy.templates_obj.set_templates(raw_anatomy_templates)
+                format_dict = get_format_dict(anatomy, location_path)
+                new_repre_report_items = check_destination_path(repre["_id"],
+                                                            anatomy,
+                                                            anatomy_data,
+                                                            datetime_data,
+                                                            anatomy_name)
+                if not new_repre_report_items:
+                    msg = "Template override failed: fallback template applied. Delivery was successfull."
+                    submsg = f"The delivery was done but the used template used is: "\
+                    f"\n\n{original_template} \n\ninstead of \n\n{template_override}"
+                    f"The original error was {repre_report_items}"
+                    report_items[msg] = submsg
+                    repre_report_items = dict()
 
             if repre_report_items:
                 report_items.update(repre_report_items)
