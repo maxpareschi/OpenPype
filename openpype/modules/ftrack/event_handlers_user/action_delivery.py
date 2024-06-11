@@ -77,6 +77,8 @@ class Delivery(BaseAction):
         self.action_settings = self.get_ftrack_settings(
             session, event, entities)["user_handlers"]["delivery_action"]
 
+        create_review_default = self.action_settings["create_client_review_default"]
+
         title = "Delivery data to Client"
 
         items = []
@@ -218,7 +220,7 @@ class Delivery(BaseAction):
             })
             items.append({
                 "type": "boolean",
-                "value": False,
+                "value": create_review_default,
                 "label": "Create ReviewSession",
                 "name": "create_review_session"
             })

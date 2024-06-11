@@ -663,7 +663,7 @@
                         {
                             "type": "boolean",
                             "key": "create_client_review_default",
-                            "label": "Ftrack's Action default value for create client review with same name as delivery list"
+                            "label": "Ftrack's Action default value for create client review (will have same name as delivery list)"
                         },
                         {
                             "type": "list",
