@@ -54,6 +54,11 @@
                 "output": []
             }
         },
+        "ExtractTimecode": {
+            "enabled": true,
+            "optional": true,
+            "default_tc": "01:00:00:00"
+        },
         "ExtractTemplatedTranscode": {
             "enabled": true,
             "profiles": [

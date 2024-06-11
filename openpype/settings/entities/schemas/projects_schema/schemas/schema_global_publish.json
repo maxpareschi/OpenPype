@@ -253,6 +253,31 @@
         {
             "type": "dict",
             "collapsible": true,
+            "checkbox_key": "enabled",
+            "key": "ExtractTimecode",
+            "label": "Extract Timecode",
+            "is_group": true,
+            "children": [
+                {
+                    "type": "boolean",
+                    "key": "enabled",
+                    "label": "Enabled"
+                },
+                {
+                    "type": "boolean",
+                    "key": "optional",
+                    "label": "Optional"
+                },
+                {
+                    "type": "text",
+                    "key": "default_tc",
+                    "label": "Default timecode"
+                }
+            ]
+        },
+        {
+            "type": "dict",
+            "collapsible": true,
             "key": "ExtractTemplatedTranscode",
             "label": "Extract Templated Transcode",
             "checkbox_key": "enabled",
