@@ -13,7 +13,7 @@ class VersionApprovalToSubset(BaseEvent):
         if not filtered_entities_info:
             return
 
-        self.process_by_project(session, filtered_entities_info)
+        self.process_by_project(session, event, filtered_entities_info)
 
     def filter_entity_info(self, event):
         entities = []
@@ -47,7 +47,22 @@ class VersionApprovalToSubset(BaseEvent):
             
         return entities
 
-    def process_by_project(self, session, entities):
+    def process_by_project(self, session, event, entities):
+        project_id = entities[0]["parents"][-1]["entityId"]
+        project_name = self.get_project_name_from_event(
+            session, event, project_id
+        )
+        project_settings = self.get_project_settings_from_event(
+            event, project_name
+        )
+        event_settings = project_settings["ftrack"]["events"]["version_to_approved_subset"]
+        # Skip if event is not enabled or status mapping is not set
+        if not event_settings["enabled"]:
+            self.log.debug("Project \"{}\" has disabled {}".format(
+                project_name, self.__class__.__name__
+            ))
+            return
+
         updates = []
         for entity in entities:
             version = session.query(

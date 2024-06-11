@@ -360,6 +360,20 @@
                 },
                 {
                     "type": "dict",
+                    "key": "version_to_approved_subset",
+                    "label": "Sync version status to approved in subset",
+                    "is_group": true,
+                    "checkbox_key": "enabled",
+                    "children": [
+                        {
+                            "type": "boolean",
+                            "key": "enabled",
+                            "label": "Enabled"
+                        }
+                    ]
+                },
+                {
+                    "type": "dict",
                     "key": "transfer_values_of_hierarchical_attributes",
                     "label": "Action to transfer hierarchical attribute values",
                     "checkbox_key": "enabled",
