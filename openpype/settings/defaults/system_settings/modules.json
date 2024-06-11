@@ -86,7 +86,14 @@
                     ],
                     "read_security_roles": [
                         "API",
-                        "Administrator"
+                        "Administrator",
+                        "VFX_Editor",
+                        "Supervisor",
+                        "Project Manager",
+                        "Pipeline_TD",
+                        "Producer",
+                        "megarole",
+                        "pypeclub"
                     ]
                 },
                 "fps": {
