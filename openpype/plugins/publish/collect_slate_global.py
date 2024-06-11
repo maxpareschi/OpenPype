@@ -87,11 +87,26 @@ class CollectSlateGlobal(pyblish.api.InstancePlugin):
 
             task = instance.data["anatomyData"].get("task",{}).get("type", None)
             if not task:
-                task = None
+                self.log.debug("No task found in instance, trying to inject from gather data...")
+                if instance.data.get("gather_task_injection"):
+                    slate_data["task"] = instance.data["gather_task_injection"]
+                else:
+                    raise ValueError("No gather data to inject from, task will remain blank...")
+            else:
+                task_name = instance.data["task"]
+                slate_data["task"] = {
+                    "name": task_name,
+                    "type": task,
+                    "short": instance.context.data["projectEntity"]["config"]\
+                        ["tasks"][task]["short_name"]
+                }
+            
+            self.log.debug("Task '{}' was set for slate templating, proceeding...".format(slate_data["task"]))
+
 
             if "customData" in instance.data:
                 slate_data.update(instance.data["customData"])
-
+            
             # if "families" not in instance.data:
             #     instance.data["families"] = list()
             # 

@@ -300,14 +300,15 @@ class GatherAction(BaseAction):
             detected_task_name = ""
 
 
-        self.log.debug("Task name is '{}'".format(detected_task_name))
-        self.log.debug("Task type is '{}'".format(avail_tasks[detected_task_name]))
+        # self.log.debug("Task name is '{}'".format(detected_task_name))
+        # self.log.debug("Task type is '{}'".format(avail_tasks[detected_task_name]))
 
         task_info = {
             "type": avail_tasks[detected_task_name],
             "name": detected_task_name,
             "short": anatomy["tasks"][avail_tasks[detected_task_name]]["short_name"]
         }
+        self.log.debug("Computed task is: {}".format(json.dumps(task_info, indent=4, default=str)))
 
         computed_variant = repre_doc["context"]["subset"].replace(
             repre_doc["context"]["family"],
@@ -345,6 +346,9 @@ class GatherAction(BaseAction):
             gather_root = asset_doc["data"]["parents"][-1]
             gather_suffix = ""
 
+        if task_info["name"] == "":
+            task_info["name"] = task_info["type"].lower()
+
         gather_instance = {
             "project": project_name,
             "family": family,
@@ -364,7 +368,8 @@ class GatherAction(BaseAction):
             "gather_representation_ext": os.path.splitext(repre_files[0])[-1].replace(".", ""),
             "gather_asset_name": asset_name + gather_suffix,
             "gather_task_id": str(version["task_id"]) if str(version["task_id"]) != "NOT_SET" else None,
-            "gather_ftrack_source_id": version["id"]
+            "gather_ftrack_source_id": version["id"],
+            "gather_task_injection": task_info
         }
 
         note = self.get_comment_from_notes(
