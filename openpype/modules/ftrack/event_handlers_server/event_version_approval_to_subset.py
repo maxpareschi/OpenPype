@@ -9,9 +9,6 @@ class VersionApprovalToSubset(BaseEvent):
     is set to any status that is mapped as done
     """
     def launch(self, session, event):
-        # Filter event entities
-        # - output is dictionary where key is project id and event info in
-        #   value
         filtered_entities_info = self.filter_entity_info(event)
         if not filtered_entities_info:
             return
@@ -30,7 +27,7 @@ class VersionApprovalToSubset(BaseEvent):
             if not keys or "statusid" not in keys:
                 continue
 
-            # Get new version task name
+            # Get version status change id
             version_status_id = (
                 entity_info
                 .get("changes", {})
@@ -38,7 +35,7 @@ class VersionApprovalToSubset(BaseEvent):
                 .get("new", {})
             )
 
-            # Just check that `new` is set to any value
+            # Just check that 'new' is set to any value
             if not version_status_id:
                 continue
 
