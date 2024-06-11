@@ -634,6 +634,15 @@ class Delivery(BaseAction):
         return version_by_repre_id
 
 
+    def handle_csv(self, report_items: dict, name: str, prj: str, repres: List[dict]):
+        csv_file = get_csv_path(report_items["created_files"], name)
+        if csv_file is not None:
+            generate_csv_from_representations(prj, repres, csv_file)
+            self.log.info(f"CSV saved in {csv_file}")
+        else:
+            create_temp_csv(prj, name, repres)
+
+
     def real_launch(self, session, entities, event):
         self.log.info("Delivery action just started.")
         report_items = collections.defaultdict(list)
@@ -815,17 +824,12 @@ class Delivery(BaseAction):
         for id_, value in attr_by_version.items():
             value["entity"]["custom_attributes"]["delivery_name"] = value["attr"]
 
-        csv_file = get_csv_path(report_items["created_files"], ftrack_list_name)
-        if csv_file is not None:
-            generate_csv_from_representations(project_name, repres_to_deliver, csv_file)
-            self.log.info(f"CSV saved in {csv_file}")
-        else:
-            create_temp_csv(project_name, ftrack_list_name, repres_to_deliver)
+
+        self.handle_csv(report_items, ftrack_list_name, project_name, repres_to_deliver)
 
         report_items.pop("created_files", "") # removes false positive
         # get final path of repre to be used for attributes
         # and fill custom attributes on list
-
             
         if entities[0].entity_type.lower() == "assetversionlist":
             entities[0]["custom_attributes"]["delivery_package_name"] = ftrack_list_name
