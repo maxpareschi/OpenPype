@@ -199,12 +199,52 @@
             ],
             "delivery_templates": {},
             "create_client_review_default": false,
-            "delivery_csv_items": {
-                "studio": "22Dogs",
-                "shot": "{asset}",
-                "task": "{task[name]}",
-                "date": "{yyyy}{mm}{dd}"
-            }
+            "delivery_csv_items": [
+                {
+                    "column_name": "Studio",
+                    "column_value": "22Dogs"
+                },
+                {
+                    "column_name": "Shot - Asset",
+                    "column_value": "{asset}"
+                },
+                {
+                    "column_name": "Task",
+                    "column_value": "{task[name]}"
+                },
+                {
+                    "column_name": "Date",
+                    "column_value": "{yyyy} - {mm} - {dd}"
+                },
+                {
+                    "column_name": "File Name",
+                    "column_value": "{asset}_{subset}_v{version:0>4}<_{output}><.{frame:0>4}>.{ext}"
+                },
+                {
+                    "column_name": "Format",
+                    "column_value": "{ext}"
+                },
+                {
+                    "column_name": "Family",
+                    "column_value": "{family}"
+                },
+                {
+                    "column_name": "Subset",
+                    "column_value": "{subset}"
+                },
+                {
+                    "column_name": "Start Frame",
+                    "column_value": "{asset_data[start]}"
+                },
+                {
+                    "column_name": "End Frame",
+                    "column_value": "{asset_data[end]}"
+                },
+                {
+                    "column_name": "Duration",
+                    "column_value": "{asset_data[duration]}"
+                }
+            ]
         },
         "gather_action": {
             "enabled": true,

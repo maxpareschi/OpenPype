@@ -638,7 +638,7 @@
                         },
                         {
                             "type": "label",
-                            "label": "NOTE: extra template strings from ftrack are: '{ftrack[listname]}, {ftrack[category]}, {ftrack[username]}, {ftrack[first_name]}, {ftrack[last_name]}'"
+                            "label": "NOTE: extra template strings from ftrack are: '{ftrack[listname]}, {ftrack[category]}, {ftrack[username]}'"
                         },
                         {
                             "type": "dict-modifiable",
@@ -652,11 +652,25 @@
                             "label": "Ftrack's Action default value for create client review with same name as delivery list"
                         },
                         {
-                            "label": "Delivery CSV columns",
+                            "type": "list",
+                            "collapsible": true,
                             "key": "delivery_csv_items",
-                            "type": "dict-modifiable",
+                            "label": "Delivery CSV Items",
+                            "use_label_wrap": true,
                             "object_type": {
-                                "type": "text"
+                                "type": "dict",
+                                "children": [
+                                    {
+                                        "key": "column_name",
+                                        "label": "Column name",
+                                        "type": "text"
+                                    },
+                                    {
+                                        "key": "column_value",
+                                        "label": "Column value",
+                                        "type": "text"
+                                    }
+                                ]
                             }
                         }
                     ]

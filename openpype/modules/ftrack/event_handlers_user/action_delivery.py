@@ -6,6 +6,8 @@ import json
 import collections
 from pathlib import Path
 from logging import getLogger
+import webbrowser
+from tempfile import NamedTemporaryFile
 
 logger = getLogger(__name__)
 
@@ -31,10 +33,22 @@ from openpype.pipeline.delivery import (
     deliver_single_file,
     deliver_sequence,
 )
+from openpype.lib.ttd_op_utils import generate_csv, yield_csv_lines
 from ftrack_api import Session
 from ftrack_api.entity.base import Entity
 
 from openpype.modules.ftrack.event_handlers_user.action_ttd_delete_version import get_op_version_from_ftrack_assetversion
+
+def get_csv_path(created_files: List[str], package_name: str):
+    if package_name:
+        return created_files[0].split(package_name)[0] + package_name + ".csv"
+
+
+def create_temp_csv(project_name: str, name: str, repres_to_deliver: List[dict]):
+    lines = "\n".join(yield_csv_lines(project_name, repres_to_deliver))
+    with NamedTemporaryFile(mode="w", delete=False, prefix=name, suffix=".csv") as fp:
+        fp.write(lines)
+    webbrowser.open(fp.name)        
 
 
 class Delivery(BaseAction):
@@ -801,6 +815,12 @@ class Delivery(BaseAction):
         for id_, value in attr_by_version.items():
             value["entity"]["custom_attributes"]["delivery_name"] = value["attr"]
 
+        csv_file = get_csv_path(report_items["created_files"], ftrack_list_name)
+        if csv_file:
+            generate_csv(project_name, repres_to_deliver, csv_file)
+            self.log.info(f"CSV saved in {csv_file}")
+        else:
+            create_temp_csv(project_name, ftrack_list_name, repres_to_deliver)
 
         report_items.pop("created_files", "") # removes false positive
         # get final path of repre to be used for attributes
@@ -820,6 +840,9 @@ class Delivery(BaseAction):
                 list_category_name = entities[0]["category"]["name"],
                 log = self.log
             )
+
+
+        
 
         session.commit()
         return self.report(report_items)
