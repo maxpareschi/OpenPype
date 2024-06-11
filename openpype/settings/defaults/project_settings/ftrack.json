@@ -107,6 +107,9 @@
             ],
             "name_sorting": false
         },
+        "version_to_approved_subset": {
+            "enabled": true
+        },
         "transfer_values_of_hierarchical_attributes": {
             "enabled": true,
             "role_list": [

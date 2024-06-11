@@ -8,6 +8,7 @@ that has project name as a context (e.g. on 'ProjectEntity'?).
 
 import re
 import collections
+import copy
 
 import six
 from bson.objectid import ObjectId
@@ -609,6 +610,37 @@ def version_is_latest(project_name, version_id):
     return last_version["_id"] == version_id
 
 
+def version_is_approved(project_name, version_id):
+    """Is version the approved one from it's subset.
+
+    Args:
+        project_name (str):Name of project where to look for queried entities.
+        version_id (Union[str, ObjectId]): Version id which is checked.
+
+    Returns:
+        bool: True if is latest version from subset else False.
+    """
+
+    version_id = convert_id(version_id)
+    if not version_id:
+        return False
+    version_doc = get_version_by_id(
+        project_name, version_id, fields=["_id", "type", "parent"]
+    )
+    subset_doc = get_subset_by_id(
+        project_name, version_doc["parent"]
+    )
+    # What to do when version is not found?
+    if not version_doc:
+        return False
+
+    approved_version = subset_doc["data"].get("approved_version", None)
+    if approved_version:
+        approved_version = int(approved_version)
+                           
+    return version_doc["name"] == approved_version
+
+
 def _get_versions(
     project_name,
     subset_ids=None,
@@ -696,6 +728,212 @@ def get_versions(
         hero=hero,
         fields=fields
     )
+
+
+def get_approved_versions(project_name, subset_ids, fields=None):
+    """Latest approved versions for entered subset_ids.
+
+    Args:
+        project_name (str): Name of project where to look for queried entities.
+        subset_ids (Iterable[Union[str, ObjectId]]): List of subset ids.
+        fields (Iterable[str]): Fields that should be returned. All fields are
+            returned if 'None' is passed.
+
+    Returns:
+        dict[ObjectId, int]: Key is subset id and value is last version name.
+    """
+
+    subset_ids = convert_ids(subset_ids)
+    
+    if not subset_ids:
+        return {}
+
+    if fields is not None:
+        fields = list(fields)
+        if not fields:
+            return {}
+
+    aggregation_pipeline = [
+        {
+            "$match": {
+                "type": "version",
+                "parent": { "$in": subset_ids }
+            }
+        },
+        {
+            "$sort": {
+                "name": 1
+            }
+        },
+        {
+            "$lookup": {
+                "from": project_name,
+                "localField": "parent",
+                "foreignField": "_id",
+                "as": "parent_subset"
+            }
+        },
+        {
+            "$unwind": "$parent_subset"
+        },
+        {
+            "$match": {
+                "$expr": {
+                    "$eq": [
+                        { "$toString": "$name" },
+                        "$parent_subset.data.approved_version"
+                    ]
+                }
+            }
+        },
+        {
+            "$group": {
+                "_id": "$parent",
+                "_version_id": { "$first": "$_id" }
+            }
+        },
+        {
+            "$unionWith": {
+                "coll": project_name,
+                "pipeline": [
+                    { "$match": { "_id": { "$in": subset_ids } } }
+                ]
+            }
+        },
+        {
+            "$project": {
+                "_id": "$_id",
+                "_version_id": { "$ifNull": ["$_version_id", None] }
+            }
+        }
+    ]
+
+    conn = get_project_connection(project_name)
+    aggregate_result = copy.deepcopy(list(conn.aggregate(aggregation_pipeline)))
+    
+    version_ids = [ doc["_version_id"] for doc in aggregate_result if doc["_version_id"] is not None]
+
+    fields = _prepare_fields(fields, ["parent"])
+
+    version_docs = get_versions(
+        project_name, version_ids=version_ids, fields=fields
+    )
+
+    final_versions = { s["_id"]: {} for s in aggregate_result }
+
+    final_versions.update({
+        version_doc["parent"]: version_doc for version_doc in version_docs
+    })
+
+    return final_versions
+
+
+def get_approved_version_by_id(project_name, version_id, fields=None):
+    """Hero version by it's id.
+
+    Args:
+        project_name (str): Name of project where to look for queried entities.
+        version_id (Union[str, ObjectId]): Hero version id.
+        fields (Iterable[str]): Fields that should be returned. All fields are
+            returned if 'None' is passed.
+
+    Returns:
+        None: If hero version with passed id was not found.
+        Dict: Hero version entity data.
+    """
+
+    version_id = convert_id(version_id)
+    if not version_id:
+        return None
+    
+    if not version_is_approved(project_name, version_id):
+        return None
+
+    versions = list(_get_versions(
+        project_name,
+        version_ids=[version_id],
+        standard=True,
+        fields=fields
+    ))
+    if versions:
+        return versions[0]
+    return None
+
+
+def get_approved_version_by_subset_id(project_name, subset_id, fields=None):
+    """approved version by subset id.
+
+    Args:
+        project_name (str): Name of project where to look for queried entities.
+        subset_id (Union[str, ObjectId]): Subset id under which
+            is approved version.
+        fields (Iterable[str]): Fields that should be returned. All fields are
+            returned if 'None' is passed.
+
+    Returns:
+        None: If hero version for passed subset id does not exists.
+        Dict: Hero version entity data.
+    """
+
+    subset_id = convert_id(subset_id)
+    if not subset_id:
+        return None
+    subset_doc = get_subset_by_id(
+        project_name, subset_id=subset_id
+    )
+
+    approved_version = subset_doc["data"].get("approved_version", None)
+    if approved_version is None or approved_version == "":
+        return None
+
+    versions = list(_get_versions(
+        project_name,
+        subset_ids=[subset_id],
+        standard=True,
+        versions=[int(approved_version)],
+        fields=fields
+    ))
+    if versions:
+        return versions[0]
+    return None
+
+
+def get_approved_version_by_subset_name(project_name, subset_name, fields=None):
+    """approved version by subset id.
+
+    Args:
+        project_name (str): Name of project where to look for queried entities.
+        subset_id (Union[str, ObjectId]): Subset id under which
+            is approved version.
+        fields (Iterable[str]): Fields that should be returned. All fields are
+            returned if 'None' is passed.
+
+    Returns:
+        None: If hero version for passed subset id does not exists.
+        Dict: Hero version entity data.
+    """
+
+    subset_id = convert_id(subset_id)
+    if not subset_id:
+        return None
+    subset_doc = get_subset_by_name(
+        project_name, subset_name=subset_name
+    )
+
+    approved_version = subset_doc["data"].get("approved_version", None)
+    if approved_version is None or approved_version == "":
+        return None
+
+    versions = list(_get_versions(
+        project_name,
+        subset_ids=[subset_id],
+        standard=True,
+        versions=[int(approved_version)],
+        fields=fields
+    ))
+    if versions:
+        return versions[0]
+    return None
 
 
 def get_hero_version_by_subset_id(project_name, subset_id, fields=None):

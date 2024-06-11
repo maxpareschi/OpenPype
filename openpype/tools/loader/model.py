@@ -11,6 +11,7 @@ from openpype.client import (
     get_assets,
     get_subsets,
     get_last_versions,
+    get_approved_version_by_subset_id,
     get_versions,
     get_hero_versions,
     get_version_by_name,
@@ -132,6 +133,7 @@ class SubsetsModel(TreeModel, BaseRepresentationModel):
         "asset",
         "family",
         "version",
+        "approved_version",
         "time",
         "author",
         "frames",
@@ -147,6 +149,7 @@ class SubsetsModel(TreeModel, BaseRepresentationModel):
         "asset": "Asset",
         "family": "Family",
         "version": "Version",
+        "approved_version": "Approved Version",
         "time": "Time",
         "author": "Author",
         "frames": "Frames",
@@ -349,6 +352,17 @@ class SubsetsModel(TreeModel, BaseRepresentationModel):
         # Get the data from the version
         version_data = version.get("data", dict())
 
+        approved_version = get_approved_version_by_subset_id(
+            self.dbcon.active_project(),
+            version["parent"],
+            fields=["_id", "name"]
+        )
+
+        if approved_version:
+            approved_version_name = "v" + str(int(approved_version["name"])).zfill(3)
+        else:
+            approved_version_name = ""
+         
         # Compute frame ranges (if data is present)
         frame_start = version_data.get(
             "frameStart",
@@ -393,6 +407,7 @@ class SubsetsModel(TreeModel, BaseRepresentationModel):
 
         item.update({
             "version": version["name"],
+            "approved_version": approved_version_name,
             "version_document": version,
             "author": version_data.get("author", None),
             "time": version_data.get("time", None),

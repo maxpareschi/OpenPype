@@ -29,7 +29,13 @@ from .entities import (
     get_last_version_by_subset_name,
     get_output_link_versions,
 
+    get_approved_version_by_id,
+    get_approved_version_by_subset_id,
+    get_approved_version_by_subset_name,
+    get_approved_versions,
+
     version_is_latest,
+    version_is_approved,
 
     get_representation_by_id,
     get_representation_by_name,
@@ -85,7 +91,13 @@ __all__ = (
     "get_last_version_by_subset_name",
     "get_output_link_versions",
 
+    "get_approved_version_by_id",
+    "get_approved_version_by_subset_id",
+    "get_approved_version_by_subset_name",
+    "get_approved_versions",
+
     "version_is_latest",
+    "version_is_approved",
 
     "get_representation_by_id",
     "get_representation_by_name",
