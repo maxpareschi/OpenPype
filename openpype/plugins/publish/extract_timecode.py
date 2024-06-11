@@ -7,6 +7,7 @@ from openpype.lib import (
     get_oiio_tools_path,
     get_ffmpeg_tool_path
 )
+from openpype.settings import get_project_settings, get_current_project_settings
 
 
 class ExtractTimecode(publish.Extractor):
@@ -18,6 +19,9 @@ class ExtractTimecode(publish.Extractor):
     order = order = pyblish.api.ExtractorOrder + 0.01899
     families = ["render", "review", "preview"]
     allowed_extensions = ["mov", "mp4", "dpx", "cin", "exr"]
+
+    optional = True
+    active = True
 
     def get_timecode_oiio(self, input):
         res = subprocess.run(
@@ -62,7 +66,8 @@ class ExtractTimecode(publish.Extractor):
         return tc
 
     def process(self, instance):
-        default_tc = "01:00:00:00"
+        settings = get_current_project_settings()["global"]["publish"]["ExtractTimecode"]
+        default_tc = settings.get("default_tc", "01:00:00:00")
         tc_list = []
         if instance.data.get("representations", None):
             for repre in instance.data["representations"]:
