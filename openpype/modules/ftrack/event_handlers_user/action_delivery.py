@@ -3,7 +3,7 @@ from typing import List
 import os
 import copy
 import json
-from re import compile as recomp
+from re import compile as recomp, sub
 import collections
 from pathlib import Path
 from logging import getLogger
@@ -42,12 +42,12 @@ from openpype.modules.ftrack.event_handlers_user.action_ttd_delete_version impor
 
 
 FRAME_REGEX = recomp(r"(?<=\.|\_)\d{4}(?=\.|\_)")
-TRAILING_REGEX = recomp("\.!\_$")
+TRAILING_REGEX = recomp("[\.!\_]+$")
 
 
-def get_csv_path(created_files: List[str], package_name: str):
-    if package_name:
-        return created_files[0].split(package_name)[0] + package_name + ".csv"
+def get_csv_path(created_files: List[str], pckg_name: str):
+    if pckg_name:
+        return created_files[0].split(pckg_name)[0] + f"/{pckg_name}/{pckg_name}.csv"
 
 
 def create_temp_csv(project_name: str, name: str, repres_to_deliver: List[dict]):
@@ -826,6 +826,7 @@ class Delivery(BaseAction):
             # attr_by_version[version["id"]]["attr"] += files +"\n\n"
             # self.log.info(f"Adding files {files}")
             delivered_name = FRAME_REGEX.sub("", files[0].stem)
+            delivered_name = sub(repre["name"], "", delivered_name)
             delivered_name = TRAILING_REGEX.sub("", delivered_name)
             attr_by_version[version["id"]]["attr"] = delivered_name
 
@@ -843,7 +844,10 @@ class Delivery(BaseAction):
         if entities[0].entity_type.lower() == "assetversionlist":
             entities[0]["custom_attributes"]["delivery_package_name"] = ftrack_list_name
             entities[0]["custom_attributes"]["delivery_type"] = ", ".join(list(set(collected_repres)))
-            delivery_path = collected_paths[0].split(ftrack_list_name)[0] + ftrack_list_name
+            if ftrack_list_name in collected_paths[0]:
+                delivery_path = collected_paths[0].split(ftrack_list_name)[0] + ftrack_list_name
+            else:
+                delivery_path = os.path.commonpath(collected_paths)
             entities[0]["custom_attributes"]["delivery_package_path"] = delivery_path
             create_list(
                 session,

@@ -25,10 +25,18 @@ def generate_csv_line_from_repre(
     data = deepcopy(repre["context"])
     data["root"] = anatomy.roots
     data.update(datetime_data)
-    template = ",".join([d["column_value"] for d in settings])
+    # template = ",".join([d["column_value"] for d in settings])
     augment_representation_context(prj, repre, data)
-    path = StringTemplate.format_strict_template(template, data)
-    return path
+    row =  ""
+    for item in settings:
+        t = item["column_value"]
+        try:
+            value = StringTemplate.format_strict_template(t, data)
+        except:
+            value = "null"
+        row = row + value + ","
+    return row[:-1]
+
 
 
 def yield_csv_lines_from_representations(prj: str, representations: List[dict]):
