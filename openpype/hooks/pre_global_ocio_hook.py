@@ -21,7 +21,9 @@ class GlobalOCIOHook(PreLaunchHook):
 
     def execute(self):
         self.log.debug("Hierarchy search is not yet implemented.")
-        project_name = self.launch_context.data["project_name"]
+        project_name = self.launch_context.data.get("project_name", None)
+        if not project_name:
+            return
         settings = Anatomy(project_name).get("ociosettings")
         template_data = self.get_template_data()
         if settings["enabled"]:
