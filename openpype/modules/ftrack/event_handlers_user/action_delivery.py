@@ -3,6 +3,7 @@ from typing import List
 import os
 import copy
 import json
+from re import compile as recomp
 import collections
 from pathlib import Path
 from logging import getLogger
@@ -38,6 +39,11 @@ from ftrack_api import Session
 from ftrack_api.entity.base import Entity
 
 from openpype.modules.ftrack.event_handlers_user.action_ttd_delete_version import get_op_version_from_ftrack_assetversion
+
+
+FRAME_REGEX = recomp(r"(?<=\.|\_)\d{4}(?=\.|\_)")
+TRAILING_REGEX = recomp("\.!\_$")
+
 
 def get_csv_path(created_files: List[str], package_name: str):
     if package_name:
@@ -811,20 +817,21 @@ class Delivery(BaseAction):
             collected_repres.append(repre["name"])
             collected_paths.append(dest_path)
 
-
-
             version = version_by_repre_id.get(repre["_id"])
 
             if version["id"] not in attr_by_version:
                 attr_by_version[version["id"]] = {"attr":"", "entity": version}
 
-            files = "\n".join([Path(f).name for f in report.get("created_files", [])[-1:]])
-            attr_by_version[version["id"]]["attr"] += files +"\n\n"
-            self.log.info(f"Adding files {files}")
-
+            files = [Path(f) for f in report.get("created_files", [])[-1:]]
+            # attr_by_version[version["id"]]["attr"] += files +"\n\n"
+            # self.log.info(f"Adding files {files}")
+            delivered_name = FRAME_REGEX.sub("", files[0].stem)
+            delivered_name = TRAILING_REGEX.sub("", delivered_name)
+            attr_by_version[version["id"]]["attr"] = delivered_name
 
         for id_, value in attr_by_version.items():
             value["entity"]["custom_attributes"]["delivery_name"] = value["attr"]
+
 
 
         self.handle_csv(report_items, ftrack_list_name, project_name, repres_to_deliver)
@@ -836,7 +843,8 @@ class Delivery(BaseAction):
         if entities[0].entity_type.lower() == "assetversionlist":
             entities[0]["custom_attributes"]["delivery_package_name"] = ftrack_list_name
             entities[0]["custom_attributes"]["delivery_type"] = ", ".join(list(set(collected_repres)))
-            entities[0]["custom_attributes"]["delivery_package_path"] = os.path.commonpath(collected_paths)
+            delivery_path = collected_paths[0].split(ftrack_list_name)[0] + ftrack_list_name
+            entities[0]["custom_attributes"]["delivery_package_path"] = delivery_path
             create_list(
                 session,
                 entities,
