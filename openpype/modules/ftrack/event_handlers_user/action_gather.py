@@ -285,9 +285,13 @@ class GatherAction(BaseAction):
         if len(settings["missing_task_override"]) > 0:
             task_override = settings["missing_task_override"][0]
         else:
-            task_override = ""
+            # task_override = ""
+            raise ValueError("Missing Task override if empty task from settings!")
         avail_tasks = self.get_all_available_tasks(session, version)
-        avail_tasks.update({ "": task_override })
+        if not avail_tasks.get(task_override, None):
+            avail_tasks.update({
+                task_override.lower(): task_override
+            })
         self.log.debug("Available tasks for current asset:\n{}".format(json.dumps(avail_tasks, indent=4, default=str)))
 
         try:
@@ -296,12 +300,28 @@ class GatherAction(BaseAction):
                 self.log.debug("Task type not found in available tasks.")
                 detected_task_name = ""
         except:
-            self.log.debug("Failed to fetch task!")
-            detected_task_name = ""
+            self.log.debug("Failed to fetch task for asset!")
+            detected_task_name = next((key for key in avail_tasks if avail_tasks[key] == task_override), "")
+            
+        self.log.debug("Detected task name: '{}'".format(detected_task_name))
 
-
-        # self.log.debug("Task name is '{}'".format(detected_task_name))
-        # self.log.debug("Task type is '{}'".format(avail_tasks[detected_task_name]))
+        try:
+            type_id = session.query("select id from Type where name is '{}'".format(task_override)).one()["id"]
+            self.log.debug("Creating task named '{}' of type '{}' in asset '{}'".format(
+                detected_task_name, type_id, version["asset"]["parent"]["name"]
+            ))
+            session.create("Task", {
+                "name": detected_task_name,
+                "type_id": type_id,
+                "parent_id": version["asset"]["parent"]["id"]
+            })
+            session.commit()
+            self.log.debug("Created task '{}' of type '{}'".format(detected_task_name, task_override))
+        except:
+            if detected_task_name:
+                self.log.debug("Task '{}'  of type '{}' is already present, no need to create one. skipping task generation...".format(detected_task_name, task_override))
+            else:
+                self.log.debug("Failed creating task '{}' of type '{}', gathering might fail or be malformed!!".format(detected_task_name, task_override))
 
         task_info = {
             "type": avail_tasks[detected_task_name],
