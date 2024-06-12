@@ -34,11 +34,12 @@ from openpype.pipeline.delivery import (
     deliver_single_file,
     deliver_sequence,
 )
+from openpype.modules.ftrack.event_handlers_user.action_ttd_delete_version import get_op_version_from_ftrack_assetversion
 from openpype.lib.ttd_op_utils import generate_csv_from_representations, yield_csv_lines_from_representations
 from ftrack_api import Session
 from ftrack_api.entity.base import Entity
+from ftrack_api.entity.asset_version import AssetVersion
 
-from openpype.modules.ftrack.event_handlers_user.action_ttd_delete_version import get_op_version_from_ftrack_assetversion
 
 
 FRAME_REGEX = recomp(r"(?<=\.|\_)\d{4}(?=\.|\_)")
@@ -46,9 +47,8 @@ TRAILING_REGEX = recomp("[\.!\_]+$")
 
 
 def get_csv_path(created_files: List[str], pckg_name: str):
-    if pckg_name:
-        return created_files[0].split(pckg_name)[0] + f"/{pckg_name}/{pckg_name}.csv"
-
+    if pckg_name and pckg_name in created_files[0]:
+        return created_files[0].split(pckg_name)[0] + f"/{pckg_name}/{pckg_name}_data.csv"
 
 def create_temp_csv(project_name: str, name: str, repres_to_deliver: List[dict]):
     lines = "\n".join(yield_csv_lines_from_representations(project_name, repres_to_deliver))
@@ -56,6 +56,29 @@ def create_temp_csv(project_name: str, name: str, repres_to_deliver: List[dict])
         fp.write(lines)
     webbrowser.open(fp.name)        
 
+def fetch_ancesor_of_type(ancestors: list, type_: str):
+    ancesor = next((e for e in ancestors if e.entity_type == type_), None)
+    if ancesor:
+        return ancesor["name"]
+
+def return_ancestor_of_type_from_version(version: AssetVersion, type_: str):
+    episode = fetch_ancesor_of_type(list(version["asset"]["ancestors"]), type_)
+    if episode:
+        return episode
+    episode = fetch_ancesor_of_type(list(version["asset"]["parent"]["ancestors"]), type_)
+    if episode:
+        return episode
+    else:
+        print(f"Failed to find episode vor version {version}.")
+
+def return_sequence_from_version(version: AssetVersion):
+    return return_ancestor_of_type_from_version(version, "Sequence")
+
+def return_episode_from_version(version: AssetVersion):
+    return return_ancestor_of_type_from_version(version, "Episode")
+
+def return_asset_from_version(version: AssetVersion):
+    return return_ancestor_of_type_from_version(version, "AssetBuild")
 
 class Delivery(BaseAction):
     identifier = "delivery.action"
@@ -341,7 +364,7 @@ class Delivery(BaseAction):
             asset_version_ids.add(version_id)
 
         qkeys = self.join_query_keys(asset_version_ids)
-        query = "select id, version, asset_id, incoming_links, outgoing_links"
+        query = "select id, version, asset_id, incoming_links, outgoing_links, asset.ancestors, asset.parent.ancestors"
         query += f" from AssetVersion where id in ({qkeys})"
         asset_versions = session.query(query).all()
 
@@ -819,6 +842,14 @@ class Delivery(BaseAction):
 
             version = version_by_repre_id.get(repre["_id"])
 
+            repre["episode_name"] = return_episode_from_version(version)
+            repre["sequence_name"] = return_sequence_from_version(version)
+            repre["asset_name"] = return_asset_from_version(version)
+
+
+            print(f'Appending episode {repre["episode_name"]} and sequence {repre["episode_name"]} to repre')
+
+
             if version["id"] not in attr_by_version:
                 attr_by_version[version["id"]] = {"attr":"", "entity": version}
 
@@ -861,6 +892,7 @@ class Delivery(BaseAction):
 
         session.commit()
         return self.report(report_items)
+
 
     def report(self, report_items):
         """Returns dict with final status of delivery (succes, fail etc.)."""

@@ -33,7 +33,7 @@ def generate_csv_line_from_repre(
         try:
             value = StringTemplate.format_strict_template(t, data)
         except:
-            value = "null"
+            value = ""
         row = row + value + ","
     return row[:-1]
 
@@ -51,6 +51,7 @@ def yield_csv_lines_from_representations(prj: str, representations: List[dict]):
 
 def generate_csv_from_representations(prj: str, representations: List[dict], csv_path: Union[Path, str]):
     csv = Path(csv_path)
+    print(f"Generating csv file {csv}, {csv.parent}")
     csv.parent.mkdir(exist_ok=True, parents=True)
     lines = "\n".join(yield_csv_lines_from_representations(prj, representations))
     csv.write_text(lines)

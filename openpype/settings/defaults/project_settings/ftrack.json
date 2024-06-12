@@ -216,6 +216,18 @@
                     "column_value": "{task[name]}"
                 },
                 {
+                    "column_name": "Episode",
+                    "column_value": "{episode_name}"
+                },
+                {
+                    "column_name": "Sequence",
+                    "column_value": "{sequence_name}"
+                },
+                {
+                    "column_name": "Asset",
+                    "column_value": "{asset_name}"
+                },
+                {
                     "column_name": "Date",
                     "column_value": "{yyyy} - {mm} - {dd}"
                 },
