@@ -3,6 +3,7 @@ from typing import List
 import os
 import copy
 import json
+from pprint import pprint
 from re import compile as recomp, sub
 import collections
 from pathlib import Path
@@ -46,12 +47,47 @@ FRAME_REGEX = recomp(r"(?<=\.|\_)\d{4}(?=\.|\_)")
 TRAILING_REGEX = recomp("[\.!\_]+$")
 
 
+def return_version_notes_for_csv(version):
+    result = collections.defaultdict(str)
+    for note in version["notes"]:
+        if note["in_reply_to"]:
+            continue
+        content = note["content"] + " ->REPLY-> ".join([n["content"] for n in note["replies"]]) + " "*4
+        result[note["category"]["name"]] += content
+    return result
+
+
+def augment_repre_with_ftrack_version_data(repre: dict, version: AssetVersion):
+    repre["context"]["episode_name"] = return_episode_from_version(version)["name"]
+    repre["context"]["sequence_name"] = return_sequence_from_version(version)["name"]
+    repre["context"]["asset_name"] = return_asset_from_version(version)["name"]
+    shot = return_shot_from_version(version)
+    repre["context"]["shot_name"] = shot["name"]
+    repre["context"]["status"] = version["status"]["name"]
+    repre["context"]["shot"] = {"status": shot["status"]["name"]}
+    repre["context"]["notes"] = return_version_notes_for_csv(version)
+
+
 def get_csv_path(created_files: List[str], pckg_name: str):
     if pckg_name and pckg_name in created_files[0]:
         return created_files[0].split(pckg_name)[0] + f"/{pckg_name}/{pckg_name}_data.csv"
 
-def create_temp_csv(project_name: str, name: str, repres_to_deliver: List[dict]):
-    lines = "\n".join(yield_csv_lines_from_representations(project_name, repres_to_deliver))
+
+def create_csv_in_download_folder(
+        project_name: str, name: str, repres_to_deliver: List[dict], anatomy_name: str):
+    lines = "\n".join(
+        yield_csv_lines_from_representations(project_name, repres_to_deliver, anatomy_name
+        ))
+    dl_dir = Path.home() / f'Downloads/{name}.csv'
+    dl_dir.write_text(lines)
+    webbrowser.open(dl_dir)
+
+
+def create_temp_csv(
+        project_name: str, name: str, repres_to_deliver: List[dict], anatomy_name: str):
+    lines = "\n".join(yield_csv_lines_from_representations(
+        project_name, repres_to_deliver, anatomy_name
+        ))
     with NamedTemporaryFile(mode="w", delete=False, prefix=name, suffix=".csv") as fp:
         fp.write(lines)
     webbrowser.open(fp.name)        
@@ -59,17 +95,18 @@ def create_temp_csv(project_name: str, name: str, repres_to_deliver: List[dict])
 def fetch_ancesor_of_type(ancestors: list, type_: str):
     ancesor = next((e for e in ancestors if e.entity_type == type_), None)
     if ancesor:
-        return ancesor["name"]
+        return ancesor
 
 def return_ancestor_of_type_from_version(version: AssetVersion, type_: str):
-    episode = fetch_ancesor_of_type(list(version["asset"]["ancestors"]), type_)
-    if episode:
-        return episode
-    episode = fetch_ancesor_of_type(list(version["asset"]["parent"]["ancestors"]), type_)
-    if episode:
-        return episode
+    ancestor = fetch_ancesor_of_type(list(version["asset"]["ancestors"]), type_)
+    if ancestor:
+        return ancestor
+    ancestor = fetch_ancesor_of_type(list(version["asset"]["parent"]["ancestors"]), type_)
+    if ancestor:
+        return ancestor
     else:
-        print(f"Failed to find episode vor version {version}.")
+        print(f"Failed to find episode for version {version}.")
+    return {"name":""}
 
 def return_sequence_from_version(version: AssetVersion):
     return return_ancestor_of_type_from_version(version, "Sequence")
@@ -79,6 +116,9 @@ def return_episode_from_version(version: AssetVersion):
 
 def return_asset_from_version(version: AssetVersion):
     return return_ancestor_of_type_from_version(version, "AssetBuild")
+
+def return_shot_from_version(version: AssetVersion):
+    return return_ancestor_of_type_from_version(version, "Shot")
 
 class Delivery(BaseAction):
     identifier = "delivery.action"
@@ -254,6 +294,14 @@ class Delivery(BaseAction):
                 "name": "create_review_session"
             })
 
+        items.append({
+            "type": "boolean",
+            "name": "create_only_csv",
+            "label": "Only create the CSV (this will prevent any file to be copied "
+            "and no client review will be created.",
+            "value": "False"
+        })
+
         return {
             "items": items,
             "title": title,
@@ -364,7 +412,18 @@ class Delivery(BaseAction):
             asset_version_ids.add(version_id)
 
         qkeys = self.join_query_keys(asset_version_ids)
-        query = "select id, version, asset_id, incoming_links, outgoing_links, asset.ancestors, asset.parent.ancestors"
+        fields = (
+            "id",
+            "version",
+            "asset_id",
+            "incoming_links",
+            "outgoing_links",
+            "asset.ancestors",
+            "asset.parent.ancestors",
+            "status.name",
+            "custom_attributes"
+            )
+        query = f"select {','.join(fields)}"
         query += f" from AssetVersion where id in ({qkeys})"
         asset_versions = session.query(query).all()
 
@@ -568,6 +627,7 @@ class Delivery(BaseAction):
             }
 
         values = event["data"]["values"]
+
         skipped = values.pop("__skipped__")
         if skipped:
             return {
@@ -665,13 +725,19 @@ class Delivery(BaseAction):
         return version_by_repre_id
 
 
-    def handle_csv(self, report_items: dict, name: str, prj: str, repres: List[dict]):
+    def handle_csv(
+        self, report_items: dict, name: str, prj: str, repres: List[dict], anatomy_name: str
+        ):
         csv_file = get_csv_path(report_items["created_files"], name)
         if csv_file is not None:
-            generate_csv_from_representations(prj, repres, csv_file)
+            generate_csv_from_representations(prj, repres, csv_file, anatomy_name)
             self.log.info(f"CSV saved in {csv_file}")
         else:
-            create_temp_csv(prj, name, repres)
+            try:
+                create_csv_in_download_folder(prj, name, repres, anatomy_name)
+            except:
+                # in case the download folder fails to be found
+                create_temp_csv(prj, name, repres, anatomy_name)
 
 
     def real_launch(self, session, entities, event):
@@ -823,7 +889,8 @@ class Delivery(BaseAction):
                 anatomy_data,
                 format_dict,
                 report_items,
-                self.log
+                self.log,
+                values["create_only_csv"]
             )
             if not frame:
                 report, success = deliver_single_file(*args)
@@ -842,12 +909,8 @@ class Delivery(BaseAction):
 
             version = version_by_repre_id.get(repre["_id"])
 
-            repre["episode_name"] = return_episode_from_version(version)
-            repre["sequence_name"] = return_sequence_from_version(version)
-            repre["asset_name"] = return_asset_from_version(version)
-
-
-            print(f'Appending episode {repre["episode_name"]} and sequence {repre["episode_name"]} to repre')
+            repre["context"]["submission_name"] = ftrack_list_name
+            augment_repre_with_ftrack_version_data(repre, version)
 
 
             if version["id"] not in attr_by_version:
@@ -865,8 +928,10 @@ class Delivery(BaseAction):
             value["entity"]["custom_attributes"]["delivery_name"] = value["attr"]
 
 
-
-        self.handle_csv(report_items, ftrack_list_name, project_name, repres_to_deliver)
+        if repres_to_deliver:
+            self.handle_csv(
+                report_items, ftrack_list_name, project_name, repres_to_deliver, anatomy_name
+            )
 
         report_items.pop("created_files", "") # removes false positive
         # get final path of repre to be used for attributes
@@ -884,7 +949,7 @@ class Delivery(BaseAction):
                 session,
                 entities,
                 event,
-                client_review = values["create_review_session"],
+                client_review = values["create_review_session"] and not values["create_only_csv"],
                 list_name = ftrack_list_name,
                 list_category_name = entities[0]["category"]["name"],
                 log = self.log

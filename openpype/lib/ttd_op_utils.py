@@ -39,19 +39,23 @@ def generate_csv_line_from_repre(
 
 
 
-def yield_csv_lines_from_representations(prj: str, representations: List[dict]):
+def yield_csv_lines_from_representations(
+        prj: str, representations: List[dict], anatomy_name: str):
     anatomy = Anatomy(prj)
     datetime_data = get_datetime_data()
     settings = get_project_settings(prj)["ftrack"]["user_handlers"]
-    settings = settings["delivery_action"]["delivery_csv_items"]
+    settings = settings["delivery_action"]["csv_template_families"].get(anatomy_name)
+    if settings is None:
+        settings = [{"column_name":"Errors", "column_value":"Failed to find CSV config"}]
     yield ",".join([d["column_name"] for d in settings])
     for repre in representations:
         yield generate_csv_line_from_repre(prj, repre, anatomy, datetime_data, settings)
 
 
-def generate_csv_from_representations(prj: str, representations: List[dict], csv_path: Union[Path, str]):
+def generate_csv_from_representations(
+        prj: str, representations: List[dict], csv_path: Union[Path, str], anatomy_name: str):
     csv = Path(csv_path)
     print(f"Generating csv file {csv}, {csv.parent}")
     csv.parent.mkdir(exist_ok=True, parents=True)
-    lines = "\n".join(yield_csv_lines_from_representations(prj, representations))
+    lines = "\n".join(yield_csv_lines_from_representations(prj, representations, anatomy_name))
     csv.write_text(lines)
