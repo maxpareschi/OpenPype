@@ -9,6 +9,7 @@ import collections
 from pathlib import Path
 from logging import getLogger
 import webbrowser
+from datetime import datetime
 from tempfile import NamedTemporaryFile
 
 logger = getLogger(__name__)
@@ -82,7 +83,8 @@ def create_csv_in_download_folder(
     lines = "\n".join(
         yield_csv_lines_from_representations(project_name, repres_to_deliver, anatomy_name
         ))
-    dl_dir = Path.home() / f'Downloads/{name}.csv'
+    filename = datetime.now().strftime("%Y%m%d_%H_%M") + "_delivery_data"
+    dl_dir = Path.home() / f'Downloads/{name or filename}.csv'
     dl_dir.write_text(lines)
     webbrowser.open(dl_dir)
 
