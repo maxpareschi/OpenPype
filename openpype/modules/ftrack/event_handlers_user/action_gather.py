@@ -285,7 +285,6 @@ class GatherAction(BaseAction):
         if len(settings["missing_task_override"]) > 0:
             task_override = settings["missing_task_override"][0]
         else:
-            # task_override = ""
             raise ValueError("Missing Task override if empty task from settings!")
         avail_tasks = self.get_all_available_tasks(session, version)
         if not avail_tasks.get(task_override, None):
@@ -297,8 +296,8 @@ class GatherAction(BaseAction):
         try:
             detected_task_name = repre_doc["context"]["task"]["name"]
             if detected_task_name not in avail_tasks.keys():
-                self.log.debug("Task type not found in available tasks.")
-                detected_task_name = ""
+                self.log.debug("Task '{}' not found in available tasks. Override name will be used.".format(detected_task_name))
+                detected_task_name = task_override.lower()
         except:
             self.log.debug("Failed to fetch task for asset!")
             detected_task_name = next((key for key in avail_tasks if avail_tasks[key] == task_override), "")
@@ -321,7 +320,7 @@ class GatherAction(BaseAction):
             if detected_task_name:
                 self.log.debug("Task '{}'  of type '{}' is already present, no need to create one. skipping task generation...".format(detected_task_name, task_override))
             else:
-                self.log.debug("Failed creating task '{}' of type '{}', gathering might fail or be malformed!!".format(detected_task_name, task_override))
+                raise ValueError("Failed creating task '{}' of type '{}', gathering might fail or be malformed!!".format(detected_task_name, task_override))
 
         task_info = {
             "type": avail_tasks[detected_task_name],
