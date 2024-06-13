@@ -55,8 +55,8 @@ def return_version_notes_for_csv(version):
         content = note["content"]
         
         if note["replies"]:
-            replies = "  ".join([n["content"] for n in note["replies"]]) + " "*4
-            content = content + " ->REPLIES-> " + replies
+            replies = ". ".join([n["content"] for n in note["replies"]])
+            content = content + ". " + replies
         result[note["category"]["name"]] += content
     return result
 
