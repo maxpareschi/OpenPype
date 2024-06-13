@@ -754,7 +754,10 @@ class ExtractSlateGlobal(publish.Extractor):
         
         for repre in instance.data["representations"]:
             self.log.debug("processing repre: {}".format(json.dumps(repre, indent=4, default=str)))
-            if "thumbnail" in repre.get("tags") or repre["name"] == "thumbnail" or "review" in repre.get("tags"):
+            if "thumbnail" in repre.get("tags", []) or \
+                    repre["name"] == "thumbnail" or \
+                    "review" in repre.get("tags", []) or \
+                    repre.get("thumbnail"):
                 self.log.debug("Skipping repre, not main timecode source...")
                 continue
             file_path = os.path.join(
@@ -765,7 +768,6 @@ class ExtractSlateGlobal(publish.Extractor):
                 instance_timecode = slate.get_timecode_oiio(file_path,
                     tc_frame=int(repre["frameStart"]),
                     offset=0)
-                slate_timecode = slate.offset_timecode(instance_timecode, offset=-1)
             except:
                 pass
             if not instance_timecode:
@@ -774,7 +776,6 @@ class ExtractSlateGlobal(publish.Extractor):
                     instance_timecode  = slate.get_timecode_ffprobe(file_path,
                         tc_frame=int(repre["frameStart"]),
                         offset=0)
-                    slate_timecode = slate.offset_timecode(instance_timecode, offset=-1)
                 except:
                     pass
             break
@@ -789,12 +790,10 @@ class ExtractSlateGlobal(publish.Extractor):
             instance.data["timecode"] = "01:00:00:00"
             instance_timecode = "01:00:00:00"
             self.log.debug("instance timecode was not found, defaulted to: {}".format(instance.data["timecode"]))
+
+        slate_timecode = slate.offset_timecode(instance_timecode, offset=-1)
         
-        if slate_timecode:
-            self.log.debug("Slate timecode is set to: {}".format(slate_timecode))
-        else:
-            slate_timecode = "01:00:00:00"
-            self.log.debug("Slate timecode was not found, defaulted to: {}".format(slate_timecode))
+        self.log.debug("Slate timecode is set to: {}".format(slate_timecode))
 
 
         # loop through repres

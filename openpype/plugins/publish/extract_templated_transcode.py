@@ -23,9 +23,6 @@ from openpype.lib.applications import ApplicationManager
 from openpype.lib.profiles_filtering import filter_profiles
 
 
-
-        
-
 class ExtractTemplatedTranscode(publish.Extractor):
     """
         Extracts transcodes following profiles, using nuke terminal as a base.
@@ -100,19 +97,11 @@ class ExtractTemplatedTranscode(publish.Extractor):
 
         for idx, repre in enumerate(list(repres)):
 
-            added_representations = False
-
             self.log.debug("repre ({}): '{}':\n{}".format(
                 idx + 1, repre["name"], json.dumps(repre, indent=4, default=str)))
 
             if not self._repre_is_valid(repre, instance):
                 continue
-
-            review_enabled_in_profiles = False
-            for profile_name, profile_def in profile.get("outputs", {}).items():
-                if "review" in profile_def["tags"]:
-                    review_enabled_in_profiles = True
-                    break
 
             for profile_name, profile_def in profile.get("outputs", {}).items():
                 self.log.debug("Processing profile '{}'".format(profile_name))
@@ -123,29 +112,9 @@ class ExtractTemplatedTranscode(publish.Extractor):
                     new_repre["data"] = dict()
 
                 repre_name_override = profile_def["representation_name_override"].strip()
-
-                if review_enabled_in_profiles:
-                    if "review" in new_repre.get("tags", []):
-                        new_repre["tags"].remove("review")
                 
-                # remove slate from tags, lets the slate plugin process it in the collect phase
-                # and overrides it with values in the tags here
-                if "slate-frame" in new_repre.get("tags", []):
-                    new_repre["tags"].remove("slate-frame")
-                if "slate" in new_repre.get("tags", []):
-                    new_repre["tags"].remove("slate")
-
-                custom_tags = profile_def.get("custom_tags")
-                if custom_tags:
-                    if new_repre.get("custom_tags") is None:
-                        new_repre["custom_tags"] = []
-                    new_repre["custom_tags"].extend(custom_tags)
-
-                if new_repre.get("tags") is None:
-                    new_repre["tags"] = []
-                for tag in profile_def["tags"]:
-                    if tag not in new_repre.get("tags", []):
-                        new_repre["tags"].append(tag)
+                new_repre["tags"] = profile_def["tags"]
+                new_repre["custom_tags"] = profile_def["custom_tags"]
 
                 if profile_name == "passthrough":
                     if repre_name_override:
@@ -335,7 +304,6 @@ class ExtractTemplatedTranscode(publish.Extractor):
                     json.dumps(new_repre, indent=4, default=str)))
 
                 new_representations.append(new_repre)
-                added_representations = True
 
                 if profile_def["override_thumbnail"] and os.path.exists(processed_data["thumbnail_path"]):
                     self.log.debug("Starting thumbnail override...")
@@ -364,11 +332,10 @@ class ExtractTemplatedTranscode(publish.Extractor):
                     self.log.debug("Thumbnail set as representation: {}".format(
                         json.dumps(thumb_repre, indent=4, default=str)))
 
-            if added_representations:
-                self._mark_original_repre_for_deletion(repre, profile) 
+            self._mark_original_repre_for_deletion(repre, profile)
 
         for repre in tuple(instance.data["representations"]):
-            tags = repre.get("tags") or []
+            tags = repre.get("tags", [])
             if "delete_original" in tags:
                 instance.data["representations"].remove(repre)
         
