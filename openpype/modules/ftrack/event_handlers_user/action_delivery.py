@@ -52,7 +52,11 @@ def return_version_notes_for_csv(version):
     for note in version["notes"]:
         if note["in_reply_to"]:
             continue
-        content = note["content"] + " ->REPLY-> ".join([n["content"] for n in note["replies"]]) + " "*4
+        content = note["content"]
+        
+        if note["replies"]:
+            replies = "  ".join([n["content"] for n in note["replies"]]) + " "*4
+            content = content + " ->REPLIES-> " + replies
         result[note["category"]["name"]] += content
     return result
 
