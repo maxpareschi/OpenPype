@@ -3,10 +3,13 @@ from typing import List
 import os
 import copy
 import json
+from pprint import pprint
+from re import compile as recomp, sub
 import collections
 from pathlib import Path
 from logging import getLogger
 import webbrowser
+from datetime import datetime
 from tempfile import NamedTemporaryFile
 
 logger = getLogger(__name__)
@@ -33,23 +36,100 @@ from openpype.pipeline.delivery import (
     deliver_single_file,
     deliver_sequence,
 )
+from openpype.modules.ftrack.event_handlers_user.action_ttd_delete_version import get_op_version_from_ftrack_assetversion
 from openpype.lib.ttd_op_utils import generate_csv_from_representations, yield_csv_lines_from_representations
 from ftrack_api import Session
 from ftrack_api.entity.base import Entity
-
-from openpype.modules.ftrack.event_handlers_user.action_ttd_delete_version import get_op_version_from_ftrack_assetversion
-
-def get_csv_path(created_files: List[str], package_name: str):
-    if package_name:
-        return created_files[0].split(package_name)[0] + package_name + ".csv"
+from ftrack_api.entity.asset_version import AssetVersion
 
 
-def create_temp_csv(project_name: str, name: str, repres_to_deliver: List[dict]):
-    lines = "\n".join(yield_csv_lines_from_representations(project_name, repres_to_deliver))
+
+FRAME_REGEX = recomp(r"(?<=\.|\_)\d{4}(?=\.|\_)")
+TRAILING_REGEX = recomp("[\.!\_]+$")
+
+def by_alphabet(representation: dict):
+    return representation["files"][0]["path"].split("/")[-1]
+
+def by_version(representation: dict):
+    return representation["context"]["version"]
+
+def return_version_notes_for_csv(version):
+    result = collections.defaultdict(str)
+    for note in version["notes"]:
+        if note["in_reply_to"]:
+            continue
+        content = note["content"]
+        
+        if note["replies"]:
+            replies = ". ".join([n["content"] for n in note["replies"]])
+            content = content + ". " + replies
+        result[note["category"]["name"]] += content
+    return result
+
+
+def augment_repre_with_ftrack_version_data(repre: dict, version: AssetVersion):
+    repre["context"]["episode_name"] = return_episode_from_version(version)["name"]
+    repre["context"]["sequence_name"] = return_sequence_from_version(version)["name"]
+    repre["context"]["asset_name"] = return_asset_from_version(version)["name"]
+    shot = return_shot_from_version(version)
+    repre["context"]["shot_name"] = shot["name"]
+    repre["context"]["status"] = version["status"]["name"]
+    repre["context"]["shot"] = {"status": shot["status"]["name"]}
+    repre["context"]["notes"] = return_version_notes_for_csv(version)
+
+
+def get_csv_path(created_files: List[str], pckg_name: str):
+    if pckg_name and pckg_name in created_files[0]:
+        return created_files[0].split(pckg_name)[0] + f"/{pckg_name}/{pckg_name}_data.csv"
+
+
+def create_csv_in_download_folder(
+        project_name: str, name: str, repres_to_deliver: List[dict], anatomy_name: str):
+    lines = "\n".join(
+        yield_csv_lines_from_representations(project_name, repres_to_deliver, anatomy_name
+        ))
+    filename = datetime.now().strftime("%Y%m%d_%H_%M") + "_delivery_data"
+    dl_dir = Path.home() / f'Downloads/{name or filename}.csv'
+    dl_dir.write_text(lines)
+    webbrowser.open(dl_dir)
+
+
+def create_temp_csv(
+        project_name: str, name: str, repres_to_deliver: List[dict], anatomy_name: str):
+    lines = "\n".join(yield_csv_lines_from_representations(
+        project_name, repres_to_deliver, anatomy_name
+        ))
     with NamedTemporaryFile(mode="w", delete=False, prefix=name, suffix=".csv") as fp:
         fp.write(lines)
     webbrowser.open(fp.name)        
 
+def fetch_ancesor_of_type(ancestors: list, type_: str):
+    ancesor = next((e for e in ancestors if e.entity_type == type_), None)
+    if ancesor:
+        return ancesor
+
+def return_ancestor_of_type_from_version(version: AssetVersion, type_: str):
+    ancestor = fetch_ancesor_of_type(list(version["asset"]["ancestors"]), type_)
+    if ancestor:
+        return ancestor
+    ancestor = fetch_ancesor_of_type(list(version["asset"]["parent"]["ancestors"]), type_)
+    if ancestor:
+        return ancestor
+    else:
+        print(f"Failed to find episode for version {version}.")
+    return {"name":""}
+
+def return_sequence_from_version(version: AssetVersion):
+    return return_ancestor_of_type_from_version(version, "Sequence")
+
+def return_episode_from_version(version: AssetVersion):
+    return return_ancestor_of_type_from_version(version, "Episode")
+
+def return_asset_from_version(version: AssetVersion):
+    return return_ancestor_of_type_from_version(version, "AssetBuild")
+
+def return_shot_from_version(version: AssetVersion):
+    return return_ancestor_of_type_from_version(version, "Shot")
 
 class Delivery(BaseAction):
     identifier = "delivery.action"
@@ -225,6 +305,31 @@ class Delivery(BaseAction):
                 "name": "create_review_session"
             })
 
+        items.append({
+            "type": "boolean",
+            "name": "create_only_csv",
+            "label": "Only create the CSV (this will prevent any file to be copied "
+            "and no client review will be created.",
+            "value": "False"
+        })
+
+        items.append(
+            {
+            "type": "enumerator",
+            "name": "order",
+            "data": [
+            {
+                'label': 'alphabetically',
+                'value': 'alphabetically'
+            }, {
+                'label': 'version',
+                'value': 'version'
+            }
+        ],
+            "label": "Order of the versions in the CSV.",
+            "value": "alphabetically"
+        })
+
         return {
             "items": items,
             "title": title,
@@ -335,7 +440,18 @@ class Delivery(BaseAction):
             asset_version_ids.add(version_id)
 
         qkeys = self.join_query_keys(asset_version_ids)
-        query = "select id, version, asset_id, incoming_links, outgoing_links"
+        fields = (
+            "id",
+            "version",
+            "asset_id",
+            "incoming_links",
+            "outgoing_links",
+            "asset.ancestors",
+            "asset.parent.ancestors",
+            "status.name",
+            "custom_attributes"
+            )
+        query = f"select {','.join(fields)}"
         query += f" from AssetVersion where id in ({qkeys})"
         asset_versions = session.query(query).all()
 
@@ -539,6 +655,7 @@ class Delivery(BaseAction):
             }
 
         values = event["data"]["values"]
+
         skipped = values.pop("__skipped__")
         if skipped:
             return {
@@ -635,14 +752,29 @@ class Delivery(BaseAction):
         
         return version_by_repre_id
 
+    def handle_csv(
+        self,
+        report_items: dict,
+        name: str, prj: str,
+        repres: List[dict],
+        config: str,
+        order: str,
+    ):
 
-    def handle_csv(self, report_items: dict, name: str, prj: str, repres: List[dict]):
+        repres = sorted(repres, key=by_alphabet)
+        if order == "version":
+            repres = sorted(repres, key=by_version)
+
         csv_file = get_csv_path(report_items["created_files"], name)
         if csv_file is not None:
-            generate_csv_from_representations(prj, repres, csv_file)
+            generate_csv_from_representations(prj, repres, csv_file, config)
             self.log.info(f"CSV saved in {csv_file}")
         else:
-            create_temp_csv(prj, name, repres)
+            try:
+                create_csv_in_download_folder(prj, name, repres, config)
+            except:
+                # in case the download folder fails to be found
+                create_temp_csv(prj, name, repres, config)
 
 
     def real_launch(self, session, entities, event):
@@ -731,6 +863,11 @@ class Delivery(BaseAction):
 
         attr_by_version = dict()
 
+        if not repres_to_deliver:
+            report_items["Failed to find representations"] = "No components were selected"
+            return self.report(report_items)
+
+
         for repre in repres_to_deliver:
             source_path = repre.get("data", {}).get("path")
             debug_msg = "Processing representation {}".format(repre["_id"])
@@ -794,7 +931,8 @@ class Delivery(BaseAction):
                 anatomy_data,
                 format_dict,
                 report_items,
-                self.log
+                self.log,
+                values["create_only_csv"]
             )
             if not frame:
                 report, success = deliver_single_file(*args)
@@ -811,23 +949,36 @@ class Delivery(BaseAction):
             collected_repres.append(repre["name"])
             collected_paths.append(dest_path)
 
-
-
             version = version_by_repre_id.get(repre["_id"])
+
+            repre["context"]["submission_name"] = ftrack_list_name
+            augment_repre_with_ftrack_version_data(repre, version)
+
 
             if version["id"] not in attr_by_version:
                 attr_by_version[version["id"]] = {"attr":"", "entity": version}
 
-            files = "\n".join([Path(f).name for f in report.get("created_files", [])[-1:]])
-            attr_by_version[version["id"]]["attr"] += files +"\n\n"
-            self.log.info(f"Adding files {files}")
-
+            files = [Path(f) for f in report.get("created_files", [])[-1:]]
+            # attr_by_version[version["id"]]["attr"] += files +"\n\n"
+            # self.log.info(f"Adding files {files}")
+            delivered_name = FRAME_REGEX.sub("", files[0].stem)
+            delivered_name = sub(repre["name"], "", delivered_name)
+            delivered_name = TRAILING_REGEX.sub("", delivered_name)
+            attr_by_version[version["id"]]["attr"] = delivered_name
 
         for id_, value in attr_by_version.items():
             value["entity"]["custom_attributes"]["delivery_name"] = value["attr"]
 
 
-        self.handle_csv(report_items, ftrack_list_name, project_name, repres_to_deliver)
+
+        self.handle_csv(
+            report_items,
+            ftrack_list_name,
+            project_name,
+            repres_to_deliver,
+            anatomy_name,
+            values["order"],
+        )
 
         report_items.pop("created_files", "") # removes false positive
         # get final path of repre to be used for attributes
@@ -836,12 +987,16 @@ class Delivery(BaseAction):
         if entities[0].entity_type.lower() == "assetversionlist":
             entities[0]["custom_attributes"]["delivery_package_name"] = ftrack_list_name
             entities[0]["custom_attributes"]["delivery_type"] = ", ".join(list(set(collected_repres)))
-            entities[0]["custom_attributes"]["delivery_package_path"] = os.path.commonpath(collected_paths)
+            if ftrack_list_name in collected_paths[0]:
+                delivery_path = collected_paths[0].split(ftrack_list_name)[0] + ftrack_list_name
+            else:
+                delivery_path = os.path.commonpath(collected_paths)
+            entities[0]["custom_attributes"]["delivery_package_path"] = delivery_path
             create_list(
                 session,
                 entities,
                 event,
-                client_review = values["create_review_session"],
+                client_review = values["create_review_session"] and not values["create_only_csv"],
                 list_name = ftrack_list_name,
                 list_category_name = entities[0]["category"]["name"],
                 log = self.log
@@ -849,6 +1004,7 @@ class Delivery(BaseAction):
 
         session.commit()
         return self.report(report_items)
+
 
     def report(self, report_items):
         """Returns dict with final status of delivery (succes, fail etc.)."""

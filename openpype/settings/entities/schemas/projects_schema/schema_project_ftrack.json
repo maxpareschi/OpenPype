@@ -666,27 +666,31 @@
                             "label": "Ftrack's Action default value for create client review (will have same name as delivery list)"
                         },
                         {
-                            "type": "list",
+                            "label":"CSV Template Families",
+                            "key":"csv_template_families",
+                            "type":"dict-modifiable",
                             "collapsible": true,
-                            "key": "delivery_csv_items",
-                            "label": "Delivery CSV Items",
                             "use_label_wrap": true,
-                            "object_type": {
-                                "type": "dict",
-                                "children": [
-                                    {
-                                        "key": "column_name",
-                                        "label": "Column name",
-                                        "type": "text"
-                                    },
-                                    {
-                                        "key": "column_value",
-                                        "label": "Column value",
-                                        "type": "text"
-                                    }
-                                ]
+                            "object_type":{
+                                "type": "list",
+                                "collapsible": true,
+                                "object_type": {
+                                    "type": "dict",
+                                    "children": [
+                                        {
+                                            "key": "column_name",
+                                            "label": "Column name",
+                                            "type": "text"
+                                        },
+                                        {
+                                            "key": "column_value",
+                                            "label": "Column value",
+                                            "type": "text"
+                                        }
+                                    ]
+                                }
                             }
-                        }
+                    }
                     ]
                 },
                 {

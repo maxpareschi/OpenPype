@@ -202,52 +202,181 @@
             ],
             "delivery_templates": {},
             "create_client_review_default": false,
-            "delivery_csv_items": [
-                {
-                    "column_name": "Studio",
-                    "column_value": "22Dogs"
-                },
-                {
-                    "column_name": "Shot - Asset",
-                    "column_value": "{asset}"
-                },
-                {
-                    "column_name": "Task",
-                    "column_value": "{task[name]}"
-                },
-                {
-                    "column_name": "Date",
-                    "column_value": "{yyyy} - {mm} - {dd}"
-                },
-                {
-                    "column_name": "File Name",
-                    "column_value": "{asset}_{subset}_v{version:0>4}<_{output}><.{frame:0>4}>.{ext}"
-                },
-                {
-                    "column_name": "Format",
-                    "column_value": "{ext}"
-                },
-                {
-                    "column_name": "Family",
-                    "column_value": "{family}"
-                },
-                {
-                    "column_name": "Subset",
-                    "column_value": "{subset}"
-                },
-                {
-                    "column_name": "Start Frame",
-                    "column_value": "{asset_data[start]}"
-                },
-                {
-                    "column_name": "End Frame",
-                    "column_value": "{asset_data[end]}"
-                },
-                {
-                    "column_name": "Duration",
-                    "column_value": "{asset_data[duration]}"
-                }
-            ]
+            "csv_template_families":
+            {
+                "elements":[
+                    {
+                        "column_name": "EXR Delivery Date",
+                        "column_value": "{mm}/{dd}/{yyyy}"
+                    },
+                    {
+                        "column_name": "Version Name",
+                        "column_value": "{asset}_{task[name]}_{subset}_v{version:0>4}"
+                    },
+                    {
+                        "column_name": "Shot Name",
+                        "column_value": "{shot_name}"
+                    },
+                    {
+                        "column_name": "Status",
+                        "column_value": "{status}"
+                    },
+                    {
+                        "column_name": "Shot > Status",
+                        "column_value": "{shot[status]}"
+                    },
+                    {
+                        "column_name": "Submission ID",
+                        "column_value": "{submission_name}"
+                    },
+                    {
+                        "column_name": "EXR Includes Mattes",
+                        "column_value": "{exr_includes_mattes}"
+                    },
+                    {
+                        "column_name": "For Client Notes",
+                        "column_value": "{notes[For Client]}"
+                    },
+                    {
+                        "column_name": "Client Feedback Notes",
+                        "column_value": "{notes[Client Feedback]}"
+                    }
+                ],
+                "dailies":[
+                    {
+                        "column_name": "EXR Delivery Date",
+                        "column_value": "{mm}/{dd}/{yyyy}"
+                    },
+                    {
+                        "column_name": "Version Name",
+                        "column_value": "{asset}_{task[name]}_{subset}_v{version:0>4}"
+                    },
+                    {
+                        "column_name": "Shot Name",
+                        "column_value": "{shot_name}"
+                    },
+                    {
+                        "column_name": "Status",
+                        "column_value": "{status}"
+                    },
+                    {
+                        "column_name": "Shot > Status",
+                        "column_value": "{shot[status]}"
+                    },
+                    {
+                        "column_name": "Submission ID",
+                        "column_value": "{submission_name}"
+                    },
+                    {
+                        "column_name": "EXR Includes Mattes",
+                        "column_value": "{exr_includes_mattes}"
+                    },
+                    {
+                        "column_name": "For Client Notes",
+                        "column_value": "{notes[For Client]}"
+                    },
+                    {
+                        "column_name": "Client Feedback Notes",
+                        "column_value": "{notes[Client Feedback]}"
+                    }
+                ],
+                "finals":[
+                    {
+                        "column_name": "EXR Delivery Date",
+                        "column_value": "{mm}/{dd}/{yyyy}"
+                    },
+                    {
+                        "column_name": "Version Name",
+                        "column_value": "{asset}_{task[name]}_{subset}_v{version:0>4}"
+                    },
+                    {
+                        "column_name": "Shot Name",
+                        "column_value": "{shot_name}"
+                    },
+                    {
+                        "column_name": "Status",
+                        "column_value": "{status}"
+                    },
+                    {
+                        "column_name": "Shot > Status",
+                        "column_value": "{shot[status]}"
+                    },
+                    {
+                        "column_name": "Submission ID",
+                        "column_value": "{submission_name}"
+                    },
+                    {
+                        "column_name": "EXR Includes Mattes",
+                        "column_value": "{exr_includes_mattes}"
+                    },
+                    {
+                        "column_name": "For Client Notes",
+                        "column_value": "{notes[For Client]}"
+                    },
+                    {
+                        "column_name": "Client Feedback Notes",
+                        "column_value": "{notes[Client Feedback]}"
+                    }
+                ],
+                "fallback": [
+                    {
+                        "column_name": "Studio",
+                        "column_value": "22Dogs"
+                    },
+                    {
+                        "column_name": "Shot - Asset",
+                        "column_value": "{asset}"
+                    },
+                    {
+                        "column_name": "Task",
+                        "column_value": "{task[name]}"
+                    },
+                    {
+                        "column_name": "Episode",
+                        "column_value": "{episode_name}"
+                    },
+                    {
+                        "column_name": "Sequence",
+                        "column_value": "{sequence_name}"
+                    },
+                    {
+                        "column_name": "Asset",
+                        "column_value": "{asset_name}"
+                    },
+                    {
+                        "column_name": "Date",
+                        "column_value": "{yyyy} - {mm} - {dd}"
+                    },
+                    {
+                        "column_name": "File Name",
+                        "column_value": "{asset}_{subset}_v{version:0>4}<_{output}><.{frame:0>4}>.{ext}"
+                    },
+                    {
+                        "column_name": "Format",
+                        "column_value": "{ext}"
+                    },
+                    {
+                        "column_name": "Family",
+                        "column_value": "{family}"
+                    },
+                    {
+                        "column_name": "Subset",
+                        "column_value": "{subset}"
+                    },
+                    {
+                        "column_name": "Start Frame",
+                        "column_value": "{asset_data[start]}"
+                    },
+                    {
+                        "column_name": "End Frame",
+                        "column_value": "{asset_data[end]}"
+                    },
+                    {
+                        "column_name": "Duration",
+                        "column_value": "{asset_data[duration]}"
+                    }
+                ]
+            }
         },
         "gather_action": {
             "enabled": true,

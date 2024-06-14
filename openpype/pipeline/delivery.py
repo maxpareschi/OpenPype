@@ -119,7 +119,8 @@ def deliver_single_file(
     anatomy_data,
     format_dict,
     report_items,
-    log
+    log,
+    test_run = False,
 ):
     """Copy single file to calculated path based on template
 
@@ -162,8 +163,9 @@ def deliver_single_file(
     if not os.path.exists(delivery_folder):
         os.makedirs(delivery_folder)
 
-    log.debug("Copying single: {} -> {}".format(src_path, delivery_path))
-    _copy_file(src_path, delivery_path)
+    if not test_run:
+        log.debug("Copying single: {} -> {}".format(src_path, delivery_path))
+        _copy_file(src_path, delivery_path)
 
     # TODO: use defaultdict instead?
     if not "created_files" in report_items:
@@ -181,7 +183,8 @@ def deliver_sequence(
     anatomy_data,
     format_dict,
     report_items,
-    log
+    log,
+    test_run = False,
 ):
     """ For Pype2(mainly - works in 3 too) where representation might not
         contain files.
@@ -314,8 +317,9 @@ def deliver_sequence(
 
         dst_padding = dst_collection.format("{padding}") % index
         dst = "{}{}{}".format(dst_head, dst_padding, dst_tail)
-        log.debug("Copying single: {} -> {}".format(src, dst))
-        _copy_file(src, dst)
+        if not test_run:
+            log.debug("Copying single: {} -> {}".format(src, dst))
+            _copy_file(src, dst)
         uploaded += 1
         report_items["created_files"].append(dst)
 
