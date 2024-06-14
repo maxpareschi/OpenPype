@@ -33,8 +33,6 @@ from openpype.client import (
     get_last_versions
 )
 
-import json
-
 class CollectAnatomyInstanceData(pyblish.api.ContextPlugin):
     """Collect Instance specific Anatomy data.
 
