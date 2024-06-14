@@ -47,6 +47,11 @@ from ftrack_api.entity.asset_version import AssetVersion
 FRAME_REGEX = recomp(r"(?<=\.|\_)\d{4}(?=\.|\_)")
 TRAILING_REGEX = recomp("[\.!\_]+$")
 
+def by_alphabet(representation: dict):
+    return representation["files"][0]["path"].split("/")[-1]
+
+def by_version(representation: dict):
+    return representation["context"]["version"]
 
 def return_version_notes_for_csv(version):
     result = collections.defaultdict(str)
@@ -306,6 +311,23 @@ class Delivery(BaseAction):
             "label": "Only create the CSV (this will prevent any file to be copied "
             "and no client review will be created.",
             "value": "False"
+        })
+
+        items.append(
+            {
+            "type": "enumerator",
+            "name": "order",
+            "data": [
+            {
+                'label': 'alphabetically',
+                'value': 'alphabetically'
+            }, {
+                'label': 'version',
+                'value': 'version'
+            }
+        ],
+            "label": "Order of the versions in the CSV.",
+            "value": "alphabetically"
         })
 
         return {
@@ -730,20 +752,29 @@ class Delivery(BaseAction):
         
         return version_by_repre_id
 
-
     def handle_csv(
-        self, report_items: dict, name: str, prj: str, repres: List[dict], anatomy_name: str
-        ):
+        self,
+        report_items: dict,
+        name: str, prj: str,
+        repres: List[dict],
+        config: str,
+        order: str,
+    ):
+
+        repres = sorted(repres, key=by_alphabet)
+        if order == "version":
+            repres = sorted(repres, key=by_version)
+
         csv_file = get_csv_path(report_items["created_files"], name)
         if csv_file is not None:
-            generate_csv_from_representations(prj, repres, csv_file, anatomy_name)
+            generate_csv_from_representations(prj, repres, csv_file, config)
             self.log.info(f"CSV saved in {csv_file}")
         else:
             try:
-                create_csv_in_download_folder(prj, name, repres, anatomy_name)
+                create_csv_in_download_folder(prj, name, repres, config)
             except:
                 # in case the download folder fails to be found
-                create_temp_csv(prj, name, repres, anatomy_name)
+                create_temp_csv(prj, name, repres, config)
 
 
     def real_launch(self, session, entities, event):
@@ -831,6 +862,11 @@ class Delivery(BaseAction):
         datetime_data = get_datetime_data()
 
         attr_by_version = dict()
+
+        if not repres_to_deliver:
+            report_items["Failed to find representations"] = "No components were selected"
+            return self.report(report_items)
+
 
         for repre in repres_to_deliver:
             source_path = repre.get("data", {}).get("path")
@@ -934,10 +970,15 @@ class Delivery(BaseAction):
             value["entity"]["custom_attributes"]["delivery_name"] = value["attr"]
 
 
-        if repres_to_deliver:
-            self.handle_csv(
-                report_items, ftrack_list_name, project_name, repres_to_deliver, anatomy_name
-            )
+
+        self.handle_csv(
+            report_items,
+            ftrack_list_name,
+            project_name,
+            repres_to_deliver,
+            anatomy_name,
+            values["order"],
+        )
 
         report_items.pop("created_files", "") # removes false positive
         # get final path of repre to be used for attributes
