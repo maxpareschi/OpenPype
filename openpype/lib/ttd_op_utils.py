@@ -15,7 +15,8 @@ def augment_representation_context(prj: str, repre: dict, context: dict):
     start = asset["data"]["frameStart"] - asset["data"]["handleStart"]
     end = asset["data"]["frameEnd"] + asset["data"]["handleEnd"]
     context["asset_data"] = deepcopy(asset["data"])
-    context["asset_data"]["duration"] = end - start
+    context["asset_data"]["duration"] = end - start + 2
+    context["asset_data"]["duration_no_slate"] = end - start + 1
     context["asset_data"]["start"] = start
     context["asset_data"]["end"] = end
 
