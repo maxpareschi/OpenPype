@@ -330,27 +330,6 @@ class SubsetsModel(TreeModel, BaseRepresentationModel):
         hero_version_doc["name"] = src_version["name"]
         hero_version_doc["is_from_latest"] = is_from_latest
         return hero_version_doc
-    
-    def set_approved_version(self, index, subset):
-
-        assert isinstance(index, QtCore.QModelIndex)
-        if not index.isValid():
-            return
-        
-        self.log.debug(subset)
-        
-        approved_version = subset["data"].get("approved_version", None)
-
-        item = index.internalPointer()
-
-        if approved_version:
-            approved_version_name = "v" + str(int(approved_version)).zfill(3)
-        else:
-            approved_version_name = ""
-
-        item.update({
-            "approved_version": approved_version_name
-        })
 
     def set_version(self, index, version, subset=None):
         """Update the version data of the given index.
@@ -382,9 +361,10 @@ class SubsetsModel(TreeModel, BaseRepresentationModel):
         else:
             approved_version = subset["data"].get("approved_version", None)
 
-        approved_version_name = None
         if approved_version:
-            approved_version_name = "v" + str(int(approved_version)).zfill(3)
+            approved_version = int(approved_version)
+        else:
+            approved_version = None
          
         # Compute frame ranges (if data is present)
         frame_start = version_data.get(
@@ -430,7 +410,7 @@ class SubsetsModel(TreeModel, BaseRepresentationModel):
 
         item.update({
             "version": version["name"],
-            "approved_version": approved_version_name,
+            "approved_version": approved_version,
             "version_document": version,
             "author": version_data.get("author", None),
             "time": version_data.get("time", None),
