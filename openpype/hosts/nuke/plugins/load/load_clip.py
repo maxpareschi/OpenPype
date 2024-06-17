@@ -50,7 +50,7 @@ class LoadClip(plugin.NukeLoader):
     label = "Load Clip"
     order = -20
     icon = "file-video-o"
-    color = "cyan"
+    color = "violet"
 
     # Loaded from settings
     _representations = []
