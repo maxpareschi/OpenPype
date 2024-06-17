@@ -18,7 +18,7 @@ colors = {
     "hover": QtGui.QColor(255, 255, 255, 5),
     "selected": QtGui.QColor(255, 255, 255, 10),
     "outline": QtGui.QColor("#333"),
-    "group": QtGui.QColor("#21252B"),
+    "group": QtGui.QColor("#222222"),
     "group-hover": QtGui.QColor("#3c3c3c"),
     "group-selected-hover": QtGui.QColor("#555555")
 }

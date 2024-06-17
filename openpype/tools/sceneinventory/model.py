@@ -12,7 +12,7 @@ from openpype.client import (
     get_subset_by_id,
     get_version_by_id,
     get_last_version_by_subset_id,
-    get_approved_version_by_subset_id,
+    get_approved_version_value,
     get_representation_by_id,
 )
 from openpype.pipeline import (
@@ -417,13 +417,18 @@ class InventoryModel(TreeModel):
             highest_version = get_last_version_by_subset_id(
                 project_name, version["parent"]
             )
-            approved_version = get_approved_version_by_subset_id(
-                project_name, version["parent"]
-            )
-            if approved_version:
-                approved_version_name = "v" + str(int(approved_version["name"])).zfill(3)
+
+            if not subset:
+                approved_version = get_approved_version_value(
+                    self.dbcon.active_project(),
+                    subset_id=version["parent"]
+                )
             else:
-                approved_version_name = ""
+                approved_version = subset["data"].get("approved_version", None)
+
+            approved_version_name = None
+            if approved_version:
+                approved_version_name = "v" + str(int(approved_version)).zfill(3)
 
             # create the group header
             group_node = Item()
