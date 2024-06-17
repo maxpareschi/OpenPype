@@ -59,7 +59,7 @@ from .model import (
     ITEM_ID_ROLE
 )
 from . import lib
-from .delegates import LoadedInSceneDelegate
+from .delegates import LoadedInSceneDelegate, ApprovedVersionDelegate
 
 from openpype.tools.utils.constants import (
     LOCAL_PROVIDER_ROLE,
@@ -165,6 +165,7 @@ class SubsetWidget(QtWidgets.QWidget):
         ("asset", 130),
         ("family", 90),
         ("version", 60),
+        ("approved_version", 90),
         ("time", 125),
         ("author", 75),
         ("frames", 75),
@@ -228,6 +229,10 @@ class SubsetWidget(QtWidgets.QWidget):
         version_delegate = VersionDelegate(self.dbcon, view)
         column = model.Columns.index("version")
         view.setItemDelegateForColumn(column, version_delegate)
+
+        approved_version_delegate = ApprovedVersionDelegate(column, view)
+        column = model.Columns.index("approved_version")
+        view.setItemDelegateForColumn(column, approved_version_delegate)
 
         time_delegate = PrettyTimeDelegate(view)
         column = model.Columns.index("time")

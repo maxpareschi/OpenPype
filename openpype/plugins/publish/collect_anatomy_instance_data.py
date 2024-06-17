@@ -33,7 +33,6 @@ from openpype.client import (
     get_last_versions
 )
 
-
 class CollectAnatomyInstanceData(pyblish.api.ContextPlugin):
     """Collect Instance specific Anatomy data.
 
@@ -195,6 +194,7 @@ class CollectAnatomyInstanceData(pyblish.api.ContextPlugin):
             _instances = hierarchy[asset_id][subset_name]
             for _instance in _instances:
                 _instance.data["latestVersion"] = last_version_doc["name"]
+                
 
     def fill_anatomy_data(self, context):
         self.log.debug("Storing anatomy data to instance data.")
@@ -206,18 +206,23 @@ class CollectAnatomyInstanceData(pyblish.api.ContextPlugin):
 
         for instance in context:
             if self.follow_workfile_version:
-                version_number = context.data('version')
+                version_number = context.data("version")
+                if not version_number:
+                    version_number = instance.data.get("version")
             else:
-                version_number = instance.data.get("version")
-            # If version is not specified for instance or context
-            if version_number is None:
+                version_number = None
+
+            if not version_number:
                 # TODO we should be able to change default version by studio
                 # preferences (like start with version number `0`)
                 version_number = 0
                 # use latest version (+1) if already any exist
-                latest_version = instance.data["latestVersion"]
+                latest_version = instance.data.get("latestVersion", 0)
                 if latest_version is not None:
                     version_number += int(latest_version) + 1
+
+            self.log.debug("Context version is '{}'".format(context.data('version')))
+            self.log.debug("Using version '{}' for instance publishing".format(version_number))
 
             anatomy_updates = {
                 "asset": instance.data["asset"],

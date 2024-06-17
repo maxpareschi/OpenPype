@@ -913,13 +913,13 @@ def get_approved_version_by_subset_name(project_name, subset_name, fields=None):
         Dict: Hero version entity data.
     """
 
-    subset_id = convert_id(subset_id)
-    if not subset_id:
+    if not subset_name:
         return None
     subset_doc = get_subset_by_name(
         project_name, subset_name=subset_name
     )
 
+    subset_id = subset_doc["_id"]
     approved_version = subset_doc["data"].get("approved_version", None)
     if approved_version is None or approved_version == "":
         return None
@@ -934,6 +934,22 @@ def get_approved_version_by_subset_name(project_name, subset_name, fields=None):
     if versions:
         return versions[0]
     return None
+
+
+def get_approved_version_value(project_name, subset_id):
+    subset_doc = None
+    approved_version = None
+    
+    subset_doc = get_subset_by_id(
+        project_name,
+        subset_id=convert_id(subset_id),
+        fields=["data"]
+    )
+
+    if subset_doc:
+        approved_version = subset_doc["data"].get("approved_version", None)
+
+    return approved_version
 
 
 def get_hero_version_by_subset_id(project_name, subset_id, fields=None):

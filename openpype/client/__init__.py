@@ -33,6 +33,7 @@ from .entities import (
     get_approved_version_by_subset_id,
     get_approved_version_by_subset_name,
     get_approved_versions,
+    get_approved_version_value,
 
     version_is_latest,
     version_is_approved,
@@ -95,6 +96,7 @@ __all__ = (
     "get_approved_version_by_subset_id",
     "get_approved_version_by_subset_name",
     "get_approved_versions",
+    "get_approved_version_value",
 
     "version_is_latest",
     "version_is_approved",

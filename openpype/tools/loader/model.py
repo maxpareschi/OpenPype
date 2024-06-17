@@ -11,7 +11,7 @@ from openpype.client import (
     get_assets,
     get_subsets,
     get_last_versions,
-    get_approved_version_by_subset_id,
+    get_approved_version_value,
     get_versions,
     get_hero_versions,
     get_version_by_name,
@@ -187,7 +187,8 @@ class SubsetsModel(TreeModel, BaseRepresentationModel):
         "parent": 1,
         "schema": 1,
         "data.families": 1,
-        "data.subsetGroup": 1
+        "data.subsetGroup": 1,
+        "data.approved_version": 1
     }
 
     def __init__(
@@ -330,7 +331,7 @@ class SubsetsModel(TreeModel, BaseRepresentationModel):
         hero_version_doc["is_from_latest"] = is_from_latest
         return hero_version_doc
 
-    def set_version(self, index, version):
+    def set_version(self, index, version, subset=None):
         """Update the version data of the given index.
 
         Arguments:
@@ -352,16 +353,18 @@ class SubsetsModel(TreeModel, BaseRepresentationModel):
         # Get the data from the version
         version_data = version.get("data", dict())
 
-        approved_version = get_approved_version_by_subset_id(
-            self.dbcon.active_project(),
-            version["parent"],
-            fields=["_id", "name"]
-        )
+        if not subset:
+            approved_version = get_approved_version_value(
+                self.dbcon.active_project(),
+                subset_id=version["parent"]
+            )
+        else:
+            approved_version = subset["data"].get("approved_version", None)
 
         if approved_version:
-            approved_version_name = "v" + str(int(approved_version["name"])).zfill(3)
+            approved_version = int(approved_version)
         else:
-            approved_version_name = ""
+            approved_version = None
          
         # Compute frame ranges (if data is present)
         frame_start = version_data.get(
@@ -407,7 +410,7 @@ class SubsetsModel(TreeModel, BaseRepresentationModel):
 
         item.update({
             "version": version["name"],
-            "approved_version": approved_version_name,
+            "approved_version": approved_version,
             "version_document": version,
             "author": version_data.get("author", None),
             "time": version_data.get("time", None),
@@ -718,7 +721,7 @@ class SubsetsModel(TreeModel, BaseRepresentationModel):
             self.add_child(item, parent_item)
 
             index = self.index(item.row(), 0, parent_index)
-            self.set_version(index, last_version)
+            self.set_version(index, last_version, subset=subset_doc)
 
         subset_counter = 0
         for group_name, subset_docs_by_name in subset_docs_by_group.items():
