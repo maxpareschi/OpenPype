@@ -19,7 +19,7 @@ Enabled vs Disabled logic in most of stylesheets
 */
 
 * {
-    font-size: 10pt;
+    font-size: 11pt;
     font-family: "Noto Sans";
     font-weight: 450;
     outline: none;
@@ -279,7 +279,7 @@ QSplitter::handle:horizontal, QSplitter::handle:vertical, QSplitter::handle:hori
 
 /* SLider */
 QSlider::groove {
-    border: 1px solid #4b4b4b;
+    border: 1px solid #464b54;
     border-radius: 0.3em;
     background: {color:bg-inputs};
 }
@@ -825,11 +825,11 @@ OverlayMessageWidget QWidget {
 /* Scene Inventory */
 #ButtonWithMenu {
     padding-right: 16px;
-    border: 1px solid #494949;
+    border: 1px solid #4A4949;
     border-radius: 2px;
 }
 #ButtonWithMenu::menu-button {
-    border: 1px solid #494949;
+    border: 1px solid #4A4949;
     width: 12px;
     border-top-left-radius: 0px;
     border-top-right-radius: 2px;
@@ -957,7 +957,7 @@ PixmapButton:disabled {
 }
 
 #VariantInput[state="exists"], #VariantInput[state="exists"]:focus, #VariantInput[state="exists"]:hover {
-    border-color: #3988e2;
+    border-color: #4E76BB;
 }
 
 #MultipleItemView {
@@ -1011,7 +1011,7 @@ PixmapButton:disabled {
 }
 
 #PublishInfoFrame[state="3"], #PublishInfoFrame[state="4"] {
-    background: rgb(226, 226, 226);
+    background: rgb(194, 226, 236);
 }
 
 #PublishInfoFrame QLabel {
@@ -1138,7 +1138,7 @@ CreateNextPageOverlay {
 - we need to define font family for settings UI */
 
 #SettingsMainWidget {
-    background: #151515;
+    background: #141a1f;
 }
 /* Change focus borders. */
 #SettingsMainWidget QAbstractSpinBox:focus, #SettingsMainWidget QLineEdit:focus, #SettingsMainWidget QPlainTextEdit:focus, #SettingsMainWidget QTextEdit:focus {
@@ -1163,16 +1163,16 @@ CreateNextPageOverlay {
 #SettingsMainWidget QTabBar::tab:selected {
     background: {color:bg};
     border-color: #9B9B9B;
-    border-bottom-color: #C7C7C7;
+    border-bottom-color: #C2C7CB;
 }
 
 #SettingsMainWidget QTabBar::tab:!selected {
     margin-top: 2px;
-    background: #222222;
+    background: #21252B;
 }
 
 #SettingsMainWidget QTabBar::tab:!selected:hover {
-    background: #383838;
+    background: #333840;
 }
 
 #SettingsMainWidget QTabBar::tab:first:selected {
@@ -1188,12 +1188,12 @@ CreateNextPageOverlay {
 }
 
 #SettingsToolIconBtn {
-    border: 0px solid #CCCCCC;
+    border: 0px solid #bfccd6;
     background-color: transparent;
 }
 
 #SettingsToolBtn {
-    border: 1px solid #CCCCCC;
+    border: 1px solid #bfccd6;
     border-radius: 10px;
     background-color: transparent;
 }
@@ -1204,7 +1204,7 @@ CreateNextPageOverlay {
     background-color: transparent;
 }
 #SettingsToolBtn:disabled {
-    background-color: #4B4B4B;
+    background-color: #464b54;
 }
 
 #ExpandToggleBtn {
@@ -1285,7 +1285,7 @@ CreateNextPageOverlay {
 }
 
 #SettingsFooter {
-    border-top: 1px solid #252525;
+    border-top: 1px solid #21252B;
 }
 
 #ProjectListWidget QLabel {
@@ -1312,9 +1312,9 @@ CreateNextPageOverlay {
 }
 
 #SideLineWidget {
-    background-color: #393939;
+    background-color: #333942;
     border-style: solid;
-    border-color: #505050;
+    border-color: #4e5254;
     border-left-width: 3px;
     border-bottom-width: 0px;
     border-right-width: 0px;
@@ -1322,7 +1322,7 @@ CreateNextPageOverlay {
 }
 
 #SideLineWidget:hover {
-    border-color: #808080;
+    border-color: #7d8386;
 }
 
 #SideLineWidget[state="child-studio"] {border-color: {color:settings:studio-dark};}
@@ -1344,7 +1344,7 @@ CreateNextPageOverlay {
     background: transparent;
 }
 #DictAsWidgetBody[show_borders="1"] {
-    border: 1px solid #505050;
+    border: 1px solid #4e5254;
     border-radius: 5px;
 }
 
@@ -1389,9 +1389,9 @@ CreateNextPageOverlay {
 }
 
 #BreadcrumbsPanel {
-    border: 1px solid #505050;
+    border: 1px solid #4e5254;
     border-radius: 5px;
-    background: #252525;
+    background: #21252B;
 }
 
 /* Workfiles */
