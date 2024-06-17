@@ -118,6 +118,7 @@ class ExtractThumbnail(pyblish.api.InstancePlugin):
 
             # Skip representation and try next one if  wasn't created
             if not thumbnail_created:
+                self.log.warning(f"Failed to create thumbnail for '{instance}'")
                 continue
 
             new_repre = {

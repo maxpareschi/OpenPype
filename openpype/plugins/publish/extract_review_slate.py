@@ -404,7 +404,9 @@ class ExtractReviewSlate(publish.Extractor):
 
         # Remove any representations tagged for deletion.
         for repre in inst_data.get("representations", []):
-            if "delete" in repre.get("tags", []):
+            # if we remove here the "thumbnail repre" then it wont
+            # be able to find the actual repre in the script to make the thumbnail
+            if "delete" in repre.get("tags", []) and repre["name"] != "thumbnail":
                 self.log.debug("Removing representation: {}".format(repre))
                 inst_data["representations"].remove(repre)
 
