@@ -567,6 +567,15 @@
                 },
                 {
                     "families": [
+                        "gather"
+                    ],
+                    "hosts": [],
+                    "task_types": [],
+                    "tasks": [],
+                    "template": "gather{Task}{Variant}"
+                },
+                {
+                    "families": [
                         "workfile"
                     ],
                     "hosts": [],

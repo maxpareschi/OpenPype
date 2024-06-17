@@ -459,9 +459,19 @@ class InstanceCardWidget(CardWidget):
         self._icon_widget.setVisible(valid)
         self._context_warning.setVisible(not valid)
 
+    def _get_context_label(self, asset, task=None):
+        label = "<br><span style=\"font-size: 8pt;\">"
+        label += "<b>{}</b>".format(asset)
+        if task:
+            label +=  " - <i>{}</i>".format(task)
+        label += "</span>"
+        return label
+
     def _update_subset_name(self):
         variant = self.instance["variant"]
         subset_name = self.instance["subset"]
+        asset_name = self.instance["asset"]
+        task_name = self.instance.get("task", "No task")
         if (
             variant == self._last_variant
             and subset_name == self._last_subset_name
@@ -477,6 +487,10 @@ class InstanceCardWidget(CardWidget):
             for part in found_parts:
                 replacement = "<b>{}</b>".format(part)
                 label = label.replace(part, replacement)
+                label += self._get_context_label(
+                    asset_name,
+                    task=task_name
+                )
 
         self._label_widget.setText(label)
         # HTML text will cause that label start catch mouse clicks
