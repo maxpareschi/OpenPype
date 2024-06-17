@@ -98,7 +98,6 @@ class ImageCreator(Creator):
             data.update({"subset": subset_name})
             data.update({"members": [str(group.id)]})
             data.update({"long_name": "_".join(layer_names_in_hierarchy)})
-            data.update({"thumbnailSource": data["originalDirname"] + "/" + data["originalBasename"]})
 
             new_instance = CreatedInstance(self.family, subset_name, data,
                                            self)
