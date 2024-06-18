@@ -367,7 +367,7 @@ class ActionModel(QtGui.QStandardItemModel):
 
 class LauncherModel(QtCore.QObject):
     # Refresh interval of projects
-    refresh_interval = 10000
+    refresh_interval = 120000
 
     # Signals
     # Current project has changed
