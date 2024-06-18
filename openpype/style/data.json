@@ -92,7 +92,7 @@
         "publisher": {
             "error": "#AA5050",
             "crash": "#FF6432",
-            "success": "#505050",
+            "success": "#50AA50",
             "warning": "#ffc671",
             "tab-bg": "#202020",
             "list-view-group": {
