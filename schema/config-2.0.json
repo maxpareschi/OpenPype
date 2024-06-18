@@ -26,6 +26,9 @@
         "imageio": {
             "type": "object"
         },
+        "ociosettings": {
+            "type": "object"
+        },
         "tasks": {
             "type": "object",
             "items": {
