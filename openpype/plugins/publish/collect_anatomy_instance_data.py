@@ -220,6 +220,8 @@ class CollectAnatomyInstanceData(pyblish.api.ContextPlugin):
                 latest_version = instance.data.get("latestVersion", 0)
                 if latest_version is not None:
                     version_number += int(latest_version) + 1
+                if "gather" in instance.data["family"]:
+                    version_number = instance.data["version"]
 
             self.log.debug("Context version is '{}'".format(context.data('version')))
             self.log.debug("Using version '{}' for instance publishing".format(version_number))

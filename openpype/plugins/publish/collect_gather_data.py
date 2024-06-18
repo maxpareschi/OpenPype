@@ -58,9 +58,20 @@ class CollectGatherData(pyblish.api.InstancePlugin):
             ))
 
         gather_settings = context.data["project_settings"]["ftrack"]["user_handlers"]["gather_action"]
+        
         min_version = gather_settings["min_gather_version"]
         missing_task_version = gather_settings["missing_task_gather_version"]
+
         task = instance.data.get("task")
+        task_type = instance.data.get("gather_task_injection", {}).get("type", None)
+        fallback_task = gather_settings.get("missing_task_override", [])[0]
+
+        self.log.debug("Minimum version for normal gathers is '{}'".format(min_version))
+        self.log.debug("Minimum version for taskless gathers is '{}'".format(missing_task_version))
+
+        self.log.debug("Fallback task type is '{}'".format(fallback_task))
+        self.log.debug("Detected task name is '{}'".format(task))
+        self.log.debug("Detected task type is '{}'".format(task_type))
 
         version_number = instance.data.get("version", None)
         self.log.debug("Current Version is set to '{}'".format(version_number))
@@ -68,7 +79,7 @@ class CollectGatherData(pyblish.api.InstancePlugin):
         self.log.debug("Latest Version is set to '{}'".format(latest_version))
 
         if version_number is None:
-            if task is None or task == "":
+            if not task or task_type == fallback_task:
                 version_number = missing_task_version
             else:
                 version_number = min_version
