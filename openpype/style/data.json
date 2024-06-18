@@ -1,15 +1,15 @@
 {
     "palette": {
-        "grey-base": "#2C313A",
-        "grey-light": "#373D48",
-        "grey-lighter": "#434a56",
-        "grey-lightest": "#4E5565",
-        "grey-input": "#353A45",
-        "grey-dark": "#21252B",
+        "grey-base": "#2E2E2E",
+        "grey-light": "#393939",
+        "grey-lighter": "#555555",
+        "grey-lightest": "#666666",
+        "grey-input": "#444444",
+        "grey-dark": "#181818",
 
-        "text-darker": "#99A3B2",
-        "text-base": "#D3D8DE",
-        "text-lighter": "#F0F2F5",
+        "text-darker": "#A3A3A3",
+        "text-base": "#D8D8D8",
+        "text-lighter": "#F2F2F2",
 
         "blue-base": "hsl(200, 60%, 60%)",
         "blue-light": "hsl(200, 80%, 80%)",
@@ -18,123 +18,123 @@
         "green-light": "hsl(155, 80%, 80%)"
     },
     "color": {
-        "font": "#D3D8DE",
-        "font-hover": "#F0F2F5",
-        "font-disabled": "#5b6779",
-        "font-view-selection": "#ffffff",
-        "font-view-hover": "#F0F2F5",
+        "font": "#D8D8D8",
+        "font-hover": "#F2F2F2",
+        "font-disabled": "#666666",
+        "font-view-selection": "#FFFFFF",
+        "font-view-hover": "#F2F2F2",
 
-        "bg": "#2C313A",
-        "bg-inputs": "#21252B",
-        "bg-buttons": "#434a56",
-        "bg-button-hover": "rgb(81, 86, 97)",
-        "bg-inputs-disabled": "#2C313A",
-        "bg-buttons-disabled": "#434a56",
+        "bg": "#2E2E2E",
+        "bg-inputs": "#222222",
+        "bg-buttons": "#555555",
+        "bg-button-hover": "rgb(87, 87, 87)",
+        "bg-inputs-disabled": "#333333",
+        "bg-buttons-disabled": "#555555",
 
-        "bg-splitter": "#434a56",
-        "bg-splitter-hover": "rgba(168, 175, 189, 0.3)",
+        "bg-splitter": "#555555",
+        "bg-splitter-hover": "rgba(175, 175, 175, 0.3)",
 
-        "bg-menu-separator": "rgba(75, 83, 98, 127)",
+        "bg-menu-separator": "rgba(83, 83, 83, 127)",
 
-        "bg-scroll-handle": "#4B5362",
+        "bg-scroll-handle": "#555555",
 
-        "bg-view": "#21252B",
-        "bg-view-header": "#373D48",
-        "bg-view-hover": "rgba(168, 175, 189, .3)",
-        "bg-view-alternate": "rgb(36, 42, 50)",
-        "bg-view-disabled": "#2C313A",
-        "bg-view-alternate-disabled": "#2C313A",
-        "bg-view-selection": "rgba(92, 173, 214, .4)",
-        "bg-view-selection-hover": "rgba(92, 173, 214, .8)",
+        "bg-view": "#222222",
+        "bg-view-header": "#393939",
+        "bg-view-hover": "rgba(175, 175, 175, .3)",
+        "bg-view-alternate": "rgb(40, 40, 40)",
+        "bg-view-disabled": "#333333",
+        "bg-view-alternate-disabled": "#333333",
+        "bg-view-selection": "rgba(170, 170, 170, .4)",
+        "bg-view-selection-hover": "rgba(170, 170, 170, .8)",
 
-        "border": "#373D48",
-        "border-hover": "rgba(168, 175, 189, .3)",
-        "border-focus": "rgb(92, 173, 214)",
+        "border": "#444444",
+        "border-hover": "rgba(170, 170, 170, .3)",
+        "border-focus": "rgb(170, 170, 170)",
 
-        "restart-btn-bg": "#458056",
+        "restart-btn-bg": "#508050",
 
         "delete-btn-bg": "rgb(201, 54, 54)",
         "delete-btn-bg-disabled": "rgba(201, 54, 54, 64)",
 
-        "icon-tools": "#ffffff",
+        "icon-tools": "#EEEEEE",
         "icon-alert-tools": "#AA5050",
-        "icon-entity-default": "#bfccd6",
-        "icon-entity-disabled": "#808080",
+        "icon-entity-default": "#33AACC",
+        "icon-entity-disabled": "#557788",
         "font-entity-deprecated": "#666666",
         "overlay-messages": {
-            "close-btn": "#D3D8DE",
-            "bg-success": "#458056",
-            "bg-success-hover": "#55a066",
+            "close-btn": "#D8D8D8",
+            "bg-success": "#508050",
+            "bg-success-hover": "#55A055",
             "bg-error": "#AD2E2E",
             "bg-error-hover": "#C93636"
         },
         "tab-widget": {
-            "bg": "#21252B",
-            "bg-selected": "#434a56",
-            "bg-hover": "#373D48",
-            "color": "#99A3B2",
-            "color-selected": "#F0F2F5",
-            "color-hover": "#F0F2F5"
+            "bg": "#222222",
+            "bg-selected": "#555555",
+            "bg-hover": "#444444",
+            "color": "#A3A3A3",
+            "color-selected": "#F2F2F2",
+            "color-hover": "#F2F2F2"
         },
         "nice-checkbox": {
-            "bg-checked": "#56a06f",
-            "bg-unchecked": "#21252B",
-            "bg-checker": "#D3D8DE",
-            "bg-checker-hover": "#F0F2F5"
+            "bg-checked": "#66AA66",
+            "bg-unchecked": "#222222",
+            "bg-checker": "#D8D8D8",
+            "bg-checker-hover": "#F2F2F2"
         },
         "loader": {
             "asset-view": {
-                "selected": "rgba(168, 175, 189, 0.6)",
-                "hover": "rgba(168, 175, 189, 0.3)",
-                "selected-hover": "rgba(168, 175, 189, 0.7)"
+                "selected": "rgba(170, 170, 170, 0.6)",
+                "hover": "rgba(170, 170, 170, 0.3)",
+                "selected-hover": "rgba(170, 170, 170, 0.7)"
             }
         },
         "publisher": {
             "error": "#AA5050",
             "crash": "#FF6432",
-            "success": "#458056",
+            "success": "#505050",
             "warning": "#ffc671",
-            "tab-bg": "#16191d",
+            "tab-bg": "#202020",
             "list-view-group": {
-                "bg": "#434a56",
-                "bg-hover": "rgba(168, 175, 189, 0.3)",
-                "bg-selected-hover": "rgba(92, 173, 214, 0.4)",
-                "bg-expander": "#2C313A",
-                "bg-expander-hover": "#2d6c9f",
-                "bg-expander-selected-hover": "#3784c5"
+                "bg": "#555555",
+                "bg-hover": "rgba(170, 170, 170, 0.3)",
+                "bg-selected-hover": "rgba(170, 170, 170, 0.4)",
+                "bg-expander": "#333333",
+                "bg-expander-hover": "#666666",
+                "bg-expander-selected-hover": "#888888"
             }
         },
         "settings": {
             "invalid-light": "#C93636",
             "invalid-dark": "#AD2E2E",
 
-            "modified-light": "#46b1f3",
-            "modified-mid": "#189AEA",
-            "modified-dark": "#106AA2",
+            "modified-light": "#77DDFF",
+            "modified-mid": "#55BBEE",
+            "modified-dark": "#3399CC",
 
             "studio-light": "#73C990",
-            "studio-dark": "#56a06f",
+            "studio-dark": "#56a056",
             "studio-label-hover": "#FFFFFF",
 
             "project-light": "#FFA64D",
             "project-mid": "#FF8C1A",
             "project-dark": "#E67300",
 
-            "label-fg": "#969b9e",
-            "label-fg-hover": "#b8c1c5",
+            "label-fg": "#999999",
+            "label-fg-hover": "#BBBBBB",
 
             "breadcrumbs-btn-bg": "rgba(127, 127, 127, 60)",
             "breadcrumbs-btn-bg-hover": "rgba(127, 127, 127, 90)",
 
-            "content-highlighted": "rgba(19, 26, 32, 15)",
-            "focus-border": "#839caf",
-            "image-btn": "#bfccd6",
-            "image-btn-hover": "#189aea",
-            "image-btn-disabled": "#bfccd6",
-            "version-exists": "#458056",
+            "content-highlighted": "rgba(25, 25, 25, 15)",
+            "focus-border": "#999999",
+            "image-btn": "#C0C0C0",
+            "image-btn-hover": "#999999",
+            "image-btn-disabled": "##C0C0C0",
+            "version-exists": "#508050",
             "version-not-found": "#ffc671",
 
-            "source-version": "#D3D8DE",
+            "source-version": "#D8D8D8",
             "source-version-outdated": "#ffc671"
         }
     }

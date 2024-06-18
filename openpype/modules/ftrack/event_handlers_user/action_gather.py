@@ -3,6 +3,7 @@ import os
 import re
 import tempfile
 import traceback
+import copy
 
 from openpype.modules.ftrack.lib import BaseAction, statics_icon
 
@@ -66,10 +67,10 @@ class GatherAction(BaseAction):
             for assetversion in self.assetversions:
                 enum_data = []
                 components = self.get_all_available_components_for_assetversion(session, assetversion)
-                for comp in components:
+                for component in components:
                     enum_data.append({
-                        "label": comp,
-                        "value": comp
+                        "label": component,
+                        "value": component
                     })
                 enum_data = sorted(enum_data, key = lambda d: not "exr"==d["label"])
                 if not enum_data:
@@ -279,14 +280,15 @@ class GatherAction(BaseAction):
         )
 
         repre_files = self.get_files_from_repre(repre_doc, version_doc)
-
         computed_asset = repre_doc["context"]["asset"]
+        ftrack_tasks = self.get_all_available_tasks(session, version)
+        avail_tasks = copy.deepcopy(ftrack_tasks)
 
         if len(settings["missing_task_override"]) > 0:
             task_override = settings["missing_task_override"][0]
         else:
             raise ValueError("Missing Task override if empty task from settings!")
-        avail_tasks = self.get_all_available_tasks(session, version)
+        
         if not avail_tasks.get(task_override, None):
             avail_tasks.update({
                 task_override.lower(): task_override
@@ -307,7 +309,7 @@ class GatherAction(BaseAction):
         try:
             type_id = session.query("select id from Type where name is '{}'".format(task_override)).one()["id"]
             self.log.debug("Creating task named '{}' of type '{}' in asset '{}'".format(
-                detected_task_name, type_id, version["asset"]["parent"]["name"]
+                detected_task_name, task_override, version["asset"]["parent"]["name"]
             ))
             session.create("Task", {
                 "name": detected_task_name,
@@ -349,10 +351,6 @@ class GatherAction(BaseAction):
         computed_assetversion_name = settings["ftrack_name_template"].format_map(subset_format_data)
         self.log.debug("Computed subset is '{}'".format(computed_subset))
 
-        computed_name = "{} ({})".format(computed_subset, computed_asset)
-        self.log.debug("Computed instance name is '{}'".format(computed_name))
-
-
         gather_root = settings["gather_root"].strip()
         gather_suffix = settings["gather_asset_suffix"].strip()
 
@@ -371,13 +369,10 @@ class GatherAction(BaseAction):
         gather_instance = {
             "project": project_name,
             "family": family,
-            "families": [family],
             "subset": computed_subset,
-            "variant": avail_tasks[detected_task_name] + computed_variant,
+            "variant": computed_variant,
             "asset": repre_doc["context"]["asset"],
             "task": detected_task_name,
-            "name": computed_name.replace(" ", "_").replace("(", "").replace(")", ""),
-            "label": computed_name,
             "gather_root_name": gather_root,
             "gather_project_name": project_name,
             "gather_project_id": project_id,
