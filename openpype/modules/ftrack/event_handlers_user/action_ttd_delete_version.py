@@ -227,14 +227,14 @@ class DeleteVersionAction(BaseAction):
 
             version_ids = [entity["id"]]
 
-            if in_links:  # is delivery version
-                self.log.info("Working on delivery version")
+            if in_links:  # is gathered version
+                self.log.info("Working on gathered version")
 
                 # clear source attributes
                 in_links[0]["from"]["custom_attributes"]["client_version_string"] = ""
 
             elif out_links:  # has delivery version
-                self.log.info("Working on normal version with delivery attached")
+                self.log.info("Working on normal version with gather attached")
 
                 # fetch delivery version and mark it for deletion
                 delivery_version = out_links[0]["to"]
