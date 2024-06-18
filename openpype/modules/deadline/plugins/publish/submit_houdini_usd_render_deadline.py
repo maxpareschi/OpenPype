@@ -28,28 +28,25 @@ INTERMEDIATE_SCRIPT = [
 
 
 def get_temp_path(instance: Instance):
-    # get a temp path
-    cur_file = hou.hipFile.path().replace("\\", "/")
-    file_name = "{}_{}.{}".format(os.path.splitext(
-        os.path.basename(cur_file))[0],
-        instance.data["subset"],
-        "usd")
-    staging_dir = os.path.join(
-        os.path.dirname(cur_file),
-        instance.context.data["project_settings"]\
-            ["houdini"]["RenderSettings"]\
-            ["default_render_image_folder"]).replace("\\", "/")
-    return os.path.join(staging_dir,
-        file_name).replace("\\", "/")
+    """Returns temp path for the intermediate USD render."""
+
+    curr_file = hou.hipFile.path().replace("\\", "/")
+    curr_file_stem = os.path.splitext(os.path.basename(curr_file))[0]
+    render_cfg = instance.context.data["project_settings"]["houdini"]["RenderSettings"]
+    file_name = "{}_{}.{}".format(curr_file_stem, instance.data["subset"], "usd")
+    staging_dir = os.path.join(os.path.dirname(curr_file), render_cfg\
+            ["default_render_image_folder"], curr_file_stem).replace("\\", "/")
+    if not os.path.exists(staging_dir):
+        os.makedirs(staging_dir)
+    return os.path.join(staging_dir, file_name).replace("\\", "/")
     
 
 def create_intermediate_usd(ropnode, file_abs_path):
+    """Creates a usd file given a ROP node and a path where to save the usd."""
 
     # Get instance node and upstream LOP node
-    
     loppath = ropnode.parm("loppath").eval()
     staging_dir, file_name = os.path.split(file_abs_path)
-
 
     # create the render intermediate node
     rend = hou.node("/out").createNode("usd",
@@ -174,7 +171,6 @@ class houdiniSubmitUSDRenderDeadline(pyblish.api.InstancePlugin):
         hou_usd_path = get_temp_path(instance)
         staging_dir, file_name = os.path.split(hou_usd_path)
         current_file = hou.hipFile.path()
-        print(">>>>", ropnode, type(ropnode), ropnode.path(), hou_usd_path)
 
         if "representations" not in instance.data:
             instance.data["representations"] = []
@@ -247,6 +243,8 @@ class houdiniSubmitUSDRenderDeadline(pyblish.api.InstancePlugin):
             "primary_pool").eval() or self.primary_pool
         self.secondary_pool = node.parm(
             "secondary_pool").eval() or self.secondary_pool
+        self.intermediate_to_farm = node.parm(
+            "intermediate_to_farm").eval() or False
 
         # NEED TO GET LIMITS GROUP FUNCTIONALITY IN AGAIN
         # resolve any limit groups
@@ -346,16 +344,17 @@ class houdiniSubmitUSDRenderDeadline(pyblish.api.InstancePlugin):
         intermediate_payload["JobInfo"].pop("Frames")
         intermediate_payload["JobInfo"].pop("OutputFilename0")
         intermediate_payload["JobInfo"]["Name"] += "_intermediate"
-        from pprint import pprint
 
 
-        resp = self.submit(instance, intermediate_payload)
-        pprint(resp.json())
-        dependency = resp.json()["_id"]
+        if self.intermediate_to_farm:
+            resp = self.submit(instance, intermediate_payload)
+            dependency = resp.json()["_id"]
+        else:
+            dependency = ""
+            create_intermediate_usd(ropnode, hou_usd_path)
 
         payload["JobInfo"]["JobDependencies"] = [dependency]
         response = self.submit(instance, payload)
-        pprint(response.json())
 
 
         # Store output dir for unified publisher (filesequence)
