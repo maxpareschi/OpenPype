@@ -116,7 +116,14 @@ class InstanceListItemWidget(QtWidgets.QWidget):
 
         self.instance = instance
 
+        asset_name = self.instance["asset"]
+        task_name = self.instance.get("task", "No task")
+
         instance_label = html_escape(instance.label)
+        instance_label += self._get_context_label(
+            asset_name,
+            task=task_name
+        )
 
         subset_name_label = QtWidgets.QLabel(instance_label, self)
         subset_name_label.setObjectName("ListViewSubsetName")
@@ -143,6 +150,14 @@ class InstanceListItemWidget(QtWidgets.QWidget):
         self._has_valid_context = None
 
         self._set_valid_property(instance.has_valid_context)
+
+    def _get_context_label(self, asset, task=None):
+        label = "<span style=\"font-size: 8pt;\">"
+        label += " - <b>{}</b>".format(asset)
+        if task:
+            label +=  " - <i>{}</i>".format(task)
+        label += "</span>"
+        return label
 
     def _set_valid_property(self, valid):
         if self._has_valid_context == valid:
@@ -179,11 +194,19 @@ class InstanceListItemWidget(QtWidgets.QWidget):
         self.update_instance_values()
 
     def update_instance_values(self):
+        
         """Update instance data propagated to widgets."""
         # Check subset name
         label = self.instance.label
+        asset_name = self.instance["asset"]
+        task_name = self.instance.get("task", None)
         if label != self._instance_label_widget.text():
-            self._instance_label_widget.setText(html_escape(label))
+            pretty_label = html_escape(label)
+            pretty_label += self._get_context_label(
+                asset_name,
+                task=task_name
+            )
+            self._instance_label_widget.setText(pretty_label)
         # Check active state
         self.set_active(self.instance["active"])
         # Check valid states
