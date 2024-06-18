@@ -41,6 +41,7 @@ class CreateUSDRender(plugin.HoudiniCreator):
 
         # Add Deadline Parameters to Create USD Render ROP
         extra_parms = {
+            "intermediate_to_farm": False,
             "suspendPublishJob": False,
             "review": True,
             "multipartExr": True,
