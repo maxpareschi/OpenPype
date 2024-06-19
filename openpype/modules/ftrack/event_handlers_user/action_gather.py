@@ -133,7 +133,7 @@ class GatherAction(BaseAction):
         if not forwarding_data:
             return {
                 "success": True,
-                "message": "All assets already had linked versions and they were skipped."
+                "message": "All AssetVersions were already gathered. The action was kipped."
             }
 
         exchange_file = tempfile.mktemp(prefix="traypublisher_gather_", suffix=".json")
