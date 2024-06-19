@@ -130,6 +130,12 @@ class GatherAction(BaseAction):
             instance_data = self.publisher_start(session, version, user_values)
             forwarding_data.append(instance_data)
 
+        if not forwarding_data:
+            return {
+                "success": True,
+                "message": "All assets already had linked versions and they were skipped."
+            }
+
         exchange_file = tempfile.mktemp(prefix="traypublisher_gather_", suffix=".json")
         with open(exchange_file, "w") as exf:
             exf.write(json.dumps(forwarding_data, indent=4, default=str))
