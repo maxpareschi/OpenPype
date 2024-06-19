@@ -349,11 +349,10 @@ class houdiniSubmitUSDRenderDeadline(pyblish.api.InstancePlugin):
         if self.intermediate_to_farm:
             resp = self.submit(instance, intermediate_payload)
             dependency = resp.json()["_id"]
+            payload["JobInfo"]["JobDependencies"] = [dependency]
         else:
-            dependency = ""
             create_intermediate_usd(ropnode, hou_usd_path)
 
-        payload["JobInfo"]["JobDependencies"] = [dependency]
         response = self.submit(instance, payload)
 
 
