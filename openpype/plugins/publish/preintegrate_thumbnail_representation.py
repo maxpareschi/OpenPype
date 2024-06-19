@@ -27,6 +27,7 @@ class PreIntegrateThumbnails(pyblish.api.InstancePlugin):
     def process(self, instance):
         repres = instance.data.get("representations")
         if not repres:
+            self.log.debug(f"Failed to find representations for '{instance}'")
             return
 
         thumbnail_repre = None
@@ -36,6 +37,7 @@ class PreIntegrateThumbnails(pyblish.api.InstancePlugin):
                 break
 
         if not thumbnail_repre:
+            self.log.debug(f"Failed to find thumbnail for '{instance}'")
             return
 
         family = instance.data["family"]
@@ -58,6 +60,7 @@ class PreIntegrateThumbnails(pyblish.api.InstancePlugin):
         )
 
         if not found_profile:
+            self.log.debug(f"Failed to find profile for '{instance}'")
             return
 
         if not found_profile["integrate_thumbnail"]:

@@ -107,6 +107,8 @@ class SlateCreator:
                 ".exe" if system == "windows" else ""
             )
         )
+        if not os.path.exists(chrome_path):
+            chrome_path = "C:/Program Files/Google/Chrome/Application/chrome.exe"
         self.log.debug("Using Chrome at path: {}".format(chrome_path))
         return chrome_path
 
