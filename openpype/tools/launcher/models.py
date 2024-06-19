@@ -524,6 +524,10 @@ class LauncherModel(QtCore.QObject):
         if project_name == self.project_name:
             return
         self._dbcon.Session["AVALON_PROJECT"] = project_name
+        if project_name:
+            self._project_docs_by_name.update({
+                project_name: get_project(project_name)
+            })
         self.project_changed.emit(project_name)
 
         self.refresh_assets(force=True)

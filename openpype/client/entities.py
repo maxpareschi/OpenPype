@@ -69,16 +69,19 @@ def convert_ids(in_ids):
     return list(_output)
 
 
-def get_projects(active=True, inactive=False, fields=None):
+def get_projects(active=True, inactive=False, fields=None, just_names = True):
     mongodb = get_project_database()
-    for project_name in mongodb.collection_names():
-        if project_name in ("system.indexes",):
-            continue
-        project_doc = get_project(
-            project_name, active=active, inactive=inactive, fields=fields
-        )
-        if project_doc is not None:
-            yield project_doc
+    # for project_name in mongodb.collection_names():
+    #     if project_name in ("system.indexes",):
+    #         continue
+    #     project_doc = get_project(
+    #         project_name, active=active, inactive=inactive, fields=fields
+    #     )
+    #     if project_doc is not None:
+    #         yield project_doc
+    for project_name in mongodb.list_collection_names():
+        if project_name is not None:
+            yield { "name": project_name }
 
 
 def get_project(project_name, active=True, inactive=True, fields=None):
