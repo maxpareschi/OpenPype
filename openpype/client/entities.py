@@ -9,6 +9,7 @@ that has project name as a context (e.g. on 'ProjectEntity'?).
 import re
 import collections
 import copy
+import threading
 
 import six
 from bson.objectid import ObjectId
@@ -69,20 +70,46 @@ def convert_ids(in_ids):
     return list(_output)
 
 
-def get_projects(active=True, inactive=False, fields=None, just_names = True):
-    mongodb = get_project_database()
-    # for project_name in mongodb.collection_names():
-    #     if project_name in ("system.indexes",):
-    #         continue
-    #     project_doc = get_project(
-    #         project_name, active=active, inactive=inactive, fields=fields
-    #     )
-    #     if project_doc is not None:
-    #         yield project_doc
-    for project_name in mongodb.list_collection_names():
-        if project_name is not None:
-            yield { "name": project_name }
 
+def get_projects(active=True, inactive=False, fields=None, just_names=True):
+    mongodb = get_project_database()    
+    all_projects = mongodb.list_collection_names()
+    # Prepare the query and projection
+    query = {"type": "project"}
+    projection = {"_id": 0, "name": 1, "data.active": 1}
+    
+    # Initialize an empty list to store the results
+    results = []
+    
+    # Define a thread-safe results collection
+    results_lock = threading.Lock()
+    
+    def fetch_documents(collection_name):
+        collection = mongodb[collection_name]
+        documents = collection.find(query, projection)
+        with results_lock:
+            results.extend(documents)
+    
+    # Create and start threads
+    threads = []
+    for collection_name in all_projects:
+        thread = threading.Thread(target=fetch_documents, args=(collection_name,))
+        threads.append(thread)
+        thread.start()
+    
+    # Wait for all threads to complete
+    for thread in threads:
+        thread.join()
+    
+    for result in results:
+        if result["data"]["active"] and active:
+            yield { "name": result["name"] }
+        elif not result["data"]["active"] and inactive:
+            yield { "name": result["name"] }
+
+    # for project_name in mongodb.list_collection_names():
+    #     if project_name is not None:
+    #         yield { "name": project_name }
 
 def get_project(project_name, active=True, inactive=True, fields=None):
     # Skip if both are disabled
