@@ -13,7 +13,7 @@ class CollectSlateGlobal(pyblish.api.InstancePlugin):
     selected families
     """
     label = "Collect Slate Global data"
-    order = pyblish.api.CollectorOrder + 0.499
+    order = pyblish.api.CollectorOrder + 0.4993
     # families = [
     #     "review",
     #     # "render",
@@ -84,6 +84,18 @@ class CollectSlateGlobal(pyblish.api.InstancePlugin):
             }
             slate_data["comment"] = ""
             slate_data["scope"] = ""
+
+            ftrack_session = context.data.get("ftrackSession", None)
+
+            if ftrack_session:
+                try:
+                    scope = ftrack_session.query("select description from Shot where name is '{}'".format(
+                        instance.data.get("asset", None)
+                    )).first()
+                    if scope:
+                        slate_data["scope"] = scope["description"]
+                except:
+                    self.log.debug("Could not find shot description to assign slate scope.")
 
             task = instance.data["anatomyData"].get("task",{}).get("type", None)
             if not task:
