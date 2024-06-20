@@ -117,7 +117,7 @@ class ExtractThumbnailSP(pyblish.api.InstancePlugin):
             'ext': 'jpg',
             'files': filename,
             "stagingDir": staging_dir,
-            "tags": ["thumbnail", "delete"],
+            "tags": ["thumbnail"],
             "thumbnail": True
         }
         if width and height:

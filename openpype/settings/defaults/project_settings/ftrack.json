@@ -211,7 +211,7 @@
                     },
                     {
                         "column_name": "Version Name",
-                        "column_value": "{asset}_{task[name]}_{subset}_v{version:0>4}"
+                        "column_value": "{asset}_{task[short]}_v{version:0>4}"
                     },
                     {
                         "column_name": "Shot Name",
@@ -249,7 +249,7 @@
                     },
                     {
                         "column_name": "Version Name",
-                        "column_value": "{asset}_{task[name]}_{subset}_v{version:0>4}"
+                        "column_value": "{asset}_{task[short]}_v{version:0>4}"
                     },
                     {
                         "column_name": "Shot Name",
@@ -287,7 +287,7 @@
                     },
                     {
                         "column_name": "Version Name",
-                        "column_value": "{asset}_{task[name]}_{subset}_v{version:0>4}"
+                        "column_value": "{asset}_{task[short]}_v{version:0>4}"
                     },
                     {
                         "column_name": "Shot Name",
@@ -349,7 +349,7 @@
                     },
                     {
                         "column_name": "File Name",
-                        "column_value": "{asset}_{subset}_v{version:0>4}<_{output}><.{frame:0>4}>.{ext}"
+                        "column_value": "{asset}_{task[short]}_v{version:0>4}<_{output}><.{frame:0>4}>.{ext}"
                     },
                     {
                         "column_name": "Format",

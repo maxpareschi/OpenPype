@@ -74,7 +74,7 @@ def augment_repre_with_ftrack_version_data(repre: dict, version: AssetVersion):
     shot = return_shot_from_version(version)
     repre["context"]["shot_name"] = shot["name"]
     repre["context"]["status"] = version["status"]["name"]
-    repre["context"]["shot"] = {"status": shot["status"]["name"]}
+    repre["context"]["shot"] = { "status": shot["status"]["name"] }
     repre["context"]["notes"] = return_version_notes_for_csv(version)
 
 
@@ -760,6 +760,8 @@ class Delivery(BaseAction):
         config: str,
         order: str,
     ):
+        
+        self.log.debug(report_items)
 
         repres = sorted(repres, key=by_alphabet)
         if order == "version":
@@ -790,8 +792,10 @@ class Delivery(BaseAction):
         # if launched from list retrieve the list name to fill
         # up template values
         ftrack_list_name = None
+        ftrack_list_category_name = None
         if entities[0].entity_type == "AssetVersionList":
             ftrack_list_name = entities[0]["name"]
+            ftrack_list_category_name = entities[0]["category"]["name"]
 
         collected_paths = []
         collected_repres = []
@@ -847,16 +851,16 @@ class Delivery(BaseAction):
         
         # add ftrack custom template keys for path resolving
         # TODO: put more data and expand templating items
+        
         ftrack_template_data = {
             "ftrack": {
                 "listname": ftrack_list_name,
                 "username": session.api_user,
+                "category": ftrack_list_category_name
                 # "first_name": event["user"]["first_name"],
                 # "last_name": event["user"]["last_name"]
             }
         }
-        if entities[0].entity_type == "AssetVersionList":
-            ftrack_template_data["category"] = entities[0]["category"]["name"]
 
         format_dict = get_format_dict(anatomy, location_path)
         datetime_data = get_datetime_data()
@@ -878,8 +882,7 @@ class Delivery(BaseAction):
             anatomy_data = copy.deepcopy(repre["context"])
 
             # update anatomy_data with ftrack template data
-            if ftrack_list_name:
-                anatomy_data.update(ftrack_template_data)
+            anatomy_data.update(ftrack_template_data)
             
             repre_report_items = check_destination_path(repre["_id"],
                                                         anatomy,
@@ -919,6 +922,21 @@ class Delivery(BaseAction):
 
             if frame:
                 repre["context"]["frame"] = len(str(frame)) * "#"
+            
+            # fallback for missing task. WE NEED TO TAKE THIS OUT
+            # NEXT VERSION
+            if not repre["context"].get("task"):
+                repre["context"]["task"] = {
+                    "name": "roundtrip",
+                    "type": "Roundtrip",
+                    "short": "lineup"
+                }
+            # Get ftrack template data into repre context
+            if not repre["context"].get("ftrack"):
+                repre["context"]["ftrack"] = ftrack_template_data
+            else:
+                repre["context"]["ftrack"].update(ftrack_template_data)
+
 
             repre_path = get_representation_path_with_anatomy(repre, anatomy)
             # TODO add backup solution where root of path from component
@@ -941,7 +959,6 @@ class Delivery(BaseAction):
 
             if not success:
                 continue
-
 
             anatomy_filled = anatomy.format_all(anatomy_data)
             dest_path = anatomy_filled["delivery"][anatomy_name]
