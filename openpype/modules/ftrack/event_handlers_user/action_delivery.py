@@ -74,7 +74,7 @@ def augment_repre_with_ftrack_version_data(repre: dict, version: AssetVersion):
     shot = return_shot_from_version(version)
     repre["context"]["shot_name"] = shot["name"]
     repre["context"]["status"] = version["status"]["name"]
-    repre["context"]["shot"] = { "status": shot["status"]["name"] }
+    # repre["context"]["shot"] = { "status": shot["status"]["name"] }
     repre["context"]["notes"] = return_version_notes_for_csv(version)
 
 
