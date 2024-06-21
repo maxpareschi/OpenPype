@@ -761,8 +761,6 @@ class Delivery(BaseAction):
         order: str,
     ):
         
-        self.log.debug(report_items)
-
         repres = sorted(repres, key=by_alphabet)
         if order == "version":
             repres = sorted(repres, key=by_version)
@@ -851,7 +849,6 @@ class Delivery(BaseAction):
         
         # add ftrack custom template keys for path resolving
         # TODO: put more data and expand templating items
-        
         ftrack_template_data = {
             "ftrack": {
                 "listname": ftrack_list_name,
