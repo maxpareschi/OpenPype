@@ -71,45 +71,41 @@ def convert_ids(in_ids):
 
 
 
-def get_projects(active=True, inactive=False, fields=None, just_names=True):
-    mongodb = get_project_database()    
+def get_projects(active=True, inactive=False, fields=None, just_names=False):
+    mongodb = get_project_database()
     all_projects = mongodb.list_collection_names()
-    # Prepare the query and projection
-    query = {"type": "project"}
-    projection = {"_id": 0, "name": 1, "data.active": 1}
-    
-    # Initialize an empty list to store the results
-    results = []
-    
-    # Define a thread-safe results collection
-    results_lock = threading.Lock()
-    
-    def fetch_documents(collection_name):
-        collection = mongodb[collection_name]
-        documents = collection.find(query, projection)
-        with results_lock:
-            results.extend(documents)
-    
-    # Create and start threads
-    threads = []
-    for collection_name in all_projects:
-        thread = threading.Thread(target=fetch_documents, args=(collection_name,))
-        threads.append(thread)
-        thread.start()
-    
-    # Wait for all threads to complete
-    for thread in threads:
-        thread.join()
-    
-    for result in results:
-        if result["data"]["active"] and active:
-            yield { "name": result["name"] }
-        elif not result["data"]["active"] and inactive:
-            yield { "name": result["name"] }
 
-    # for project_name in mongodb.list_collection_names():
-    #     if project_name is not None:
-    #         yield { "name": project_name }
+    if just_names:
+        for project_name in mongodb.list_collection_names():
+            if project_name is not None:
+                yield { "name": project_name }
+    
+    else:
+        # Initialize an empty list to store the results
+        results = []
+        
+        # Define a thread-safe results collection
+        results_lock = threading.Lock()
+        
+        def get_project_threaded(project_name, active=True, inactive=True, fields=None):
+            prj_doc = get_project(project_name, active=active, inactive=inactive, fields=fields)
+            if prj_doc:
+                with results_lock:
+                    results.append(prj_doc)
+        
+        # Create and start threads
+        threads = []
+        for collection_name in all_projects:
+            thread = threading.Thread(target=get_project_threaded, args=(collection_name, active, inactive, fields))
+            threads.append(thread)
+            thread.start()
+        
+        # Wait for all threads to complete
+        for thread in threads:
+            thread.join()
+        
+        for result in results:
+            yield { "name": result["name"] }
 
 def get_project(project_name, active=True, inactive=True, fields=None):
     # Skip if both are disabled
@@ -136,7 +132,8 @@ def get_project(project_name, active=True, inactive=True, fields=None):
         ]
 
     conn = get_project_connection(project_name)
-    return conn.find_one(query_filter, _prepare_fields(fields))
+    doc = conn.find_one(query_filter, _prepare_fields(fields))
+    return doc
 
 
 def get_whole_project(project_name):
