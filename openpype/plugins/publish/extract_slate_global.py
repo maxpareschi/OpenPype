@@ -928,7 +928,7 @@ class ExtractSlateGlobal(publish.Extractor):
             # Data Layout and preparation in instance
             slate_repre_data = slate_data["slate_repre_data"][repre["name"]] = {
                 "family_match": repre_match or "",
-                "frameStart": int(repre["frameStart"]),
+                "frameStart": int(frame_start) + 1,
                 "frameEnd": frame_end,
                 "real_frameStart": frame_start,
                 "resolution_width": int(resolution["width"]),

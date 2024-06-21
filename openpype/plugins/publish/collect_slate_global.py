@@ -14,15 +14,17 @@ class CollectSlateGlobal(pyblish.api.InstancePlugin):
     """
     label = "Collect Slate Global data"
     order = pyblish.api.CollectorOrder + 0.4993
-    # families = [
-    #     "review",
-    #     # "render",
-    #     "gather"
-    # ]
+    families = [
+        "review",
+        "render",
+        "gather"
+    ]
 
     _slate_settings_name = "ExtractSlateGlobal"
 
     def process(self, instance):
+
+        self.log.debug("Instance data: {}".format(json.dumps(instance.data, indent=4, default=str)))
 
         context = instance.context
         publ_settings = context.data["project_settings"]["global"]["publish"]
@@ -123,35 +125,17 @@ class CollectSlateGlobal(pyblish.api.InstancePlugin):
             
             self.log.debug("Task '{}' was set for slate templating, proceeding...".format(slate_data["task"]))
 
+            if instance.data.get("frameStart", None):
+                slate_data["frameStart"] = instance.data["frameStart"] - instance.data["handleStart"]
+                slate_data["frameEnd"] = instance.data["frameEnd"] + instance.data["handleEnd"]
+            else:
+                slate_data["frameStart"] = None
+                slate_data["frameEnd"] = None
 
             if "customData" in instance.data:
                 slate_data.update(instance.data["customData"])
-            
-            # if "families" not in instance.data:
-            #     instance.data["families"] = list()
+
             # 
-            # if not "versionData" in instance.data:
-            #     instance.data["versionData"] = dict()
-            # 
-            # if "families" not in instance.data["versionData"]:
-            #     instance.data["versionData"]["families"] = list()
-            # if not task:
-            #     default_task = {
-            #         "name": settings["missing_task_type"][0].lower(),
-            #         "type": settings["missing_task_type"][0],
-            #         "short": instance.context.data["projectEntity"]["config"]\
-            #             ["tasks"][settings["missing_task_type"][0]]["short_name"]
-            #     }
-            #     instance.data["anatomyData"]["task"] = default_task
-            #     slate_data["task"] = default_task
-            # self.log.debug("Task: {} is enabled for Extract "
-            #     "Slate Global workflow, tagging for slate "
-            #     "extraction on review families...".format(
-            #         task
-            # ))
-            # instance.data["slate"] = True
-            # instance.data["families"].append("slate")
-            # instance.data["versionData"]["families"].append("slate")
 
             self.log.debug(
                 "SlateGlobal Data: {}".format(
