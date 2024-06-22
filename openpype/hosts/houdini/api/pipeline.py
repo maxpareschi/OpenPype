@@ -19,7 +19,8 @@ from openpype.pipeline import (
 from openpype.pipeline.load import any_outdated_containers
 from openpype.hosts.houdini import HOUDINI_HOST_DIR
 from openpype.hosts.houdini.api import lib, shelves
-
+from openpype.lib.env_tools import env_value_to_bool
+from openpype.tools.utils import host_tools
 from openpype.lib import (
     register_event_callback,
     emit_event,
@@ -81,7 +82,14 @@ class HoudiniHost(HostBase, IWorkfileHost, ILoadHost, IPublishHost):
         # TODO: make sure this doesn't trigger when
         #       opening with last workfile.
         _set_context_settings()
-        shelves.generate_shelves()
+        if not IS_HEADLESS:
+            import hdefereval  # noqa, hdefereval is only available in ui mode
+            # Defer generation of shelves due to issue on Windows where shelf
+            # initialization during start up delays Houdini UI by minutes
+            # making it extremely slow to launch.
+            hdefereval.executeDeferred(shelves.generate_shelves)
+            if env_value_to_bool("OPENPYPE_WORKFILE_TOOL_ON_START"):
+                hdefereval.executeDeferred(lambda: host_tools.show_workfiles(hou.qt.mainWindow()))
 
     def has_unsaved_changes(self):
         return hou.hipFile.hasUnsavedChanges()
