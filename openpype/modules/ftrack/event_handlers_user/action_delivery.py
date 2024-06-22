@@ -68,13 +68,20 @@ def return_version_notes_for_csv(version):
 
 
 def augment_repre_with_ftrack_version_data(repre: dict, version: AssetVersion):
-    repre["context"]["episode_name"] = return_episode_from_version(version)["name"]
-    repre["context"]["sequence_name"] = return_sequence_from_version(version)["name"]
-    repre["context"]["asset_name"] = return_asset_from_version(version)["name"]
-    shot = return_shot_from_version(version)
-    repre["context"]["shot_name"] = shot["name"]
+    version_padding = int(get_anatomy_settings("TEST_GATHER_NEW")["templates"]["defaults"]["version_padding"])
+    repre["context"]["version_info"] = {
+        "name": version["asset"]["name"],
+        "version": version["version"],
+        "full_name": version["asset"]["name"] + "_v" + str(version["version"]).zfill(version_padding)
+    }
+    if len(version["incoming_links"]) > 0:
+        internal_working_version = version["incoming_links"][0]["from"]
+    else:
+        internal_working_version = version
+    repre["context"]["episode_name"] = return_episode_from_version(internal_working_version)["name"]
+    repre["context"]["sequence_name"] = return_sequence_from_version(internal_working_version)["name"]
+    repre["context"]["shot_name"] = return_shot_from_version(internal_working_version)["name"]
     repre["context"]["status"] = version["status"]["name"]
-    # repre["context"]["shot"] = { "status": shot["status"]["name"] }
     repre["context"]["notes"] = return_version_notes_for_csv(version)
 
 
@@ -930,9 +937,9 @@ class Delivery(BaseAction):
                 }
             # Get ftrack template data into repre context
             if not repre["context"].get("ftrack"):
-                repre["context"]["ftrack"] = ftrack_template_data
+                repre["context"]["ftrack"] = ftrack_template_data["ftrack"]
             else:
-                repre["context"]["ftrack"].update(ftrack_template_data)
+                repre["context"]["ftrack"].update(ftrack_template_data["ftrack"])
 
 
             repre_path = get_representation_path_with_anatomy(repre, anatomy)
@@ -967,7 +974,6 @@ class Delivery(BaseAction):
 
             repre["context"]["submission_name"] = ftrack_list_name
             augment_repre_with_ftrack_version_data(repre, version)
-
 
             if version["id"] not in attr_by_version:
                 attr_by_version[version["id"]] = {"attr":"", "entity": version}

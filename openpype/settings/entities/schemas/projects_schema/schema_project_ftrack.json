@@ -635,6 +635,7 @@
                     "key": "delivery_action",
                     "label": "Delivery",
                     "checkbox_key": "enabled",
+                    "is_group": true,
                     "children": [
                         {
                             "type": "boolean",
@@ -665,7 +666,7 @@
                         },
                         {
                             "type": "label",
-                            "label": "NOTE: Template keys can be All standard anatomy template data plus:\n- {ftrack[listname]}\n- {ftrack[username]}\n- {ftrack[category]}\n- {asset_data[duration]}\n- {asset_data[frameStart]}\n- {asset_data[frameEnd]}\n- {asset_data[duration]}\n- {asset_data[duration_no_slate]}\n- {asset_data[start]}\n- {asset_data[end]}\n- {episode_name}\n- {shot_name}\n- {status}\n- {shot[status]}\n- {notes[For Client]}\n- {notes[Client Feedback]}\n- {notes[...]}\n- {exr_includes_mattes}"
+                            "label": "NOTE: Template keys can be All standard anatomy template data plus:\n- {ftrack[listname]}\n- {ftrack[username]}\n- {ftrack[category]}\n- {asset_data[duration]}\n- {asset_data[frameStart]}\n- {asset_data[frameEnd]}\n- {asset_data[duration]}\n- {asset_data[duration_no_slate]}\n- {asset_data[start]}\n- {asset_data[end]}\n- {episode_name}\n- {shot_name}\n- {status}\n- {version_info[name]}\n- {version_info[version]}\n- {version_info[full_name]}\n- {notes[For Client]}\n- {notes[Client Feedback]}\n- {notes[...]}\n- {exr_includes_mattes}"
                         },
                         {
                             "label":"CSV Template Families",
