@@ -89,6 +89,10 @@ class houdiniSubmitUSDRenderDeadline(pyblish.api.InstancePlugin):
     targets = ["local"]
 
     # presets
+    usd_intermediate_on_farm = True
+    suspendPublishJob = False
+    review =  True
+    multipartExr =  True
     priority = 50
     chunk_size = 1
     concurrent_tasks = 1
@@ -109,9 +113,14 @@ class houdiniSubmitUSDRenderDeadline(pyblish.api.InstancePlugin):
         node = hou.node(instance.data["instance_node"])
         context = instance.context
 
+        instance_settings = instance.data.get("creator_attributes", {})
+        if instance_settings:
+            for k, v in instance_settings.items():
+                self.__setattr__(k, v)
+
         # IMPORTANT FOR REVIEW
-        instance.data["review"] = node.parm("review").eval()
-        instance.data["multipartExr"] = node.parm("multipartExr").eval()
+        instance.data["review"] = self.review
+        instance.data["multipartExr"] = self.multipartExr
         instance.data["useSequenceForReview"] = True
 
         # get default deadline webservice url from deadline module
@@ -229,23 +238,6 @@ class houdiniSubmitUSDRenderDeadline(pyblish.api.InstancePlugin):
         except OSError:
             pass
 
-        # define vars for deadline
-        self.priority = node.parm(
-            "priority").eval() or self.priority
-        self.chunk_size = node.parm(
-            "chunk_size").eval() or self.chunk_size
-        self.concurrent_tasks = node.parm(
-            "concurrent_tasks").eval() or self.concurrent_tasks
-        self.group = node.parm("group").eval() or self.group
-        self.department = node.parm(
-            "department").eval() or self.department
-        self.primary_pool = node.parm(
-            "primary_pool").eval() or self.primary_pool
-        self.secondary_pool = node.parm(
-            "secondary_pool").eval() or self.secondary_pool
-        self.intermediate_to_farm = node.parm(
-            "intermediate_to_farm").eval() or False
-
         # NEED TO GET LIMITS GROUP FUNCTIONALITY IN AGAIN
         # resolve any limit groups
         # self.log.info("Limit groups: `{}`".format(limit_groups))
@@ -345,7 +337,7 @@ class houdiniSubmitUSDRenderDeadline(pyblish.api.InstancePlugin):
         intermediate_payload["JobInfo"].pop("OutputFilename0")
         intermediate_payload["JobInfo"]["Name"] += "_intermediate"
 
-        if self.intermediate_to_farm:
+        if self.usd_intermediate_on_farm:
             resp = self.submit(instance, intermediate_payload)
             payload["JobInfo"]["JobDependency0"] = resp.json()["_id"]
         else:
