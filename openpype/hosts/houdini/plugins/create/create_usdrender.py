@@ -25,7 +25,7 @@ class CreateUSDRender(plugin.HoudiniCreator):
     def get_instance_attr_defs(self):
         instance_parms = {
             "usd_intermediate_on_farm": True,
-            "flush_data_after_each_frame": True,
+            "flush_data_after_each_frame": False,
             "separator": "separator",
             "suspendPublishJob": False,
             "review": True,

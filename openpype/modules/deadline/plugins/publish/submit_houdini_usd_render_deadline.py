@@ -1,4 +1,5 @@
 import os
+import sys
 import json
 import getpass
 import re
@@ -12,11 +13,6 @@ import hou # type: ignore
 
 from openpype.pipeline import legacy_io
 from openpype.hosts.houdini.api.lib import render_rop
-from openpype.modules.deadline.ttd_usd_submit import (
-    create_intermediate_usd,
-    HOUDINI_USD_SUBMISSION_SCRIPT
-)
-
 
 class houdiniSubmitUSDRenderDeadline(pyblish.api.InstancePlugin):
     """Submit Solaris USD Render ROPs to Deadline.
@@ -57,6 +53,27 @@ class houdiniSubmitUSDRenderDeadline(pyblish.api.InstancePlugin):
     # env_search_replace_values = {}
 
     def process(self, instance):
+
+        ttd_scripts_dir = os.environ.get("TTD_STUDIO_PIPELINE_SCRIPTS", None)
+        self.log.debug(ttd_scripts_dir)
+        if not ttd_scripts_dir or not os.path.isdir(ttd_scripts_dir):
+            raise OSError("No script path defined with 'TTD_STUDIO_PIPELINE_SCRIPTS'")
+        
+        module_name = os.path.basename(ttd_scripts_dir)
+        script_file = os.path.join(ttd_scripts_dir, "__init__.py")
+        
+        import importlib.util
+        spec = importlib.util.spec_from_file_location(module_name, script_file)
+        ttd_module = importlib.util.module_from_spec(spec)
+        sys.modules[module_name] = ttd_module
+        spec.loader.exec_module(ttd_module)
+
+        from ttd_scripts import (
+            create_intermediate_usd,
+            HOUDINI_USD_SUBMISSION_SCRIPT
+        )
+
+        
 
         instance.data["toBeRenderedOn"] = "deadline"
         node = hou.node(instance.data["instance_node"])
@@ -285,7 +302,7 @@ class houdiniSubmitUSDRenderDeadline(pyblish.api.InstancePlugin):
             resp = self.submit(instance, intermediate_payload)
             payload["JobInfo"]["JobDependency0"] = resp.json()["_id"]
         else:
-            create_intermediate_usd(node, hou_usd_path)
+            create_intermediate_usd(node, hou_usd_path, fileperframe=self.flush_data_after_each_frame)
 
         response = self.submit(instance, payload)
 
