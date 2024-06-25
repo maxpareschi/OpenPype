@@ -227,11 +227,21 @@ class HoudiniCreator(NewCreator, HoudiniCreatorBase):
     def update_instances(self, update_list):
         for created_inst, _changes in update_list:
             instance_node = hou.node(created_inst.get("instance_node"))
-
-            new_values = {
-                key: new_value
-                for key, (_old_value, new_value) in _changes.items()
-            }
+            new_values = {}
+            for key, value in _changes.items():
+                if not isinstance(value, dict):
+                    new_values.update({
+                        key: value[1]
+                    })
+                else:
+                    dict_values = {}
+                    for k, v in value.items():
+                        dict_values.update({
+                            k: v[1]
+                        })
+                    new_values.update({
+                            key: dict_values
+                        })
             imprint(
                 instance_node,
                 new_values,

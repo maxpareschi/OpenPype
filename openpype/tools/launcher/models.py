@@ -542,7 +542,11 @@ class LauncherModel(QtCore.QObject):
         current_project = self.project_name
         project_names = set()
         project_docs_by_name = {}
-        for project_doc in get_projects():
+        fields = {
+            "name": 1,
+            "data.active": 1
+        }
+        for project_doc in get_projects(fields=fields):
             project_name = project_doc["name"]
             project_names.add(project_name)
             project_docs_by_name[project_name] = project_doc
