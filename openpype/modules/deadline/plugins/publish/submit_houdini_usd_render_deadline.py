@@ -12,62 +12,11 @@ import hou # type: ignore
 
 from openpype.pipeline import legacy_io
 from openpype.hosts.houdini.api.lib import render_rop
+from openpype.modules.deadline.ttd_usd_submit import (
+    create_intermediate_usd,
+    HOUDINI_USD_SUBMISSION_SCRIPT
+)
 
-
-
-INTERMEDIATE_SCRIPT = [
-    "from sys import path as syspath, argv",
-    "import hou # type: ignore",
-    "syspath.append('R:/app_repos/houdini/scripts') # TODO: check whether we need this or not",
-    "from ttd_hou_utils import create_intermediate_usd # type: ignore",
-    "hip_file, rop_path, target = argv[-3:]",
-    "hou.hipFile.load(hip_file)",
-    "rop = hou.node(rop_path)",
-    "create_intermediate_usd(rop, target)"
-    ]
-
-
-def get_temp_path(instance: Instance):
-    """Returns temp path for the intermediate USD render."""
-
-    curr_file = hou.hipFile.path().replace("\\", "/")
-    curr_file_stem = os.path.splitext(os.path.basename(curr_file))[0]
-    render_cfg = instance.context.data["project_settings"]["houdini"]["RenderSettings"]
-    file_name = "{}_{}.{}".format(curr_file_stem, instance.data["subset"], "usd")
-    staging_dir = os.path.join(os.path.dirname(curr_file), render_cfg\
-            ["default_render_image_folder"], curr_file_stem).replace("\\", "/")
-    if not os.path.exists(staging_dir):
-        os.makedirs(staging_dir)
-    return os.path.join(staging_dir, file_name).replace("\\", "/")
-    
-
-def create_intermediate_usd(ropnode, file_abs_path):
-    """Creates a usd file given a ROP node and a path where to save the usd."""
-
-    # Get instance node and upstream LOP node
-    loppath = ropnode.parm("loppath").eval()
-    staging_dir, file_name = os.path.split(file_abs_path)
-
-    # create the render intermediate node
-    rend = hou.node("/out").createNode("usd",
-        node_name="render_intermediate")
-    rend.parm("trange").set(ropnode.parm("trange").eval())
-    rend.parm("f1").set(ropnode.parm("f1").eval())
-    rend.parm("f2").set(ropnode.parm("f2").eval())
-    rend.parm("f3").set(ropnode.parm("f3").eval())
-    rend.parm("loppath").set(loppath)
-    rend.parm("lopoutput").set(file_abs_path)
-    rend.parm("fileperframe").set(True)
-
-    print(f"Writing intermediate render USD '{file_name}' to '{staging_dir}'")
-
-    # save the usd file and check for actual file creation
-    render_rop(rend)
-    assert os.path.exists(file_abs_path),\
-        "Output does not exist: %s" % file_abs_path
-
-    # delete the render intermediate node
-    rend.destroy()
 
 class houdiniSubmitUSDRenderDeadline(pyblish.api.InstancePlugin):
     """Submit Solaris USD Render ROPs to Deadline.
@@ -90,6 +39,7 @@ class houdiniSubmitUSDRenderDeadline(pyblish.api.InstancePlugin):
 
     # presets
     usd_intermediate_on_farm = True
+    flush_data_after_each_frame = True
     suspendPublishJob = False
     review =  True
     multipartExr =  True
@@ -109,10 +59,10 @@ class houdiniSubmitUSDRenderDeadline(pyblish.api.InstancePlugin):
     def process(self, instance):
 
         instance.data["toBeRenderedOn"] = "deadline"
-
         node = hou.node(instance.data["instance_node"])
         context = instance.context
 
+        # write instance settings to self vars
         instance_settings = instance.data.get("creator_attributes", {})
         if instance_settings:
             for k, v in instance_settings.items():
@@ -124,13 +74,13 @@ class houdiniSubmitUSDRenderDeadline(pyblish.api.InstancePlugin):
         instance.data["useSequenceForReview"] = True
 
         # get default deadline webservice url from deadline module
-        deadline_url = instance.context.data["defaultDeadline"]
+        deadline_base_url = context.data.get("defaultDeadline")
         # if custom one is set in instance, use that
         if instance.data.get("deadlineUrl"):
-            deadline_url = instance.data.get("deadlineUrl")
-        assert deadline_url, "Requires Deadline Webservice URL"
+            deadline_base_url = instance.data.get("deadlineUrl")
+        assert deadline_base_url, "Requires Deadline Webservice URL"
 
-        self.deadline_url = "{}/api/jobs".format(deadline_url)
+        self.deadline_url = "{}/api/jobs".format(deadline_base_url)
         self._comment = context.data.get("comment", "")
         self._deadline_user = context.data.get(
             "deadlineUser", getpass.getuser())
@@ -148,14 +98,10 @@ class houdiniSubmitUSDRenderDeadline(pyblish.api.InstancePlugin):
                 node.parm("f2").eval())
             rop_frame_step = int(
                 node.parm("f3").eval())
-            if rop_frame_start != submit_frame_start or \
-               rop_frame_end != submit_frame_end or \
-               rop_frame_step != submit_frame_step:
-                instance.data["review"] = False
-                submit_frame_start = rop_frame_start
-                submit_frame_end = rop_frame_end
-                submit_frame_step = rop_frame_step
-                self.log.debug("Frame ranges from houdini are different from ftrack data, no review will be generated!")
+            submit_frame_start = rop_frame_start
+            submit_frame_end = rop_frame_end
+            submit_frame_step = rop_frame_step
+            self.log.debug("Frame ranges from houdini are different from ftrack data, review can be wrong!")
         except:
             self.log.debug("Couldn't get frame ranges params from Houdini, defaulting to ftrack data for submission...")
         
@@ -176,8 +122,7 @@ class houdiniSubmitUSDRenderDeadline(pyblish.api.InstancePlugin):
             hou_output_file
         ).replace("\\", "/")
 
-        ropnode = hou.node(instance.data.get("instance_node"))
-        hou_usd_path = get_temp_path(instance)
+        hou_usd_path = self.get_temp_path(instance)
         staging_dir, file_name = os.path.split(hou_usd_path)
         current_file = hou.hipFile.path()
 
@@ -189,7 +134,6 @@ class houdiniSubmitUSDRenderDeadline(pyblish.api.InstancePlugin):
             'ext': 'usd',
             'files': file_name,
             "stagingDir": staging_dir,
-            # "tags": ["delete"]
             'tags': []
         }
         
@@ -237,10 +181,6 @@ class houdiniSubmitUSDRenderDeadline(pyblish.api.InstancePlugin):
             os.makedirs(render_dir)
         except OSError:
             pass
-
-        # NEED TO GET LIMITS GROUP FUNCTIONALITY IN AGAIN
-        # resolve any limit groups
-        # self.log.info("Limit groups: `{}`".format(limit_groups))
 
         payload = {
             "JobInfo": {
@@ -323,25 +263,29 @@ class houdiniSubmitUSDRenderDeadline(pyblish.api.InstancePlugin):
             submit_frame_step
         )
 
-
-
-        intermediate_payload = deepcopy(payload)
-
-        cmd = "\n".join(INTERMEDIATE_SCRIPT)
-        args = "\" \"".join(("-c", cmd, current_file, ropnode.path(), hou_usd_path))
-        intermediate_payload["PluginInfo"] = {
-            "Arguments": " \"" + args + "\"",
-            "Executable": "$HFS/bin/hython.exe"
-        }
-        intermediate_payload["JobInfo"].pop("Frames")
-        intermediate_payload["JobInfo"].pop("OutputFilename0")
-        intermediate_payload["JobInfo"]["Name"] += "_intermediate"
-
         if self.usd_intermediate_on_farm:
+            intermediate_payload = deepcopy(payload)
+            intermediate_payload["JobInfo"].pop("Frames")
+            intermediate_payload["JobInfo"].pop("OutputFilename0")
+            intermediate_payload["JobInfo"]["Name"] += "_intermediate"
+
+            args = "\" \"".join(
+                (
+                    HOUDINI_USD_SUBMISSION_SCRIPT,
+                    current_file,
+                    node.path(),
+                    hou_usd_path,
+                    "--flush" if self.flush_data_after_each_frame else "--noflush"
+                )
+            )
+            intermediate_payload["PluginInfo"] = {
+                "Arguments": "\"" + args + "\"",
+                "Executable": "$HFS/bin/hython.exe"
+            }
             resp = self.submit(instance, intermediate_payload)
             payload["JobInfo"]["JobDependency0"] = resp.json()["_id"]
         else:
-            create_intermediate_usd(ropnode, hou_usd_path)
+            create_intermediate_usd(node, hou_usd_path)
 
         response = self.submit(instance, payload)
 
@@ -357,6 +301,18 @@ class houdiniSubmitUSDRenderDeadline(pyblish.api.InstancePlugin):
             if "tags" not in repre:
                 repre["tags"] = []
 
+    def get_temp_path(self, instance: Instance):
+        """Returns temp path for the intermediate USD render."""
+
+        curr_file = hou.hipFile.path().replace("\\", "/")
+        curr_file_stem = os.path.splitext(os.path.basename(curr_file))[0]
+        render_cfg = instance.context.data["project_settings"]["houdini"]["RenderSettings"]
+        file_name = "{}_{}.{}".format(curr_file_stem, instance.data["subset"], "usd")
+        staging_dir = os.path.join(os.path.dirname(curr_file), render_cfg\
+            ["default_render_image_folder"], curr_file_stem).replace("\\", "/")
+        if not os.path.exists(staging_dir):
+            os.makedirs(staging_dir)
+        return os.path.join(staging_dir, file_name).replace("\\", "/")
 
     def submit(self, instance, payload):
 
@@ -453,67 +409,6 @@ class houdiniSubmitUSDRenderDeadline(pyblish.api.InstancePlugin):
         for i in range(start_frame, (end_frame + 1), step_frame):
             instance.data["expectedFiles"].append(
                 os.path.join(dirname, (file % i)).replace("\\", "/"))
-
-    # this creates a usd intermediate file to be used as a
-    # rendering source. Assumes save to be in the same dir as
-    # staging_dir/HOU-RENDER-SETTINGS/.
-    def create_intermediate_usd(self, instance):
-
-        # Get instance node and upstream LOP node
-        ropnode = hou.node(instance.data.get("instance_node"))
-        loppath = ropnode.parm("loppath").eval()
-
-        # get a temp path
-        cur_file = hou.hipFile.path().replace("\\", "/")
-        file_name = "{}_{}.{}".format(os.path.splitext(
-            os.path.basename(cur_file))[0],
-            instance.data["subset"],
-            "usd")
-        staging_dir = os.path.join(
-            os.path.dirname(cur_file),
-            instance.context.data["project_settings"]\
-                ["houdini"]["RenderSettings"]\
-                ["default_render_image_folder"]).replace("\\", "/")
-        file_abs_path = os.path.join(staging_dir,
-            file_name).replace("\\", "/")
-        
-        # create the render intermediate node
-        rend = hou.node("/out").createNode("usd",
-            node_name="render_intermediate")
-        rend.parm("trange").set(ropnode.parm("trange").eval())
-        rend.parm("f1").set(ropnode.parm("f1").eval())
-        rend.parm("f2").set(ropnode.parm("f2").eval())
-        rend.parm("f3").set(ropnode.parm("f3").eval())
-        rend.parm("loppath").set(loppath)
-        rend.parm("lopoutput").set(file_abs_path)
-        rend.parm("fileperframe").set(True)
-
-        self.log.info("Writing intermediate render USD '%s' to '%s'" % (
-            file_name, staging_dir))
-
-        # save the usd file and check for actual file creation
-        render_rop(rend)
-        assert os.path.exists(file_abs_path),\
-            "Output does not exist: %s" % file_abs_path
-
-        # delete the render intermediate node
-        rend.destroy()
-
-        if "representations" not in instance.data:
-            instance.data["representations"] = []
-
-        representation = {
-            'name': 'usd',
-            'ext': 'usd',
-            'files': file_name,
-            "stagingDir": staging_dir,
-            # "tags": ["delete"]
-            'tags': []
-        }
-        
-        instance.data["representations"].append(representation)
-         
-        return file_abs_path
 
     # Checks for workfile integration alongside usdrender
     def get_workfile(self, context):
