@@ -10,13 +10,12 @@ import re
 import collections
 import copy
 import threading
+import os
 
 import six
 from bson.objectid import ObjectId
 
 from .mongo import get_project_database, get_project_connection
-
-from openpype.lib.env_tools import env_value_to_bool
 
 PatternType = type(re.compile(""))
 
@@ -77,9 +76,12 @@ def get_projects(active=True, inactive=False, fields=None, just_names=False):
     mongodb = get_project_database()
     all_projects = mongodb.list_collection_names()
 
-    fast_mode = env_value_to_bool("OPENPYPE_LAUNCHER_FAST_MODE", default=False)
-    just_names = fast_mode
-
+    just_names = os.environ.get("OPENPYPE_LAUNCHER_FAST_MODE", 0)
+    if int(just_names) == 1:
+        just_names = True
+    else:
+        just_names = False
+    
     if just_names:
         for project_name in mongodb.list_collection_names():
             if project_name is not None:

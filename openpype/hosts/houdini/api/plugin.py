@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 """Houdini specific Avalon/Pyblish plugin definitions."""
 import sys
+import json
 from abc import (
     ABCMeta
 )
@@ -227,6 +228,14 @@ class HoudiniCreator(NewCreator, HoudiniCreatorBase):
     def update_instances(self, update_list):
         for created_inst, _changes in update_list:
             instance_node = hou.node(created_inst.get("instance_node"))
+            creator_attributes = instance_node.parm("creator_attributes").eval()
+            publish_attributes = instance_node.parm("publish_attributes").eval()
+
+            attributes = {
+                "creator_attributes": json.loads(creator_attributes.replace("JSON:::", "")),
+                "publish_attributes": json.loads(publish_attributes.replace("JSON:::", ""))
+            }
+
             new_values = {}
             for key, value in _changes.items():
                 if not isinstance(value, dict):
@@ -242,9 +251,18 @@ class HoudiniCreator(NewCreator, HoudiniCreatorBase):
                     new_values.update({
                             key: dict_values
                         })
+                    
+            for k, v in new_values.items():
+                print(k, v, type(v))
+                if isinstance(v, dict):
+                    for dk, dv in v.items():
+                        attributes[k][dk] = dv
+                else:
+                    attributes[k] = v
+
             imprint(
                 instance_node,
-                new_values,
+                attributes,
                 update=True
             )
 

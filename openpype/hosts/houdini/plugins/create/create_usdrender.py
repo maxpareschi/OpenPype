@@ -25,6 +25,7 @@ class CreateUSDRender(plugin.HoudiniCreator):
     def get_instance_attr_defs(self):
         instance_parms = {
             "usd_intermediate_on_farm": True,
+            "flush_data_after_each_frame": False,
             "separator": "separator",
             "suspendPublishJob": False,
             "review": True,
@@ -34,7 +35,7 @@ class CreateUSDRender(plugin.HoudiniCreator):
             "concurrent_tasks": 1,
             "group": "",
             "department": "",
-            "machine_list": "",
+            # "machine_list": "",
             "primary_pool": "",
             "secondary_pool": ""
         }
