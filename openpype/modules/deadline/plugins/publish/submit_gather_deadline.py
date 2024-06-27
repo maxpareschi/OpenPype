@@ -2,26 +2,26 @@ import os
 import re
 import json
 import getpass
+from subprocess import run
+from re import findall
+from pathlib import Path
 
 import requests
 import pyblish.api
 
-import nuke
+import nuke # type: ignore
 from openpype.pipeline import legacy_io
 
 
-class NukeSubmitDeadline(pyblish.api.InstancePlugin):
-    """Submit write to Deadline
+class GatherSubmitDeadline(pyblish.api.InstancePlugin):
+    """Submit gather to deadline."""
 
-    Renders are submitted to a Deadline Web Service as
-    supplied via settings key "DEADLINE_REST_URL".
-
-    """
-
-    label = "Submit to Deadline"
+    label = "Submit gather to Deadline"
     order = pyblish.api.IntegratorOrder + 0.1
-    hosts = ["nuke", "nukestudio"]
-    families = ["render.farm", "prerender.farm"]
+    hosts = ["traypublisher", "nuke"]
+    # families = ["render.farm", "prerender.farm"]
+    families = ["gather.farm"]
+    # families = []
     optional = True
     targets = ["local"]
 
@@ -31,7 +31,6 @@ class NukeSubmitDeadline(pyblish.api.InstancePlugin):
     concurrent_tasks = 1
     group = ""
     department = ""
-    limit_groups = {}
     use_gpu = False
     env_allowed_keys = []
     env_search_replace_values = {}
@@ -43,24 +42,29 @@ class NukeSubmitDeadline(pyblish.api.InstancePlugin):
         node = instance[0]
         context = instance.context
 
-        # get default deadline webservice url from deadline module
         deadline_url = instance.context.data["defaultDeadline"]
-        # if custom one is set in instance, use that
-        if instance.data.get("deadlineUrl"):
-            deadline_url = instance.data.get("deadlineUrl")
+        deadline_url = instance.data.get("deadlineUrl", deadline_url)
         assert deadline_url, "Requires Deadline Webservice URL"
 
-        self.deadline_url = "{}/api/jobs".format(deadline_url)
+        self.deadline_url = f"{deadline_url}/api/jobs"
         self._comment = context.data.get("comment", "")
         self._ver = re.search(r"\d+\.\d+", context.data.get("hostVersion"))
-        self._deadline_user = context.data.get(
-            "deadlineUser", getpass.getuser())
+        self._deadline_user = context.data.get( "deadlineUser", getpass.getuser())
         submit_frame_start = int(instance.data["frameStartHandle"])
         submit_frame_end = int(instance.data["frameEndHandle"])
 
         # get output path
         render_path = instance.data['path']
+        self.log.info(f">>>> Render path is {render_path}")
         script_path = context.data["currentFile"]
+
+
+        # self.expected_files(
+        #     instance,
+        #     render_path,
+        #     submit_frame_start,
+        #     submit_frame_end
+        # )
 
         for item in context:
             if "workfile" in item.data["families"]:
@@ -68,7 +72,7 @@ class NukeSubmitDeadline(pyblish.api.InstancePlugin):
                 assert item.data["publish"] is True, msg
 
                 template_data = item.data.get("anatomyData")
-                rep = item.data.get("representations")[0].get("name")
+                rep = item.data["representations"][0].get("name")
                 template_data["representation"] = rep
                 template_data["ext"] = rep
                 template_data["comment"] = None
@@ -76,59 +80,145 @@ class NukeSubmitDeadline(pyblish.api.InstancePlugin):
                 template_filled = anatomy_filled["publish"]["path"]
                 script_path = os.path.normpath(template_filled)
 
-                self.log.info(
-                    "Using published scene for render {}".format(script_path)
-                )
+                self.log.info(f"Using published scene for render {script_path}")
 
-        response = self.payload_submit(
-            instance,
-            script_path,
-            render_path,
-            node.name(),
-            submit_frame_start,
-            submit_frame_end
-        )
-        # Store output dir for unified publisher (filesequence)
+        # response = self.payload_submit(
+        #     instance,
+        #     script_path,
+        #     render_path,
+        #     node.name(),
+        #     submit_frame_start,
+        #     submit_frame_end
+        # )
+
+        response = self.create_fake_deadline_job(instance, render_path)
+
         instance.data["deadlineSubmissionJob"] = response.json()
         instance.data["outputDir"] = os.path.dirname(
             render_path).replace("\\", "/")
         instance.data["publishJobState"] = "Suspended"
 
-        if instance.data.get("bakingNukeScripts"):
-            for baking_script in instance.data["bakingNukeScripts"]:
-                render_path = baking_script["bakeRenderPath"]
-                script_path = baking_script["bakeScriptPath"]
-                exe_node_name = baking_script["bakeWriteNodeName"]
+        self.redefine_families(instance, families)
 
-                resp = self.payload_submit(
-                    instance,
-                    script_path,
-                    render_path,
-                    exe_node_name,
-                    submit_frame_start,
-                    submit_frame_end,
-                    response.json()
-                )
+    def create_fake_deadline_job( self, instance, render_path):
+        """Creates a Deadline job that creates an image at $home/deleteme_image.bmp''"""
+        args = [
+            "Add-Type -AssemblyName System.Drawing",
+            "$filename = \\<QUOTE><PLACEHOLDER_FILE>\\<QUOTE>",
+            "$bmp = new-object System.Drawing.Bitmap 250,61",
+            "$font = new-object System.Drawing.Font Consolas,24",
+            "$brushBg = [System.Drawing.Brushes]::Yellow, [System.Drawing.Brushes]::Blue, [System.Drawing.Brushes]::Orange, [System.Drawing.Brushes]::Green, [System.Drawing.Brushes]::Red | Get-Random",
+            "$brushFg = [System.Drawing.Brushes]::Black",
+            "$graphics = [System.Drawing.Graphics]::FromImage($bmp)",
+            "$graphics.FillRectangle($brushBg,0,0,$bmp.Width,$bmp.Height)",
+            "$graphics.DrawString('22Dogs',$font,$brushFg,10,10)",
+            "$graphics.Dispose()",
+            "$bmp.Save($filename)",
+            # "Invoke-Item $filename",
+            "Write-Host \\<QUOTE>Image created at $filename\\<QUOTE>",
+            "if (![System.IO.File]::Exists(\\<QUOTE><PLACEHOLDER_FILE>\\<QUOTE>)){Write-Warning \\<QUOTE>File does not exist\\<QUOTE>}"
+        ]
 
-                # Store output dir for unified publisher (filesequence)
-                instance.data["deadlineSubmissionJob"] = resp.json()
-                instance.data["publishJobState"] = "Suspended"
+        render_dir = os.path.normpath(os.path.dirname(render_path))
 
-                # add to list of job Id
-                if not instance.data.get("bakingSubmissionJobs"):
-                    instance.data["bakingSubmissionJobs"] = []
+        output_filename_0 = self.preview_fname(render_dir)
 
-                instance.data["bakingSubmissionJobs"].append(
-                    resp.json()["_id"])
+        # render_dir = Path.home().as_posix()
+        # output_filename_0 = render_dir + "/foo.bmp"
 
-        # redefinition of families
-        if "render.farm" in families:
-            instance.data['family'] = 'write'
-            families.insert(0, "render2d")
-        elif "prerender.farm" in families:
-            instance.data['family'] = 'write'
-            families.insert(0, "prerender")
-        instance.data["families"] = families
+        chunk_size = instance.data["deadlineChunkSize"] or self.chunk_size
+        concurrent_tasks = instance.data["deadlineConcurrentTasks"] or self.concurrent_tasks
+        priority = instance.data["deadlinePriority"] or self.priority
+        arguments = "<QUOTE>" + ";".join(args) + "<QUOTE>"
+        expected_file = output_filename_0 + ".1001.bmp"
+        arguments = arguments.replace("<PLACEHOLDER_FILE>", expected_file)
+        payload = {
+            "JobInfo": {
+                "BatchName": "OP Test for gather and publish in Deadline",
+                "Name": "Test publish for OP",
+                "UserName": self._deadline_user,
+                "Priority": priority,
+                "ChunkSize": chunk_size,
+                "ConcurrentTasks": concurrent_tasks,
+                "Department": self.department,
+                "Pool": instance.data.get("primaryPool"),
+                "SecondaryPool": instance.data.get("secondaryPool"),
+                "Group": self.group,
+                "Plugin": "CommandLine",
+                "Comment": self._comment,
+                "OutputFilename0": output_filename_0,
+                "Frames":"1001"
+
+            },
+            "PluginInfo": {
+                "Executable": "C:/Windows/System32/WindowsPowerShell/v1.0/powershell.exe",
+                "Arguments": arguments,
+            },
+
+            "AuxFiles": [] # Mandatory for Deadline, may be empty
+        }
+
+        # Include critical environment variables with submission
+        keys = [
+            "PYTHONPATH",
+            "PATH",
+            "AVALON_PROJECT",
+            "AVALON_ASSET",
+            "AVALON_TASK",
+            "AVALON_APP_NAME",
+            "FTRACK_API_KEY",
+            "FTRACK_API_USER",
+            "FTRACK_SERVER",
+            "PYBLISHPLUGINPATH",
+            "NUKE_PATH",
+            "TOOL_ENV",
+            "FOUNDRY_LICENSE",
+            "OPENPYPE_VERSION"
+        ]
+        # Add mongo url if it's enabled
+        if instance.context.data.get("deadlinePassMongoUrl"):
+            keys.append("OPENPYPE_MONGO")
+
+        # add allowed keys from preset if any
+        if self.env_allowed_keys:
+            keys += self.env_allowed_keys
+
+        environment = dict({key: os.environ[key] for key in keys
+                            if key in os.environ}, **legacy_io.Session)
+
+        for _path in os.environ:
+            if _path.lower().startswith('openpype_'):
+                environment[_path] = os.environ[_path]
+
+        # to recognize job from PYPE for turning Event On/Off
+        environment["OPENPYPE_RENDER_JOB"] = "1"
+
+        # finally search replace in values of any key
+        if self.env_search_replace_values:
+            for key, value in environment.items():
+                for _k, _v in self.env_search_replace_values.items():
+                    environment[key] = value.replace(_k, _v)
+
+        payload["JobInfo"].update({
+            f"EnvironmentKeyValue{index}": f"{key}={environment[key]}"
+            for index, key in enumerate(environment)
+        })
+
+        plugin = payload["JobInfo"]["Plugin"]
+        self.log.info("using render plugin : {}".format(plugin))
+
+        self.log.info("Submitting..")
+        self.log.info(json.dumps(payload, indent=4, sort_keys=True))
+
+        instance.data["expectedFiles"] = [Path(expected_file).name]
+        self.log.debug(f"__ expectedFiles: `{instance.data['expectedFiles']}`")
+        response = requests.post(self.deadline_url, json=payload, timeout=10)
+
+        if not response.ok:
+            raise Exception(response.text)
+
+        return response
+
 
     def payload_submit(
         self,
@@ -138,7 +228,7 @@ class NukeSubmitDeadline(pyblish.api.InstancePlugin):
         exe_node_name,
         start_frame,
         end_frame,
-        responce_data=None
+        response_data=None
     ):
         render_dir = os.path.normpath(os.path.dirname(render_path))
         script_name = os.path.basename(script_path)
@@ -146,8 +236,8 @@ class NukeSubmitDeadline(pyblish.api.InstancePlugin):
 
         output_filename_0 = self.preview_fname(render_path)
 
-        if not responce_data:
-            responce_data = {}
+        if not response_data:
+            response_data = {}
 
         try:
             # Ensure render folder exists
@@ -155,66 +245,37 @@ class NukeSubmitDeadline(pyblish.api.InstancePlugin):
         except OSError:
             pass
 
-        # define chunk and priority
-        chunk_size = instance.data["deadlineChunkSize"]
-        if chunk_size == 0 and self.chunk_size:
-            chunk_size = self.chunk_size
-
-        # define chunk and priority
-        concurrent_tasks = instance.data["deadlineConcurrentTasks"]
-        if concurrent_tasks == 0 and self.concurrent_tasks:
-            concurrent_tasks = self.concurrent_tasks
-
-        priority = instance.data["deadlinePriority"]
-        if not priority:
-            priority = self.priority
-
-        # resolve any limit groups
-        limit_groups = self.get_limit_groups()
-        self.log.info("Limit groups: `{}`".format(limit_groups))
+        chunk_size = instance.data["deadlineChunkSize"] or self.chunk_size
+        concurrent_tasks = instance.data["deadlineConcurrentTasks"] or self.concurrent_tasks
+        priority = instance.data["deadlinePriority"] or self.priority
 
         payload = {
             "JobInfo": {
-                # Top-level group name
-                "BatchName": script_name,
+                "BatchName": script_name, # Top-level group name
 
                 # Asset dependency to wait for at least the scene file to sync.
                 # "AssetDependency0": script_path,
 
-                # Job name, as seen in Monitor
-                "Name": jobname,
-
-                # Arbitrary username, for visualisation in Monitor
+                "Name": jobname, # Job name, as seen in Monitor
                 "UserName": self._deadline_user,
-
                 "Priority": priority,
                 "ChunkSize": chunk_size,
                 "ConcurrentTasks": concurrent_tasks,
-
                 "Department": self.department,
-
                 "Pool": instance.data.get("primaryPool"),
                 "SecondaryPool": instance.data.get("secondaryPool"),
                 "Group": self.group,
-
                 "Plugin": "Nuke",
-                "Frames": "{start}-{end}".format(
-                    start=start_frame,
-                    end=end_frame
-                ),
+                "Frames": f"{start_frame}-{end_frame}",
                 "Comment": self._comment,
 
                 # Optional, enable double-click to preview rendered
                 # frames from Deadline Monitor
                 "OutputFilename0": output_filename_0.replace("\\", "/"),
 
-                # limiting groups
-                "LimitGroups": ",".join(limit_groups)
-
             },
             "PluginInfo": {
-                # Input
-                "SceneFile": script_path,
+                "SceneFile": script_path, # input
 
                 # Output directory and filename
                 "OutputFilePath": render_dir.replace("\\", "/"),
@@ -227,22 +288,18 @@ class NukeSubmitDeadline(pyblish.api.InstancePlugin):
                 "ProjectPath": script_path,
                 "AWSAssetFile0": render_path,
 
-                # using GPU by default
-                "UseGpu": self.use_gpu,
-
-                # Only the specific write node is rendered.
-                "WriteNode": exe_node_name
+                "UseGpu": self.use_gpu, # using GPU by default
+                "WriteNode": exe_node_name # Only the specific write node is rendered.
             },
 
-            # Mandatory for Deadline, may be empty
-            "AuxFiles": []
+            "AuxFiles": [] # Mandatory for Deadline, may be empty
         }
 
-        if responce_data.get("_id"):
+        if response_data.get("_id"):
             payload["JobInfo"].update({
                 "JobType": "Normal",
-                "BatchName": responce_data["Props"]["Batch"],
-                "JobDependency0": responce_data["_id"],
+                "BatchName": response_data["Props"]["Batch"],
+                "JobDependency0": response_data["_id"],
                 "ChunkSize": 99999999
             })
 
@@ -360,8 +417,8 @@ class NukeSubmitDeadline(pyblish.api.InstancePlugin):
         start_frame,
         end_frame
     ):
-        """ Create expected files in instance data
-        """
+        """ Create expected files in instance data """
+
         if not instance.data.get("expectedFiles"):
             instance.data["expectedFiles"] = []
 
@@ -384,27 +441,20 @@ class NukeSubmitDeadline(pyblish.api.InstancePlugin):
             instance.data["expectedFiles"].append(
                 os.path.join(dirname, (file % i)).replace("\\", "/"))
 
-    def get_limit_groups(self):
-        """Search for limit group nodes and return group name.
-        Limit groups will be defined as pairs in Nuke deadline submitter
-        presents where the key will be name of limit group and value will be
-        a list of plugin's node class names. Thus, when a plugin uses more
-        than one node, these will be captured and the triggered process
-        will add the appropriate limit group to the payload jobinfo attributes.
-        Returning:
-            list: captured groups list
-        """
-        captured_groups = []
-        for lg_name, list_node_class in self.limit_groups.items():
-            for node_class in list_node_class:
-                for node in nuke.allNodes(recurseGroups=True):
-                    # ignore all nodes not member of defined class
-                    if node.Class() not in node_class:
-                        continue
-                    # ignore all disabled nodes
-                    if node["disable"].value():
-                        continue
-                    # add group name if not already added
-                    if lg_name not in captured_groups:
-                        captured_groups.append(lg_name)
-        return captured_groups
+    @staticmethod
+    def redefine_families(instance, families):
+        """This method changes the family into 'write' for nuke so it is that
+        it is not recogniced by following plugins and thus they are turned off."""
+
+
+        if "render.farm" in families:
+            instance.data['family'] = 'write'
+            families.insert(0, "render2d")
+        elif "prerender.farm" in families:
+            instance.data['family'] = 'write'
+            families.insert(0, "prerender")
+        elif "gather.farm" in families:
+            instance.data['family'] = 'write'
+            families.insert(0, "gather")
+
+        instance.data["families"] = families
