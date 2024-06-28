@@ -434,7 +434,7 @@ def process_thumb(node, data):
 
 if __name__ == "__main__":
 
-    json_path = ARGS[1]
+    json_path = ARGS[-1]
 
     with open(json_path,"r") as data_json:
         data = json.loads(data_json.read())
