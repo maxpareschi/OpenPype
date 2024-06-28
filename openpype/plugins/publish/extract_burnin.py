@@ -42,6 +42,7 @@ class ExtractBurnin(publish.Extractor):
         "shell",
         "hiero",
         "premiere",
+        "houdini",
         "traypublisher",
         "standalonepublisher",
         "harmony",
