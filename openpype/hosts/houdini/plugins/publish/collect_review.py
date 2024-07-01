@@ -24,7 +24,7 @@ class CollectHoudiniReviewData(pyblish.api.InstancePlugin):
         instance.data["fps"] = instance.context.data["fps"]
 
         # Enable ftrack functionality
-        instance.data.setdefault("families", []).append('ftrack')
+        # instance.data.setdefault("families", []).append('ftrack')
 
         # Get the camera from the rop node to collect the focal length
         ropnode_path = instance.data["instance_node"]
@@ -66,6 +66,4 @@ class CollectHoudiniReviewData(pyblish.api.InstancePlugin):
         burnin_members["focalLength"] = focal_length
 
         self.log.debug(json.dumps(instance.data, indent=4, default=str))
-        import os
-        self.log.debug(json.dumps({k: v for k, v in os.environ.items()}, indent=4, default=str))
 

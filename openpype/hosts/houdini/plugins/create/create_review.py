@@ -60,9 +60,7 @@ class CreateHoudiniReview(plugin.HoudiniCreator):
     def create (self, subset_name, instance_data, pre_create_data):
 
         instance_data.pop("active", None)
-        if not instance.data.get("families", None):
-            instance.data["families"] = []
-        instance.data["families"].append("review")
+        instance_data["families"] = ["review"]
         instance_data.update({"node_type": "opengl"})
         instance_data["image_format"] = pre_create_data.get("image_format")
         instance_data["keep_images"] = pre_create_data.get("keep_images")

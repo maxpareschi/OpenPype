@@ -73,4 +73,14 @@ class ExtractHoudiniReview(publish.Extractor):
             #instance.data["representations"] = []
         instance.data["representations"].append(representation)
 
+        thumb_repre = {
+            "name": "thumbnail",
+            "ext": instance.data["image_format"],
+            "files": file_names[len(file_names)//2],
+            "stagingDir": staging_dir,
+            "tags": ["thumbnail"],
+            "thumbnail": True
+        }
+        instance.data["representations"].append(thumb_repre)
+
         self.log.debug(json.dumps(instance.data, indent=4, default=str))
