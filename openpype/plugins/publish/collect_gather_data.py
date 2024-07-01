@@ -74,7 +74,14 @@ class CollectGatherData(pyblish.api.InstancePlugin):
                 "gather.farm",
                 "publish_on_farm"
             ])
-            instance.data["farm"] = True
+
+
+            instance.data["farm"] = False # Juan: if we set this to true, the integrate.py
+            # will not add keys to the context such as the expected gather files
+            # which are needed to create the publish process so we keep
+            # this as False, and set it up to True in "submit_gather_deadline.py"
+
+
             self.log.debug("Instance 'families': '{}'".format(
                 instance.data["families"]
             ))
