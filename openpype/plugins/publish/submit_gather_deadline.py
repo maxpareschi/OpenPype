@@ -49,7 +49,13 @@ class GatherSubmitDeadline(pyblish.api.InstancePlugin):
         legacy_io.Session["AVALON_TASK"] = instance.data['task']
         legacy_io.Session["AVALON_ASSET"] = instance.data['asset']
 
-        batch = f"{instance.data['asset']}_{instance.data['task']}_{instance.data['subset']}"
+        from pprint import pformat
+
+        self.log.info(pformat(instance.data))
+
+        batch = f"{instance.data['project']} - {instance.data['asset']} - "
+        batch += f"{instance.data['task']} - {instance.data['subset']} - "
+        batch += f"v{instance.data['version']:03}"
         instance.data["deadlineSubmissionJob"] = {
             "Props" : {
                 "Batch": batch,
