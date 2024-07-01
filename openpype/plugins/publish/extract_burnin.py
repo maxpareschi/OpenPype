@@ -334,10 +334,17 @@ class ExtractBurnin(publish.Extractor):
                 args.append(temporary_json_filepath)
                 self.log.debug("Executing: {}".format(" ".join(args)))
 
+                new_env = os.environ.copy()
+                new_env["PATH"] = os.pathsep.join([e for e in new_env["PATH"] if e.lower().find("hou") < 0])
+                if os.environ.get("PYTHONPATH"):
+                    new_env["PYTHONPATH"] = os.pathsep.join([e for e in new_env["PYTHONPATH"] if e.lower().find("hou") < 0])
+                if os.environ.get("PYTHONHOME"):
+                    new_env.pop("PYTHONHOME", None)
+
                 # Run burnin script
                 process_kwargs = {
                     "logger": self.log,
-                    "env": {}
+                    "env": new_env
                 }
                 if platform.system().lower() == "windows":
                     process_kwargs["creationflags"] = CREATE_NO_WINDOW
