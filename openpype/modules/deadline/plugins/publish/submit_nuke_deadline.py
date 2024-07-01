@@ -130,6 +130,8 @@ class NukeSubmitDeadline(pyblish.api.InstancePlugin):
             families.insert(0, "prerender")
         instance.data["families"] = families
 
+        self.log.debug(json.dumps(instance.data, ))
+
     def payload_submit(
         self,
         instance,

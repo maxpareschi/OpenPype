@@ -553,8 +553,9 @@ class ExtractTemplatedTranscode(publish.Extractor):
         
         env = copy.deepcopy(os.environ)
         env["PYTHONPATH"] = os.pathsep.join(sorted(list(set(env["PYTHONPATH"].split(";")))))
-        env["PYTHONPATH"] = env["PYTHONPATH"] + os.pathsep + os.path.dirname(str(nuke_app.find_executable())).replace("\\", "/") + "/plugins"
-        env["PATH"] = env["PATH"] + os.pathsep + os.path.dirname(str(nuke_app.find_executable())).replace("\\", "/") + "/plugins"
+        env["PYTHONPATH"] = os.path.dirname(str(nuke_app.find_executable())).replace("\\", "/") + "/plugins" + os.pathsep + env["PYTHONPATH"]
+        env["PYTHONHOME"] = os.path.dirname(nukepy)
+        env["PATH"] = os.path.dirname(str(nuke_app.find_executable())).replace("\\", "/") + "/plugins" + os.pathsep + env["PATH"]
         env.update({
             "project_name": data["project"]["name"],
             "asset_name": data["asset"],

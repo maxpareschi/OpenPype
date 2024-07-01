@@ -709,8 +709,6 @@ class ExtractSlateGlobal(publish.Extractor):
             "passing"
         ]
 
-        self.log.debug(json.dumps(instance.data["representations"], indent=4, default=str))
-
         slate_data = instance.data[self._slate_data_name]
 
         self.log.debug("Base comment: {}".format(
@@ -928,7 +926,7 @@ class ExtractSlateGlobal(publish.Extractor):
             # Data Layout and preparation in instance
             slate_repre_data = slate_data["slate_repre_data"][repre["name"]] = {
                 "family_match": repre_match or "",
-                "frameStart": int(repre["frameStart"]),
+                "frameStart": int(frame_start) + 1,
                 "frameEnd": frame_end,
                 "real_frameStart": frame_start,
                 "resolution_width": int(resolution["width"]),
