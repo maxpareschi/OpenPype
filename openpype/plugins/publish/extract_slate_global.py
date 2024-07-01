@@ -709,8 +709,6 @@ class ExtractSlateGlobal(publish.Extractor):
             "passing"
         ]
 
-        self.log.debug(json.dumps(instance.data["representations"], indent=4, default=str))
-
         slate_data = instance.data[self._slate_data_name]
 
         self.log.debug("Base comment: {}".format(
