@@ -118,10 +118,10 @@ class ProcessSubmittedJobOnFarm(pyblish.api.InstancePlugin):
 
     # fix for houdini
     hosts = ["fusion", "maya", "nuke", "celaction", "aftereffects",
-            "harmony", "houdini"]
+            "harmony", "houdini", "traypublisher"]
 
     # fix for usdrender
-    families = ["render.farm", "prerender.farm",
+    families = ["render.farm", "prerender.farm", "gather.farm",
                 "renderlayer", "imagesequence", "vrayscene", "usdrender"]
 
     # fix for houdini, is it needed?
@@ -315,8 +315,14 @@ class ProcessSubmittedJobOnFarm(pyblish.api.InstancePlugin):
             for assembly_id in instance.data["bakingSubmissionJobs"]:
                 payload["JobInfo"]["JobDependency{}".format(job_index)] = assembly_id  # noqa: E501
                 job_index += 1
-        else:
+        elif "_id" in job:
             payload["JobInfo"]["JobDependency0"] = job["_id"]
+        else: # case: gather doesn't have a prepublish job, so there is no _id
+            self.log.info(
+                "Failed to find previous job."
+                "The publish job will not depend in any other job."
+            )
+
 
         if instance.data.get("suspend_publish"):
             payload["JobInfo"]["InitialStatus"] = "Suspended"
