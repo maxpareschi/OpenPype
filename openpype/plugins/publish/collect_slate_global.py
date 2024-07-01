@@ -24,8 +24,6 @@ class CollectSlateGlobal(pyblish.api.InstancePlugin):
 
     def process(self, instance):
 
-        self.log.debug("Instance data: {}".format(json.dumps(instance.data, indent=4, default=str)))
-
         context = instance.context
         publ_settings = context.data["project_settings"]["global"]["publish"]
         version_padding = context.data["anatomy"]["templates"]["defaults"]\

@@ -37,24 +37,29 @@ class CollectHoudiniCurrentFile(pyblish.api.InstancePlugin):
 
         instance.context.data["currentFile"] = current_file
 
-        folder, file = os.path.split(current_file)
-        filename, ext = os.path.splitext(file)
+        if self.family[0] in instance.data["family"]:
+            folder, file = os.path.split(current_file)
+            filename, ext = os.path.splitext(file)
 
-        instance.data.update({
-            "setMembers": [current_file],
-            "frameStart": instance.context.data['frameStart'],
-            "frameEnd": instance.context.data['frameEnd'],
-            "handleStart": instance.context.data['handleStart'],
-            "handleEnd": instance.context.data['handleEnd']
-        })
+            instance.data.update({
+                "setMembers": [current_file],
+                "frameStart": instance.context.data['frameStart'],
+                "frameEnd": instance.context.data['frameEnd'],
+                "handleStart": instance.context.data['handleStart'],
+                "handleEnd": instance.context.data['handleEnd']
+            })
 
-        instance.data['representations'] = [{
-            'name': ext.lstrip("."),
-            'ext': ext.lstrip("."),
-            'files': file,
-            "stagingDir": folder,
-        }]
+            instance.data['representations'] = [{
+                'name': ext.lstrip("."),
+                'ext': ext.lstrip("."),
+                'files': file,
+                "stagingDir": folder,
+            }]
 
-        self.log.info('Collected instance: {}'.format(file))
-        self.log.info('Scene path: {}'.format(current_file))
-        self.log.info('staging Dir: {}'.format(folder))
+            self.log.info('Collecting for instance "{}" of family "{}"'.format(
+                instance.data["name"],
+                instance.data["family"]
+            ))
+            self.log.info('Collected instance: {}'.format(file))
+            self.log.info('Scene path: {}'.format(current_file))
+            self.log.info('staging Dir: {}'.format(folder))
