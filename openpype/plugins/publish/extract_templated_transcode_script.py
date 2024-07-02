@@ -415,7 +415,14 @@ def process_all(data):
     
 
 def process_thumb(node, data):
-    frame_number = int(data["frameEnd"] - data["frameStart"] / 2) + data["frameStart"]
+    frame_number = int(data["frameEnd"] - data["frameStart"] // 2) + data["frameStart"]
+
+    thumb_read = nuke.nodes.Read(file = node["file"].getValue())
+    thumb_read["name"].setValue("READ_THUMB")
+    thumb_read["first"].setValue(data["frameStart"])
+    thumb_read["last"].setValue(data["frameEnd"])
+    thumb_read["raw"].setValue(True)
+    
     thumb_write = nuke.nodes.Write(file = data["thumbnail_path"])
     thumb_write["name"].setValue("WRITE_THUMB")
     thumb_write["create_directories"].setValue(True)
@@ -424,7 +431,7 @@ def process_thumb(node, data):
     thumb_write["last"].setValue(frame_number)
     thumb_write["raw"].setValue(True)
     thumb_write["file_type"].setValue("jpg")
-    thumb_write.setInput(0, node)
+    thumb_write.setInput(0, thumb_read)
     
     if thumb_write:
         nuke.execute(thumb_write, start=frame_number, end=frame_number)
