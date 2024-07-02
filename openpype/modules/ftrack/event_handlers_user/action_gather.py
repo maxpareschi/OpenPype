@@ -172,7 +172,11 @@ class GatherAction(BaseAction):
         for file in repre["files"]:
             files.append(file["path"].format(**repre["context"]))
         version_start = int(version["data"]["frameStart"]) - int(version["data"]["handleStart"])
-        detected_startframe = re.findall(r'\d+$', os.path.splitext(files[0])[0])
+        basename = str(os.path.splitext(files[0])[0])
+        detected_startframe = re.findall(r'\d+$', basename)
+        str_index = basename.find(detected_startframe[0])
+        if basename[str_index-1] == "v":
+            detected_startframe = None
         if detected_startframe:
             repre_start = int(detected_startframe[0])
         else:
@@ -371,6 +375,12 @@ class GatherAction(BaseAction):
 
         if task_info["name"] == "":
             task_info["name"] = task_info["type"].lower()
+        
+        if isinstance(repre_files, list):
+            self.log.debug(repre_files)
+            ext = os.path.splitext(repre_files[0])[-1].replace(".", "")
+        else:
+            ext = os.path.splitext(repre_files)[-1].replace(".", "")
 
         gather_instance = {
             "project": project_name,
@@ -385,7 +395,7 @@ class GatherAction(BaseAction):
             "gather_assetversion_name": computed_assetversion_name,
             "gather_representation_name": repre_doc["name"],
             "gather_representation_files": repre_files,
-            "gather_representation_ext": os.path.splitext(repre_files[0])[-1].replace(".", ""),
+            "gather_representation_ext": ext,
             "gather_asset_name": asset_name + gather_suffix,
             "gather_task_id": str(version["task_id"]) if str(version["task_id"]) != "NOT_SET" else None,
             "gather_ftrack_source_id": version["id"],
