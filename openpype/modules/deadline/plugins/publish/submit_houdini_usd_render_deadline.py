@@ -1,5 +1,6 @@
 import os
 import sys
+import shutil
 import json
 import getpass
 import re
@@ -12,7 +13,12 @@ from pyblish.plugin import Instance
 import hou # type: ignore
 
 from openpype.pipeline import legacy_io
-from openpype.hosts.houdini.api.lib import render_rop
+# from openpype.hosts.houdini.api.lib import render_rop
+
+from openpype.hosts.houdini.api import (
+    HOUDINI_USD_SUBMISSION_SCRIPT,
+    create_intermediate_usd
+)
 
 class houdiniSubmitUSDRenderDeadline(pyblish.api.InstancePlugin):
     """Submit Solaris USD Render ROPs to Deadline.
@@ -53,27 +59,6 @@ class houdiniSubmitUSDRenderDeadline(pyblish.api.InstancePlugin):
     # env_search_replace_values = {}
 
     def process(self, instance):
-
-        ttd_scripts_dir = os.environ.get("TTD_STUDIO_PIPELINE_SCRIPTS", None)
-        self.log.debug(ttd_scripts_dir)
-        if not ttd_scripts_dir or not os.path.isdir(ttd_scripts_dir):
-            raise OSError("No script path defined with 'TTD_STUDIO_PIPELINE_SCRIPTS'")
-        
-        module_name = os.path.basename(ttd_scripts_dir)
-        script_file = os.path.join(ttd_scripts_dir, "__init__.py")
-        
-        import importlib.util
-        spec = importlib.util.spec_from_file_location(module_name, script_file)
-        ttd_module = importlib.util.module_from_spec(spec)
-        sys.modules[module_name] = ttd_module
-        spec.loader.exec_module(ttd_module)
-
-        from ttd_scripts import (
-            create_intermediate_usd,
-            HOUDINI_USD_SUBMISSION_SCRIPT
-        )
-
-        
 
         instance.data["toBeRenderedOn"] = "deadline"
         node = hou.node(instance.data["instance_node"])
@@ -286,9 +271,18 @@ class houdiniSubmitUSDRenderDeadline(pyblish.api.InstancePlugin):
             intermediate_payload["JobInfo"].pop("OutputFilename0")
             intermediate_payload["JobInfo"]["Name"] += "_intermediate"
 
+            submission_script = os.path.abspath(os.path.normpath(
+                os.path.join(staging_dir,
+                             os.path.basename(HOUDINI_USD_SUBMISSION_SCRIPT))
+            ))
+
+            shutil.copy2(HOUDINI_USD_SUBMISSION_SCRIPT, submission_script)
+            if not os.path.isfile(submission_script):
+                raise OSError("Submission script was not copied!")
+
             args = "\" \"".join(
                 (
-                    HOUDINI_USD_SUBMISSION_SCRIPT,
+                    submission_script,
                     current_file,
                     node.path(),
                     hou_usd_path,

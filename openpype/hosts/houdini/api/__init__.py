@@ -16,6 +16,11 @@ from .lib import (
     maintained_selection
 )
 
+from .usd_render_intermediate import (
+    HOUDINI_USD_SUBMISSION_SCRIPT,
+    create_intermediate_usd
+)
+
 
 __all__ = [
     "HoudiniHost",
@@ -30,5 +35,8 @@ __all__ = [
     "lsattrs",
     "read",
 
-    "maintained_selection"
+    "maintained_selection",
+
+    "HOUDINI_USD_SUBMISSION_SCRIPT",
+    "create_intermediate_usd"
 ]
