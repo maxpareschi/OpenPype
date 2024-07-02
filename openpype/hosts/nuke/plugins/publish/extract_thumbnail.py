@@ -24,7 +24,7 @@ class ExtractThumbnail(publish.Extractor):
     order = pyblish.api.ExtractorOrder + 0.011
     label = "Extract Thumbnail"
 
-    families = ["review"]
+    families = ["review", "still"]
     hosts = ["nuke"]
 
     # settings
