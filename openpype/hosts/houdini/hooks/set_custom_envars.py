@@ -19,5 +19,6 @@ class SetCustomEnvVars(PreLaunchHook):
 
     def execute(self):
         update_application_launch_ctx(self.launch_context)
-        env = self.launch_context.env
-        print(f"Adding env var SFSTART: {env['SFSTART']} and SFEND: {env['SFEND']}")
+        start = self.launch_context.env['SFSTART']
+        end = self.launch_context.env['SFEND']
+        self.log.debug(f"Adding env var SFSTART: {start} and SFEND: {end}")
