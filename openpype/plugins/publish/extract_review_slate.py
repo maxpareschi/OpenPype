@@ -87,6 +87,11 @@ class ExtractReviewSlate(publish.Extractor):
             p_tags = repre.get("tags", [])
             if "slate-frame" not in p_tags:
                 continue
+            
+            tailslate = False
+            if "tail-slate" in p_tags:
+                tailslate = True
+                self.log.debug("Slate is set at tail!")
 
             # get repre file
             stagingdir = repre["stagingDir"]
@@ -208,6 +213,9 @@ class ExtractReviewSlate(publish.Extractor):
                 self.log.debug("Slate Timecode: `{}`".format(
                     offset_timecode
                 ))
+            
+            if tailslate:
+                offset_timecode = input_timecode
 
             if use_legacy_code:
                 format_args = []
@@ -343,8 +351,8 @@ class ExtractReviewSlate(publish.Extractor):
             concat_args = [
                 ffmpeg_path,
                 "-y",
-                "-i", slate_v_path,
-                "-i", input_path,
+                "-i", input_path if tailslate else slate_v_path,
+                "-i", slate_v_path if tailslate else input_path,
             ]
             concat_args.extend(fmap)
             if offset_timecode:
@@ -363,7 +371,7 @@ class ExtractReviewSlate(publish.Extractor):
             if source_ffmpeg_cmd:
                 copy_args = (
                     "-metadata",
-                    "-metadata:s:v:0",
+                    "-metadata:s:v:1" if tailslate else "-metadata:s:v:0",
                     "-b:v",
                     "-b:a",
                 )

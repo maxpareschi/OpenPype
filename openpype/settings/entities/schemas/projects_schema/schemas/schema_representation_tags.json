@@ -30,6 +30,9 @@
         },
         {
             "no-audio": "Do not add audio"
+        },
+        {
+            "tail-slate": "Move slate to tail"
         }
     ]
 }

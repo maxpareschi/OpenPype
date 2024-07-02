@@ -184,9 +184,9 @@ class SlateCreator:
 
         self.data = copy.deepcopy(data)
 
-        self.log.debug(
-            "Data: '{}'".format(json.dumps(self.data, indent=4, default=str))
-        )
+        # self.log.debug(
+        #     "Data: '{}'".format(json.dumps(self.data, indent=4, default=str))
+        # )
 
     def set_resolution(self, width, height):
         """
@@ -214,7 +214,7 @@ class SlateCreator:
             else:
                 self.env[k] = v
 
-        self.log.debug("Env: '{}'".format(self.env))
+        # self.log.debug("Env: '{}'".format(self.env))
 
     def set_staging_dir(self, path, subfolder=""):
         """
@@ -686,9 +686,9 @@ class ExtractSlateGlobal(publish.Extractor):
     label = "Extract Slate Global"
     order = pyblish.api.ExtractorOrder + 0.0305
     families = [
-        "review", "review.farm",
-        "gather", "gather.farm",
-        "render", "render.farm",
+        "review",
+        "gather",
+        "render"
     ]
 
     _slate_data_name = "slateGlobal"
@@ -811,6 +811,11 @@ class ExtractSlateGlobal(publish.Extractor):
             if "review" not in repre["tags"]:
                 repre["tags"].remove("slate-frame")
 
+            # check if slate is set at tail
+            tailslate = False
+            if "tail-slate" in repre["tags"]:
+                tailslate = True
+
             # loop through repres for thumbnail
             thumbnail_path = ""
             for thumb_repre in instance.data["representations"]:
@@ -824,10 +829,15 @@ class ExtractSlateGlobal(publish.Extractor):
             isSequence = False
             check_file = repre["files"]
             if isinstance(check_file, list):
+                self.log.debug("File list: {}".format(check_file))
                 check_file.sort()
-                check_file = check_file[0]
+                if not tailslate:
+                    check_file = check_file[0]
+                else:
+                    check_file = check_file[-1]
                 isSequence = True
                 self.log.debug("Representation is a sequence.")
+                self.log.debug("Check file: {}".format(check_file))
 
             file_path = os.path.normpath(
                 os.path.join(
@@ -835,6 +845,7 @@ class ExtractSlateGlobal(publish.Extractor):
                     check_file
                 )
             )
+            self.log.debug("Full Check file: {}".format(file_path))
 
             filename = check_file.split(".")[0]
             ext = check_file.split(".")[-1]
@@ -849,12 +860,16 @@ class ExtractSlateGlobal(publish.Extractor):
 
                 frame_start = int(repre["frameStart"]) - 1
                 frame_end = len(repre["files"]) + frame_start
+                slate_frame = frame_start
+                if tailslate:
+                    slate_frame = frame_end + 1
                 output_name = "{}.{}.{}".format(
                     filename,
-                    str(frame_start).zfill(
+                    str(slate_frame).zfill(
                         int(common_data["frame_padding"])),
                     ext
                 )
+                self.log.debug("Slate Oputput path is set as: '{}'".format(output_name))
                 meta_source_name = os.path.join(
                     repre["stagingDir"],
                     "{}.{}.{}".format(
@@ -901,6 +916,15 @@ class ExtractSlateGlobal(publish.Extractor):
                 timecode = instance_timecode
             if slate_timecode:
                 timecode = slate_timecode
+
+            if tailslate:
+                slate_timecode = instance.data.get("tail_timecode", None)
+                if not slate_timecode:
+                    timecode = "99:59:59:23"
+                else:
+                    timecode = slate_timecode
+                self.log.debug("Slate is set at tail, new slate timecode is '{}'".format(slate_timecode))
+
             resolution = slate.get_resolution_ffprobe(file_path)
 
             for profile in slate_data["slate_profiles"]:
@@ -929,6 +953,7 @@ class ExtractSlateGlobal(publish.Extractor):
                 "frameStart": int(frame_start) + 1,
                 "frameEnd": frame_end,
                 "real_frameStart": frame_start,
+                "real_frameEnd": frame_end + 1,
                 "resolution_width": int(resolution["width"]),
                 "resolution_height": int(resolution["height"]),
                 "stagingDir": repre["stagingDir"],
@@ -975,8 +1000,12 @@ class ExtractSlateGlobal(publish.Extractor):
                     slate_final_path,
                     tc=timecode
                 )
-                repre["files"].insert(0, slate.data["slate_file"])
-                repre["frameStart"] = slate.data["real_frameStart"]
+                if not tailslate:
+                    repre["files"].insert(0, slate.data["slate_file"])
+                    repre["frameStart"] = slate.data["real_frameStart"]
+                else:
+                    repre["files"].append(slate.data["slate_file"])
+                    repre["frameEnd"] = slate.data["real_frameEnd"]
                 self.log.debug(
                     "Added {} to {} representation file list.".format(
                         slate.data["slate_file"],
