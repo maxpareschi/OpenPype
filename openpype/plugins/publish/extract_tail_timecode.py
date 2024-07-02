@@ -1,5 +1,6 @@
 import os
 import json
+import math
 import subprocess
 import pyblish.api
 import opentimelineio as otio
@@ -11,6 +12,16 @@ from openpype.lib import (
     get_ffmpeg_tool_path
 )
 
+def truncate(number, digits) -> float:
+    # Improve accuracy with floating point operations, to avoid truncate(16.4, 2) = 16.39 or truncate(-1.13, 2) = -1.12
+    try:
+        nbDecimals = len(str(number).split('.')[1])
+    except:
+        nbDecimals = 0
+    if nbDecimals <= digits:
+        return number
+    stepper = 10.0 ** digits
+    return math.trunc(stepper * number) / stepper
 
 class ExtractTailTimecode(publish.Extractor):
     """
@@ -110,7 +121,7 @@ class ExtractTailTimecode(publish.Extractor):
             raise ValueError
 
         default_length = int(instance.data.get(
-            "frameEndHandle", int(instance.data.get("ftrameEnd", 0)) + int(instance.data.get("handleEnd", 0))
+            "frameEndHandle", int(instance.data.get("frameEnd", 0)) + int(instance.data.get("handleEnd", 0))
         )) - int(instance.data.get(
             "frameStartHandle", int(instance.data.get("frameStart", 0)) - int(instance.data.get("handleStart", 0))
         )) + 1
@@ -148,7 +159,9 @@ class ExtractTailTimecode(publish.Extractor):
         
         self.log.debug("Final length is: {}".format(final_length))
 
-        tail_tc = self.offset_timecode(timecode, instance.data.get("fps", instance.context.data.get("fps", 24.0)), offset=final_length)
+        fps = truncate(instance.data.get("fps", instance.context.data.get("fps", 24)), 3)
+
+        tail_tc = self.offset_timecode(timecode, fps, offset=final_length)
 
         for repre in instance.data["representations"]:
             if repre["name"] is not "thumbnail":
