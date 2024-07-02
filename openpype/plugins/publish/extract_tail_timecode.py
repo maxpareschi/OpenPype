@@ -137,8 +137,12 @@ class ExtractTailTimecode(publish.Extractor):
                     length = len(repre["files"])
                     self.log.debug("Repre is a sequence, file list length is: '{}'".format(length))
                 else:
-                    length = self.get_length_ffprobe(repre["files"][0])
-                    self.log.debug("FFprobe detected length is: '{}'".format(length))
+                    try:
+                        length = self.get_length_ffprobe(repre["files"][0])
+                        self.log.debug("FFprobe detected length is: '{}'".format(length))
+                    except:
+                        self.log.debug("No length available, defaulting at 1 for still image")
+                        length = 1
                 if length:
                     if length != default_length:
                         self.log.debug("Frame range of repre is different from asset length! setting to: '{}'".format(length))
