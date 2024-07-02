@@ -35,7 +35,8 @@ class ExtractTemplatedTranscode(publish.Extractor):
     optional = True
 
     # Supported extensions
-    supported_exts = ["exr", "dpx", "jpg", "png", "cin", "mov", "mxf", "mp4"]
+    supported_exts = ["exr", "dpx", "jpg", "png", "cin", "mov", "mxf", "mp4", "tiff", "tif"]
+    movie_exts = ["mov", "mxf", "mp4"]
 
     # Configurable by Settings
     profiles = None
@@ -181,6 +182,10 @@ class ExtractTemplatedTranscode(publish.Extractor):
                 frame_start = instance.data["frameStart"]-instance.data["handleStart"]
                 frame_end = instance.data["frameEnd"]+instance.data["handleEnd"]
 
+                if not new_repre["ext"] in self.movie_exts and not isinstance(new_repre["files"], list):
+                    frame_start = 1
+                    frame_end = 1
+
                 input_is_sequence = True
 
                 if isinstance(new_repre["files"], list):
@@ -199,12 +204,12 @@ class ExtractTemplatedTranscode(publish.Extractor):
                 else:
                     expected_files = []
                     source_head, source_tail = os.path.splitext(new_repre["files"])
-                    for f in range(frame_start, frame_end):
+                    for f in range(frame_start, frame_end+1):
                         new_head = source_head
                         if new_repre.get("outputName"):
-                            new_head + '_{}'.format(new_repre["outputName"])
+                            new_head += '_{}'.format(new_repre["outputName"])
                         expected_files.append("{}.{}.{}".format(
-                            source_head,
+                            new_head,
                             f,
                             new_repre["ext"]
                         ))
@@ -288,6 +293,11 @@ class ExtractTemplatedTranscode(publish.Extractor):
                 instance.context.data["cleanupFullPaths"].append(
                     new_repre["stagingDir"])
 
+                # ensure that ["files"] is a list even if it has just one element
+                if not isinstance(new_repre["files"], list):
+                    new_repre["files"] = [new_repre["files"]]
+
+                # sort files
                 new_repre["files"] = sorted(new_repre["files"])
 
                 # If there is only 1 file outputted then convert list to
@@ -379,6 +389,8 @@ class ExtractTemplatedTranscode(publish.Extractor):
             ).replace("\\", "/")
         else:
             self.log.debug("Repre is not a sequence, single name output: '{}'".format(repre["files"]))
+            if isinstance(repre["files"], list):
+                repre["files"] = repre["files"][-1]
             head, tail = os.path.splitext(repre["files"])
             return os.path.join(
                 staging_dir, repre["files"]).replace("\\", "/"), head, "", tail, None
