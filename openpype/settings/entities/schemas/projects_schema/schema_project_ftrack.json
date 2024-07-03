@@ -302,6 +302,16 @@
                             "label": "Asset types (short)",
                             "key": "asset_types_to_skip",
                             "object_type": "text"
+                        },
+                        {
+                            "type": "label",
+                            "label": "<b>Disable<b/> event if status was changed on specific asset name with a prefix."
+                        },
+                        {
+                            "type": "list",
+                            "label": "Prefix",
+                            "key": "asset_prefix_to_skip",
+                            "object_type": "text"
                         }
                     ]
                 },
