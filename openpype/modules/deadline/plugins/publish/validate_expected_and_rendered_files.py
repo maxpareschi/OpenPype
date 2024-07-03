@@ -4,7 +4,7 @@ import requests
 import pyblish.api
 
 from openpype.lib import collect_frames
-from openpype_modules.deadline.abstract_submit_deadline import requests_get
+from openpype_modules.deadline.abstract_submit_deadline import requests_get # type: ignore
 
 
 class ValidateExpectedFiles(pyblish.api.InstancePlugin):
@@ -21,7 +21,12 @@ class ValidateExpectedFiles(pyblish.api.InstancePlugin):
 
     def process(self, instance):
         self.instance = instance
-        frame_list = self._get_frame_list(instance.data["render_job_id"])
+
+        if "gather" in instance.data["name"]:
+            frame_range = range(1001, int(instance.data["frameEndHandle"]))
+            frame_list = [str(n) for n in frame_range]
+        else:
+            frame_list = self._get_frame_list(instance.data["render_job_id"])
 
         for repre in instance.data["representations"]:
             expected_files = self._get_expected_files(repre)
@@ -82,6 +87,7 @@ class ValidateExpectedFiles(pyblish.api.InstancePlugin):
         Returns:
             (list)
         """
+        self.log.debug(f"Original job id is: {original_job_id}")
         all_frame_lists = []
         render_job_ids = os.environ.get("RENDER_JOB_IDS")
         if render_job_ids:
@@ -90,6 +96,7 @@ class ValidateExpectedFiles(pyblish.api.InstancePlugin):
             render_job_ids = [original_job_id]
 
         for job_id in render_job_ids:
+            self.log.debug(f"Working on job_id {job_id}")
             job_info = self._get_job_info(job_id)
             frame_list = job_info["Props"]["Frames"]
             if frame_list:
@@ -160,6 +167,7 @@ class ValidateExpectedFiles(pyblish.api.InstancePlugin):
         assert deadline_url, "Requires Deadline Webservice URL"
 
         url = "{}/api/jobs?JobID={}".format(deadline_url, job_id)
+        self.log.debug(f"Using deadline url: {url}")
         try:
             response = requests_get(url)
         except requests.exceptions.ConnectionError:
