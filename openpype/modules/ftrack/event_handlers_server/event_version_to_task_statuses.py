@@ -1,4 +1,4 @@
-from openpype_modules.ftrack.lib import BaseEvent
+from openpype_modules.ftrack.lib import BaseEvent # type: ignore
 
 
 class VersionToTaskStatus(BaseEvent):
@@ -77,6 +77,9 @@ class VersionToTaskStatus(BaseEvent):
             for short_name in event_settings["asset_types_to_skip"]
         ]
 
+
+        prefixes_to_skip = [tag for tag in event_settings.get("asset_prefix_to_skip", [])]
+
         # Collect entity ids
         asset_version_ids = set()
         for entity_info in entities_info:
@@ -99,6 +102,12 @@ class VersionToTaskStatus(BaseEvent):
                 short_name = asset_version["asset"]["type"]["short"].lower()
                 if short_name in asset_types_to_skip:
                     continue
+
+            if prefixes_to_skip:
+                asset_name = asset_version["asset"]["name"]
+                if any(asset_name.startswith(tag) for tag in prefixes_to_skip):
+                    continue
+
             asset_version_entities.append(asset_version)
             task_ids.add(asset_version["task_id"])
 
