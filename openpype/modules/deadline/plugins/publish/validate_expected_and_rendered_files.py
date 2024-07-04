@@ -23,7 +23,11 @@ class ValidateExpectedFiles(pyblish.api.InstancePlugin):
         self.instance = instance
 
         if "gather" in instance.data["name"]:
-            frame_range = range(1001, int(instance.data["frameEndHandle"]))
+            start = int(instance.data.get("frameStart"))
+            end = int(instance.data.get("frameEnd"))
+            handle_start = int(instance.data.get("handleStart"))
+            handle_end = int(instance.data.get("handleEnd"))
+            frame_range = range(start-handle_start, end+handle_end)
             frame_list = [str(n) for n in frame_range]
         else:
             frame_list = self._get_frame_list(instance.data["render_job_id"])

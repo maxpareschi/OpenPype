@@ -4,16 +4,14 @@ import getpass
 import pyblish.api
 
 from openpype.pipeline import legacy_io
+import copy
 
 class GatherSubmitDeadline(pyblish.api.InstancePlugin):
     """Submit gather to deadline."""
 
     label = "Submit gather to Deadline"
     order = pyblish.api.IntegratorOrder + 0.1
-    hosts = ["traypublisher"]
-    # families = ["render.farm", "prerender.farm"]
     families = ["gather.farm"]
-    # families = []
     optional = True
     targets = ["local"]
 
@@ -29,7 +27,6 @@ class GatherSubmitDeadline(pyblish.api.InstancePlugin):
 
     def process(self, instance):
         instance.data["toBeRenderedOn"] = "deadline"
-        families = instance.data["families"]
 
         context = instance.context
 
@@ -38,17 +35,21 @@ class GatherSubmitDeadline(pyblish.api.InstancePlugin):
         assert deadline_url, "Requires Deadline Webservice URL"
 
         self.deadline_url = f"{deadline_url}/api/jobs"
-        self._comment = context.data.get("comment", "")
+        self._comment = context.data.get("comment", None)
+        
+        if not str(self._comment).strip():
+            self._comment = " "
+        
+        instance.context.data["comment"] = self._comment
         self._deadline_user = context.data.get( "deadlineUser", getpass.getuser())
 
         # get output path
-        render_path = instance.data["publishDir"]
+        render_path = os.path.dirname(instance.data.get("source"))
         self.log.info(f">>>> Render path is {render_path}")
         context.data["currentFile"] = ""
 
         legacy_io.Session["AVALON_TASK"] = instance.data['task']
         legacy_io.Session["AVALON_ASSET"] = instance.data['asset']
-
 
         batch = f"{instance.data['project']} - {instance.data['asset']} - "
         batch += f"{instance.data['task']} - {instance.data['subset']} - "
@@ -58,24 +59,28 @@ class GatherSubmitDeadline(pyblish.api.InstancePlugin):
             "Props" : {
                 "Batch": batch,
                 "User": context.data.get("deadlineUser", getpass.getuser()),
-                }
+            }
         }
         
-        instance.data["farm"] = True
-        instance.data["outputDir"] = os.path.dirname(
-            render_path).replace("\\", "/")
+        instance.data["outputDir"] = os.path.normpath(render_path)
+        instance.data["gather_json_location"] = os.path.normpath(render_path)
         instance.data["publishJobState"] = "Suspended"
         instance.context.data["version"] = instance.data["version"]
 
-        for k, v in instance.data["published_representations"].items():
+        files = copy.deepcopy(instance.data["gather_representation_files"])
+
+        if isinstance(files, str):
+            files = [files]
+
+        for file in files:
             self.expected_files(
                 instance,
-                v["published_files"][0],
+                file,
                 instance.data["frameStart"],
                 instance.data["frameEnd"]
             )
 
-        self.redefine_families(instance, families)
+        instance.data["families"] = list(set(instance.data["families"]))
     
     def expected_files(
         self,
@@ -101,27 +106,13 @@ class GatherSubmitDeadline(pyblish.api.InstancePlugin):
             instance.data["expectedFiles"].append(path)
             return
 
-        if instance.data.get("slate"):
-            start_frame -= 1
+        # if instance.data.get("slate"):
+        #     start_frame -= 1
 
         for i in range(start_frame, (end_frame + 1)):
             instance.data["expectedFiles"].append(
                 os.path.join(dirname, (file % i)).replace("\\", "/"))
 
-    @staticmethod
-    def redefine_families(instance, families):
-        """This method changes the family into 'write' for nuke so it is that
-        it is not recogniced by following plugins and thus they are turned off."""
 
-        if "render.farm" in families:
-            instance.data['family'] = 'write'
-            families.insert(0, "render2d")
-        elif "prerender.farm" in families:
-            instance.data['family'] = 'write'
-            families.insert(0, "prerender")
-        elif "gather.farm" in families:
-            instance.data['family'] = 'write'
-            families.insert(0, "gather.farm")
-
-        instance.data["families"] = families
+        
 

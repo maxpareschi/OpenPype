@@ -158,6 +158,30 @@ class ProcessSubmittedJobOnFarm(pyblish.api.InstancePlugin):
     # mapping of instance properties to be transfered to new instance for every
     # specified family
     instance_transfer = {
+        "gather.farm": [
+            "project",
+            "family",
+            "subset",
+            "variant",
+            "asset",
+            "task",
+            "comment",
+            "intent",
+            "scope",
+            "gather_root_name",
+            "gather_json_location",
+            "gather_project_name",
+            "gather_project_id",
+            "gather_assetversion_name",
+            "gather_representation_name",
+            "gather_representation_files",
+            "gather_representation_ext",
+            "gather_asset_name",
+            "gather_task_id",
+            "gather_ftrack_source_id",
+            "gather_task_injection",
+            "gather_review"
+        ],
         "slate": ["slateFrames", "slate"],
         "review": ["lutPath"],
         "render2d": ["bakingNukeScripts", "version"],
@@ -165,7 +189,7 @@ class ProcessSubmittedJobOnFarm(pyblish.api.InstancePlugin):
     }
 
     # list of family names to transfer to new family if present
-    families_transfer = ["render3d", "render2d", "ftrack", "slate"]
+    families_transfer = ["render3d", "render2d", "ftrack", "slate", "review"]
     plugin_pype_version = "3.0"
 
     # script path for publish_filesequence.py
@@ -179,6 +203,9 @@ class ProcessSubmittedJobOnFarm(pyblish.api.InstancePlugin):
         # Ensure output dir exists
         output_dir = ins_data.get(
             "publishRenderMetadataFolder", ins_data["outputDir"])
+        
+        if ins_data.get("gather_json_location"):
+            output_dir = ins_data["gather_json_location"]
 
         try:
             if not os.path.isdir(output_dir):
@@ -218,33 +245,42 @@ class ProcessSubmittedJobOnFarm(pyblish.api.InstancePlugin):
 
         # instance.data.get("subset") != instances[0]["subset"]
         # 'Main' vs 'renderMain'
-        override_version = None
-        instance_version = instance.data.get("version")  # take this if exists
-        if instance_version != 1:
-            override_version = instance_version
+        instance_version = instance.data.get("version", 0)  # take this if exists
+
+        family = "render"
+        project = legacy_io.Session["AVALON_PROJECT"]
+        asset = legacy_io.Session["AVALON_ASSET"]
+        task = legacy_io.Session["AVALON_TASK"]
+        if "gather" in instance.data.get("families",[]) or "gather.farm" in instance.data.get("families",[]):
+            project = instance.data.get("gather_project_name", project)
+            asset = instance.data.get("asset", asset)
+            task = instance.data("task", task)
+            family = "gather"
+
         output_dir = self._get_publish_folder(
             instance.context.data['anatomy'],
             deepcopy(instance.data["anatomyData"]),
             instance.data.get("asset"),
             instances[0]["subset"],
-            'render',
-            override_version
+            family,
+            instance_version
         )
 
+        instance.data["outputDir"] = output_dir
+
+        metadata_path, roothless_metadata_path = self._create_metadata_path(instance)
         # Transfer the environment from the original job to this dependent
         # job so they use the same environment
-        metadata_path, roothless_metadata_path = \
-            self._create_metadata_path(instance)
-
         environment = {
-            "AVALON_PROJECT": legacy_io.Session["AVALON_PROJECT"],
-            "AVALON_ASSET": legacy_io.Session["AVALON_ASSET"],
-            "AVALON_TASK": legacy_io.Session["AVALON_TASK"],
+            "AVALON_PROJECT": project,
+            "AVALON_ASSET": asset,
+            "AVALON_TASK": task,
             "OPENPYPE_USERNAME": instance.context.data["user"],
             "OPENPYPE_PUBLISH_JOB": "1",
             "OPENPYPE_RENDER_JOB": "0",
             "OPENPYPE_REMOTE_JOB": "0",
-            "OPENPYPE_LOG_NO_COLORS": "1"
+            "OPENPYPE_LOG_NO_COLORS": "0",
+            # "OPENPYPE_FARM_JSON_PATH": metadata_path
         }
 
         # add environments from self.environ_keys
@@ -273,6 +309,9 @@ class ProcessSubmittedJobOnFarm(pyblish.api.InstancePlugin):
             "--targets", "deadline",
             "--targets", "farm"
         ]
+
+        if instance.data.get("gather_deadline_group", None):
+            self.deadline_group = instance.data["gather_deadline_group"]
 
         # Generate the payload for Deadline submission
         payload = {
@@ -774,6 +813,8 @@ class ProcessSubmittedJobOnFarm(pyblish.api.InstancePlugin):
         family = "render"
         if "prerender" in instance.data["families"]:
             family = "prerender"
+        if "gather.farm" in instance.data["families"]:
+            family = "gather"
         families = [family]
 
         # pass review to families if marked as review
@@ -807,9 +848,8 @@ class ProcessSubmittedJobOnFarm(pyblish.api.InstancePlugin):
         }
 
         # skip locking version if we are creating v01
-        instance_version = instance.data.get("version")  # take this if exists
-        if instance_version != 1:
-            instance_skeleton_data["version"] = instance_version
+        instance_version = instance.data.get("version", 0)  # take this if exists
+        instance_skeleton_data["version"] = instance_version
 
         # transfer specific families from original instance to new render
         for item in self.families_transfer:
@@ -1089,7 +1129,7 @@ class ProcessSubmittedJobOnFarm(pyblish.api.InstancePlugin):
 
     def _get_publish_folder(self, anatomy, template_data,
                             asset, subset,
-                            family='render', version=None):
+                            family="render", version=None):
         """
             Extracted logic to pre-calculate real publish folder, which is
             calculated in IntegrateNew inside of Deadline process.
@@ -1127,13 +1167,16 @@ class ProcessSubmittedJobOnFarm(pyblish.api.InstancePlugin):
                 version = 0
 
         template_data["subset"] = subset
-        template_data["family"] = "render"
+        template_data["family"] = family
         template_data["version"] = version
 
         anatomy_filled = anatomy.format(template_data)
 
-        if "folder" in anatomy.templates["render"]:
-            publish_folder = anatomy_filled["render"]["folder"]
+        if not anatomy.templates.get(family, None):
+            family = "render"
+
+        if "folder" in anatomy.templates.get(family, []):
+            publish_folder = anatomy_filled[family]["folder"]
         else:
             # solve deprecated situation when `folder` key is not underneath
             # `publish` anatomy
@@ -1143,8 +1186,9 @@ class ProcessSubmittedJobOnFarm(pyblish.api.InstancePlugin):
                 " key underneath `publish` (in global of for project `{}`)."
             ).format(project_name))
 
-            file_path = anatomy_filled["render"]["path"]
+            file_path = anatomy_filled[family]["path"]
             # Directory
             publish_folder = os.path.dirname(file_path)
-
+        
+        self.log.debug("Json exchange for farm will be located in : '{}'".format(publish_folder))
         return publish_folder
