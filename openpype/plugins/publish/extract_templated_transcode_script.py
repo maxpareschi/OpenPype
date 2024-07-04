@@ -75,6 +75,8 @@ def transcode_template(data):
     if os.path.isfile(data["save_path"]):
         os.remove(data["save_path"])
 
+    print("\nStart Template:\n")
+
     nuke.nodePaste(data["profile_data"]["template_path"]["template"])
 
     input_node = None
@@ -99,10 +101,10 @@ def transcode_template(data):
             ))
             continue
         new_node = load_node(p["loader"].getValue(),
-                        p["subset"].getValue(),
-                        p["representation"].getValue(),
-                        data["project"],
-                        data["asset"])
+                             p["subset"].getValue(),
+                             p["representation"].getValue(),
+                             data["project"],
+                             data["asset"])
 
         for i in range(p.inputs()):
             if p.input(i):
@@ -188,10 +190,7 @@ def transcode_template(data):
     nuke.delete(input_node)
     nuke.delete(output_node)
 
-    saved = nuke.scriptSave(data["save_path"])
-
-    if not saved:
-        raise OSError("Could not save script file!")
+    print("\nEnd Template.\n")
 
     return write
 
@@ -199,6 +198,8 @@ def transcode_template(data):
 def transcode_subsetchain(data):
     if os.path.isfile(data["save_path"]):
         os.remove(data["save_path"])
+
+    print("\nStart Subset Chain:\n")
 
     node_list = []
 
@@ -280,10 +281,8 @@ def transcode_subsetchain(data):
             print("'{}' node input connected to '{}' node.".format(
                 node.name(), node_list[node_id-1].name()
             ))
-
-    saved = nuke.scriptSave(data["save_path"])
-    if not saved:
-        raise OSError("Could not save script file!")
+    
+    print("\nEnd Subset Chain.\n")
 
     return write
 
@@ -291,6 +290,8 @@ def transcode_subsetchain(data):
 def transcode_color_conversion(data):
     if os.path.isfile(data["save_path"]):
         os.remove(data["save_path"])
+
+    print("\nStart Color Conversion:\n")
 
     node_list = []
 
@@ -361,32 +362,26 @@ def transcode_color_conversion(data):
                 node.name(), node_list[node_id-1].name()
             ))
 
-    saved = nuke.scriptSave(data["save_path"])
-    if not saved:
-        raise OSError("Could not save script file!")
+    print("\nEnd Color Conversion.\n")
 
     return write
 
 
 def install_nukepy():
-    # pyblish.api.register_host("nuke")
-    print("Registering Nuke for plug-ins..")
-    # pyblish.api.register_plugin_path(PUBLISH_PATH)
+    print("Registered Nuke plug-ins..")
     register_loader_plugin_path(LOAD_PATH)
     register_creator_plugin_path(CREATE_PATH)
 
 
 def install_all():
-    print("installing loader_plugins...")
+    print("installed loader_plugins...")
     install_nukepy()
     all_loaders = get_loaders_by_name()
-    print(all_loaders)
 
 
 def process_all(data):
-    print("\nExecuting Transcode with arguments:")
-    print("\n{}".format(json.dumps(data, indent=4, default=str)))
-
+    print("Transcode with arguments:")
+    print(data)
     write_node = None
 
     root_node = nuke.root()
@@ -405,8 +400,16 @@ def process_all(data):
         write_node = transcode_color_conversion(data)
     else:
         raise ValueError("Data not valid!")
+    
+    saved = nuke.scriptSave(data["save_path"])
+    if not saved:
+        raise OSError("Could not save script file!")
 
     if write_node:
+        if write_node.knob("metadata"):
+            write_node["metadata"].setValue("all metadata")
+        if write_node.knob("noprefix"):
+            write_node["noprefix"].setValue(True)
         nuke.execute(write_node)
     else:
         raise ValueError("Can't render, invalid write node!")
@@ -415,6 +418,9 @@ def process_all(data):
     
 
 def process_thumb(node, data):
+
+    print("\nStart Thumbnail:\n")
+
     frame_number = int(data["frameEnd"] - data["frameStart"] // 2) + data["frameStart"]
 
     thumb_read = nuke.nodes.Read(file = node["file"].getValue())
@@ -438,6 +444,8 @@ def process_thumb(node, data):
     else:
         raise ValueError("Can't render, invalid write node!")
 
+    print("\nEnd Thumbnail.\n")
+
 
 if __name__ == "__main__":
 
@@ -446,9 +454,6 @@ if __name__ == "__main__":
     with open(json_path,"r") as data_json:
         data = json.loads(data_json.read())
 
-    log = open(os.path.splitext(data["save_path"])[0] + ".log", "w")
-    old_stdout = sys.stdout
-    sys.stdout = log
     
     install_all()
 
@@ -458,8 +463,5 @@ if __name__ == "__main__":
         process_thumb(main_write_node, data)
 
     nuke.scriptExit()
-
-    sys.stdout = old_stdout
-    log.close()
     
     quit()

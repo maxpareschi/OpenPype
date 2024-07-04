@@ -43,6 +43,10 @@ class ExtractTemplatedTranscode(publish.Extractor):
 
     def process(self, instance):
 
+        if instance.data.get("farm", None):
+            self.log.debug("Farm mode enabled, skipping")
+            return
+
         if not self.profiles:
             self.log.debug("No profiles present for color transcode")
             return
@@ -66,6 +70,7 @@ class ExtractTemplatedTranscode(publish.Extractor):
 
         profile = self._get_profile(instance)
         if not profile:
+            self.log.debug("No Profile found, skipping.")
             return
 
         template_format_data = self._get_template_data_format()
@@ -192,8 +197,8 @@ class ExtractTemplatedTranscode(publish.Extractor):
                     renamed_files = []
                     for file_name in orig_file_list:
                         head, _ = os.path.splitext(file_name)
-                        frame = re.findall(r'\d+$', head)[0]
-                        frame_index = head.find(frame) -1
+                        frame = re.findall(r"(\d+)", head)[-1]
+                        frame_index = str(head).rindex(frame) - 1
                         new_head = head[:frame_index]
                         if new_repre.get("outputName"):
                             new_head = new_head + '_{}'.format(new_repre["outputName"])
@@ -594,22 +599,27 @@ class ExtractTemplatedTranscode(publish.Extractor):
         self.log.debug("Json exchange file written to: {}".format(json_args))
         self.log.debug("Launcing suprocess: {}".format(" ".join(cmd)))
 
+        process_kwargs = {
+            "universal_newlines": True,
+            "start_new_session": True,
+            "env": env,
+            "bufsize": 1,
+            "stdout": subprocess.PIPE,
+            "stderr": subprocess.STDOUT
+        }
+
         process = subprocess.Popen(
             cmd,
-            # universal_newlines=True,
-            creationflags=subprocess.CREATE_NEW_CONSOLE,
-            # bufsize=1,
-            start_new_session=True,
-            env=env
+            **process_kwargs
         )
-        return_code = process.wait()
+        while process.poll() is None:
+            line = process.stdout.readline().strip("\n").strip()
+            if line and line[0] != ".":
+                self.log.debug(line)
+        
+        self.log.debug("TRANSCODE >>> END (return code: {})\n".format(process.returncode))
 
-        with open(save_log_path, "r") as log:
-            self.log.debug(log.read())
-
-        self.log.debug("TRANSCODE >>> END (return code: {})\n".format(return_code))
-
-        return return_code
+        return process.returncode
 
     def _mark_original_repre_for_deletion(self, repre, profile):
         """If new transcoded representation created, delete old."""
