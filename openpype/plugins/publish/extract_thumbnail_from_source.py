@@ -36,6 +36,11 @@ class ExtractThumbnailFromSource(pyblish.api.InstancePlugin):
     order = pyblish.api.ExtractorOrder - 0.00001
 
     def process(self, instance):
+
+        if instance.data.get("farm", None):
+            self.log.debug("Farm mode enabled, skipping")
+            return
+
         self._create_context_thumbnail(instance.context)
 
         subset_name = instance.data["subset"]

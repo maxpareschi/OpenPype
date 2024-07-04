@@ -29,6 +29,11 @@ class ExtractThumbnail(pyblish.api.InstancePlugin):
     ffmpeg_args = None
 
     def process(self, instance):
+
+        if instance.data.get("farm", None):
+            self.log.debug("Farm mode enabled, skipping")
+            return
+
         subset_name = instance.data["subset"]
         instance_repres = instance.data.get("representations")
         if not instance_repres:

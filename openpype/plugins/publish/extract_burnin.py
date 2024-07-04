@@ -77,6 +77,11 @@ class ExtractBurnin(publish.Extractor):
     options = None
 
     def process(self, instance):
+
+        if instance.data.get("farm", None):
+            self.log.debug("Farm mode enabled, skipping")
+            return
+
         if not self.profiles:
             self.log.warning("No profiles present for create burnin")
             return

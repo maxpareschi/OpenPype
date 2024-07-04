@@ -695,6 +695,10 @@ class ExtractSlateGlobal(publish.Extractor):
 
     def process(self, instance):
 
+        if instance.data.get("farm", None):
+            self.log.debug("Farm mode enabled, skipping")
+            return
+
         if self._slate_data_name not in instance.data:
             self.log.warning("Slate Global workflow is not active, \
                 skipping Global slate extraction...")
@@ -816,6 +820,24 @@ class ExtractSlateGlobal(publish.Extractor):
             if "tail-slate" in repre["tags"]:
                 tailslate = True
 
+            if repre["ext"] in ["jpg", "mov", "png", "mp4", "mxf"]:
+                colorspace = "Output - Rec.709"
+            else:
+                if instance.data.get("colorspace", None):
+                    colorspace = instance.data["colorspace"]
+                else:
+                    colorspace = "ACES - ACEScg"
+            
+            colorspace = colorspace.replace(
+                    "Input - ", ""
+                ).replace(
+                    "Output - ", ""
+                ).replace(
+                    "ACES - ", ""
+                ).replace(
+                    "Utility - ", ""
+                )
+
             # loop through repres for thumbnail
             thumbnail_path = ""
             for thumb_repre in instance.data["representations"]:
@@ -887,6 +909,10 @@ class ExtractSlateGlobal(publish.Extractor):
                 if is_linear:
                     thumb_out_args=["--colorconvert", "linear", "Rec709"]
                 
+                slate.data.update({
+                    "colorspace": colorspace
+                })
+                
                 slate.render_image_oiio(
                     file_path.replace("\\", "/"),
                     thumbnail_path,
@@ -946,7 +972,6 @@ class ExtractSlateGlobal(publish.Extractor):
                     "\"{}\"".format(timecode)
                 ])
 
-
             # Data Layout and preparation in instance
             slate_repre_data = slate_data["slate_repre_data"][repre["name"]] = {
                 "family_match": repre_match or "",
@@ -959,7 +984,8 @@ class ExtractSlateGlobal(publish.Extractor):
                 "stagingDir": repre["stagingDir"],
                 "slate_file": output_name,
                 "thumbnail": thumbnail_path,
-                "timecode": timecode
+                "timecode": timecode,
+                "colorspace": colorspace
             }
             slate.data.update(slate_repre_data)
             slate.data.update(oiio_profile)
