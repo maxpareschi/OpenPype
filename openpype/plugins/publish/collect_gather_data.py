@@ -1,4 +1,6 @@
 from copy import deepcopy
+import json
+import os
 
 import pyblish.api
 
@@ -13,9 +15,7 @@ class CollectGatherData(pyblish.api.InstancePlugin):
     """
     label = "Collect for Delivery/Gather data"
     order = pyblish.api.CollectorOrder + 0.489999
-    families = [
-        "gather"
-    ]
+    families = ["gather"]
 
     def get_formatted_task(self, instance):
         self.log.debug("inferring task from publisher options...")
@@ -61,27 +61,28 @@ class CollectGatherData(pyblish.api.InstancePlugin):
             return None
 
     def process(self, instance):
-        import json
         context = instance.context
+        instance.data["farm"] = False
 
-        publish_options = context.data["publish_attributes"]        
-        gather_options = publish_options["CollectGatherOptions"]
-        self.log.debug("Gather publish options: '{}'".format(
-            json.dumps(gather_options, indent=4, default=str)))
-        
-        if gather_options["gather_on_farm"]:
-            instance.data["families"].extend([
-                "gather.farm",
-                "publish_on_farm"
-            ])
-
-
-            instance.data["farm"] = False # Juan: if we set this to true, the integrate.py
-            # will not add keys to the context such as the expected gather files
-            # which are needed to create the publish process so we keep
-            # this as False, and set it up to True in "submit_gather_deadline.py"
-
-
+        publish_options = context.data.get("publish_attributes", None)
+        if publish_options:
+            gather_options = publish_options["CollectGatherOptions"]
+            self.log.debug("Gather publish options: '{}'".format(
+                json.dumps(gather_options, indent=4, default=str)))
+            
+            if gather_options["gather_on_farm"]:
+                instance.data["gather_review"] = True
+                instance.data["farm"] = True
+                instance.data["families"].extend([
+                    "gather.farm",
+                ])
+                instance.data["priority"] = gather_options["gather_deadline_priority"]
+                instance.data["primaryPool"] = gather_options["gather_deadline_pool"]
+                instance.data["gather_deadline_group"] = gather_options["gather_deadline_group"]
+            else:
+                if "gather.farm" in instance.data.get("families", []):
+                    instance.data["families"].remove("gather.farm")
+            
             self.log.debug("Instance 'families': '{}'".format(
                 instance.data["families"]
             ))
@@ -89,6 +90,21 @@ class CollectGatherData(pyblish.api.InstancePlugin):
                 instance.data["farm"]
             ))
 
+        if instance.data.get("source", None):
+            instance.data["gather_json_location"] = os.path.normpath(
+                os.path.dirname(
+                    instance.data["source"]
+                )
+            ).replace("\\", "/")
+        elif instance.data.get("gather_representation_files"):
+            instance.data["gather_json_location"] =  os.path.normpath(
+                os.path.dirname(
+                    instance.data.get("gather_representation_files")[0]
+                )
+            ).replace("\\", "/")
+        else:
+            instance.data["gather_json_location"] = ""
+        
         gather_settings = context.data["project_settings"]["ftrack"]["user_handlers"]["gather_action"]
         
         min_version = gather_settings["min_gather_version"]
@@ -150,6 +166,15 @@ class CollectGatherData(pyblish.api.InstancePlugin):
                 version_number += int(latest_version)
         
         instance.data["version"] = version_number
+        instance.context.data["version"] = version_number
 
         self.log.debug("Computed version for gathering '{}' is '{}'".format(
             instance.data["name"], instance.data["version"]))
+        
+        if os.environ.get("OPENPYPE_FARM_JSON_PATH", None):
+            instance.context.data["cleanupFullPaths"].append(
+                os.environ["OPENPYPE_FARM_JSON_PATH"]
+            )
+            self.log.debug("This publish comes from a gather on farm job, tagging '{}' for deletion".format(
+                os.environ["OPENPYPE_FARM_JSON_PATH"]
+            ))
