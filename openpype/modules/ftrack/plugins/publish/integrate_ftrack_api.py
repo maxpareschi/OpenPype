@@ -50,7 +50,7 @@ class IntegrateFtrackApi(pyblish.api.InstancePlugin):
 
         try:
             source = None
-            if instance.data["family"] == "gather":
+            if instance.data["family"] == "gather" and "gather.farm" not in instance.data["families"]:
                 root = session.query("TypedContext where name is '{}' and project_id is '{}'".format(
                     instance.data["gather_root_name"],
                     instance.data["gather_project_id"])
@@ -160,7 +160,7 @@ class IntegrateFtrackApi(pyblish.api.InstancePlugin):
             asset_data = data.get("asset_data") or {}
             if "name" not in asset_data:
                 asset_data["name"] = default_asset_name
-            if instance.data["family"] == "gather":
+            if instance.data["family"] == "gather" and "gather.farm" not in instance.data["families"]:
                 asset_data["name"] = instance.data["gather_assetversion_name"]
             asset_entity = self._ensure_asset_exists(
                 session,
@@ -197,7 +197,7 @@ class IntegrateFtrackApi(pyblish.api.InstancePlugin):
 
         self._create_components(session, asset_versions_data_by_id)
 
-        if instance.data["family"] == "gather":
+        if instance.data["family"] == "gather" and "gather.farm" not in instance.data["families"]:
             custom_attr_link_config = session.query(
                 "select id from CustomAttributeLinkConfiguration where key is 'client_version_link'"
             ).first()
