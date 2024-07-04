@@ -80,6 +80,18 @@ class GatherAction(BaseAction):
                     assetversion["asset"]["name"],
                     str(assetversion["version"]).zfill(3)
                 )
+                default_enum_value = None
+                for en in enum_data:
+                    if "exr" in en["value"]:
+                        default_enum_value = en["value"]
+                        break
+                if not default_enum_value:
+                    for en in enum_data:
+                        if "jpg" in en["value"] or "png" in en["value"]:
+                            default_enum_value = en["value"]
+                            break
+                if not default_enum_value:
+                    default_enum_value = enum_data[0]["value"]
                 items.extend(
                     [
                         {
@@ -91,7 +103,7 @@ class GatherAction(BaseAction):
                             "type": "enumerator",
                             "name": assetversion["id"],
                             "data": enum_data,
-                            "value": enum_data[0]["value"]
+                            "value": default_enum_value
                         }
                     ]
                 )
@@ -175,9 +187,9 @@ class GatherAction(BaseAction):
         basename = str(os.path.splitext(files[0])[0])
 
         # the regex below has to account for cases such as v0010_dnxhd
-        detected_startframe = re.findall(r'\d+(?=[A-Za-z\_]*$)', basename)
-
-        str_index = basename.find(detected_startframe[0])
+        detected_startframe = re.findall(r"(\d+)", basename)[-1] or None
+        if detected_startframe:
+            str_index = basename.rindex(detected_startframe[0])
         if basename[str_index-1] == "v":
             detected_startframe = None
         if detected_startframe:
