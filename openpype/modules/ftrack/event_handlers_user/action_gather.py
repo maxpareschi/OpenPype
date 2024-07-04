@@ -173,7 +173,10 @@ class GatherAction(BaseAction):
             files.append(file["path"].format(**repre["context"]))
         version_start = int(version["data"]["frameStart"]) - int(version["data"]["handleStart"])
         basename = str(os.path.splitext(files[0])[0])
-        detected_startframe = re.findall(r'\d+$', basename)
+
+        # the regex below has to account for cases such as v0010_dnxhd
+        detected_startframe = re.findall(r'\d+(?=[A-Za-z\_]*$)', basename)
+
         str_index = basename.find(detected_startframe[0])
         if basename[str_index-1] == "v":
             detected_startframe = None

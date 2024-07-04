@@ -207,7 +207,6 @@ class DeleteVersionAction(BaseAction):
     def launch(self, session: Session, entities: List[Entity], event: Event):
         # from pprint import pprint
         self.versions = self.versions or self._extract_asset_versions(session, entities)
-
         if not event["data"].get("values", {}):
             return {
                 "type": "form",
@@ -216,6 +215,7 @@ class DeleteVersionAction(BaseAction):
                 "submit_button_label": "I know what I'm doing. <b>Remove permanently.</b>"
             }
 
+        session = Session()
         for entity in self.versions:
             self.log.info(f"Working on version {entity['asset']['name']}")
             in_links = list(entity["incoming_links"])
