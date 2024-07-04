@@ -133,8 +133,6 @@ class CollectSlateGlobal(pyblish.api.InstancePlugin):
             if "customData" in instance.data:
                 slate_data.update(instance.data["customData"])
 
-            # 
-
             self.log.debug(
                 "SlateGlobal Data: {}".format(
                     json.dumps(
