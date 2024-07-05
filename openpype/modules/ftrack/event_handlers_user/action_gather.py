@@ -123,6 +123,9 @@ class GatherAction(BaseAction):
 
     def launch(self, session, entities, event):
 
+        session.reset()
+        session.auto_populating(True)
+
         user_values = event["data"].get("values", None)
 
         if user_values is None:
@@ -189,11 +192,11 @@ class GatherAction(BaseAction):
         # the regex below has to account for cases such as v0010_dnxhd
         detected_startframe = re.findall(r"(\d+)", basename)[-1] or None
         if detected_startframe:
-            str_index = basename.rindex(detected_startframe[0])
+            str_index = basename.rindex(detected_startframe)
         if basename[str_index-1] == "v":
             detected_startframe = None
         if detected_startframe:
-            repre_start = int(detected_startframe[0])
+            repre_start = int(detected_startframe)
         else:
             repre_start = version_start
         self.log.debug("Detected frames: repre_start:{} <-> version_start:{}".format(repre_start, version_start))

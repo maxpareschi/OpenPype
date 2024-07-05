@@ -79,7 +79,11 @@ class CopyDeliveryNotes(BaseAction):
 
 
     def launch(self, session: Session, entities: List[Entity], event: Event):
-        session = Session(plugin_paths=[])
+
+        session.reset()
+        session._plugin_paths = []
+        session.auto_populating(True)
+        
         self.log.info(event)
         versions = self._extract_asset_versions(session, entities)
         for version in versions:

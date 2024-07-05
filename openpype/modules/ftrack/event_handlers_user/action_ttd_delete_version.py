@@ -131,6 +131,7 @@ def delete_versions(versions: List[AssetVersion]):
         in_links = list(version["incoming_links"])
         if in_links:
             version_parent = in_links[0]["from"]["asset"]["parent"]
+            # in_links[0]["from"]["custom_attributes"]["client_version_string"] = ""
             asset_mongo_id = version_parent["custom_attributes"]["avalon_mongo_id"]
         op_version = get_op_version_from_ftrack_assetversion(
             prj, asset_mongo_id, subset_name, version_number
@@ -206,6 +207,7 @@ class DeleteVersionAction(BaseAction):
 
     def launch(self, session: Session, entities: List[Entity], event: Event):
         # from pprint import pprint
+
         self.versions = self.versions or self._extract_asset_versions(session, entities)
         if not event["data"].get("values", {}):
             return {
@@ -214,8 +216,10 @@ class DeleteVersionAction(BaseAction):
                 "title": "Confirm",
                 "submit_button_label": "I know what I'm doing. <b>Remove permanently.</b>"
             }
+        
+        session.reset()
+        session.auto_populating(True)
 
-        session = Session()
         for entity in self.versions:
             self.log.info(f"Working on version {entity['asset']['name']}")
             in_links = list(entity["incoming_links"])
@@ -321,7 +325,7 @@ class DeleteVersionAction(BaseAction):
             return set()
 
         ids = ", ".join(asset_ver_list_ids)
-        query_str = "select id from AssetVersion where lists any (id in ({}}))".format(ids)
+        query_str = "select id from AssetVersion where lists any (id in ({}))".format(ids)
         asset_versions = session.query(query_str).all()
 
         return {asset_version["id"] for asset_version in asset_versions}

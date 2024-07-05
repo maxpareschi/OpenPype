@@ -32,12 +32,6 @@ class CreateDerivedListAction(BaseAction):
 
         if event['data'].get('values', {}):
             return
-        
-        entity_type = entities[0].entity_type
-
-        self.list_types = []
-        for listcat in session.query("select name, id from ListCategory").all():
-            self.list_types.append({"id": listcat["id"], "name": listcat["name"]})
 
         items = [{
             "type": "label",
@@ -45,26 +39,32 @@ class CreateDerivedListAction(BaseAction):
         }]
 
         enum_data = []
-        for list_type in self.list_types:
+        for listcat in session.query("select name from ListCategory").all():
             enum_data.append({
-                "label": list_type["name"],
-                "value": list_type["name"]
+                "label": listcat["name"],
+                "value": listcat["name"]
             })
 
-        list_name = None
-        category_name = None
+        list_name = entities[0]["name"]
+        category_name = entities[0]["category"]["name"]
+
+        clean_list_name = list_name.replace(
+            category_name, ""
+        ).replace(
+            category_name.lower(), ""
+        ).replace(
+            category_name.capitalize(), ""
+        ).replace(
+            category_name.upper(), ""
+        )
 
         category_name = enum_data[0]["value"]
-        for lt in self.list_types:
-            if lt["name"] == "Delivery":
+        for lt in enum_data:
+            if lt["value"] == "Delivery":
                 category_name = "Delivery"
+                break
         
-        if entity_type == "AssetVersionList":
-            list_name = entities[0]["name"]
-            entity_list_category = entities[0]["category"]["name"]
-
-        if entity_list_category:
-            category_name = entity_list_category
+        list_name = clean_list_name + category_name.lower()
 
         if not list_name or not category_name:
             return {"success": False, "message": "No list name or category found!"}
@@ -80,6 +80,17 @@ class CreateDerivedListAction(BaseAction):
                     "type": "text",
                     "name": "list_name",
                     "value": list_name
+                },
+                {
+                    "type": "label",
+                    "value": "'Category' for classic lists or 'Folder' for client review lists."
+                },
+                {
+                    "label": "List Category/Folder",
+                    "type": "enumerator",
+                    "name": "list_category",
+                    "data": enum_data,
+                    "value": category_name
                 },
                 {
                     "type": "label",
@@ -120,26 +131,7 @@ class CreateDerivedListAction(BaseAction):
                     "type": "text",
                     "name": "template_name",
                     "value": template_name,
-                },
-                {
-                    "type": "label",
-                    "value": "---"
-                },
-                {
-                    "type": "label",
-                    "value": "---"
-                },
-                {
-                    "type": "label",
-                    "value": "'Category' for classic lists or 'Folder' for client review lists."
-                },
-                {
-                    "label": "List Category/Folder",
-                    "type": "enumerator",
-                    "name": "list_category",
-                    "data": enum_data,
-                    "value": category_name
-                },
+                }
             ]
         )
             
@@ -149,10 +141,13 @@ class CreateDerivedListAction(BaseAction):
             "items": items,
             "submit_button_label": "Create",
             "width": 500,
-            "height": 600
+            "height": 650
         }
 
     def launch(self, session, entities, event):
+
+        session.reset()
+        session.auto_populating(True)
 
         user_values = event["data"].get("values", None)
 
