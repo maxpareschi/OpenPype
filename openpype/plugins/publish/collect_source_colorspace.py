@@ -26,6 +26,10 @@ class CollectSourceColorspace(pyblish.api.InstancePlugin):
             return
 
         context = instance.context
+
+        asset_doc = None
+        subset_doc = None
+        version_doc = None
   
         asset_doc = get_asset_by_name(context.data["projectName"],
                                       instance.data["asset"],
