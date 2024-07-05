@@ -1,6 +1,7 @@
 from __future__ import annotations
 from typing import List
 import os
+import re
 import copy
 import json
 from pprint import pprint
@@ -43,9 +44,6 @@ from ftrack_api.entity.base import Entity
 from ftrack_api.entity.asset_version import AssetVersion
 
 
-
-FRAME_REGEX = recomp(r"(?<=\.|\_)\d{4}(?=\.|\_)")
-TRAILING_REGEX = recomp("[\.!\_]+$")
 
 def by_alphabet(representation: dict):
     return representation["files"][0]["path"].split("/")[-1]
@@ -978,12 +976,18 @@ class Delivery(BaseAction):
             if version["id"] not in attr_by_version:
                 attr_by_version[version["id"]] = {"attr":"", "entity": version}
 
-            files = [Path(f) for f in report.get("created_files", [])[-1:]]
-            # attr_by_version[version["id"]]["attr"] += files +"\n\n"
-            # self.log.info(f"Adding files {files}")
-            delivered_name = FRAME_REGEX.sub("", files[0].stem)
-            delivered_name = sub(repre["name"], "", delivered_name)
-            delivered_name = TRAILING_REGEX.sub("", delivered_name)
+            file = os.path.basename(
+                [f for f in report.get("created_files", [])[-1:]][0]
+            )
+            delivered_name = os.path.splitext(file)[0]
+            detected_frame= re.findall(r"(\d+)", file)[-1] or None
+            if detected_frame:
+                str_index = file.rindex(detected_frame)
+            if file[str_index-1] == "v":
+                detected_startframe = None
+            if detected_startframe:
+                delivered_name = delivered_name.replace(detected_frame, "")
+            self.log.debug(delivered_name)
             attr_by_version[version["id"]]["attr"] = delivered_name
 
         for id_, value in attr_by_version.items():
