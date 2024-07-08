@@ -47,4 +47,4 @@ class CollectSourceColorspace(pyblish.api.InstancePlugin):
         if version_doc:
             instance.data["colorspace"] = version_doc["data"]["colorspace"]
         else:
-            instance.data["colorspace"] = None
+            instance.data["colorspace"] = ""
