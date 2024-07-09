@@ -1,8 +1,8 @@
 from __future__ import annotations
-from typing import List, Set, Callable
+from typing import List
 from pathlib import Path
-from logging import getLogger, basicConfig, DEBUG, INFO
-from os import environ, remove, rmdir
+from logging import getLogger
+from os import remove, rmdir
 
 from logging import getLogger
 
@@ -109,7 +109,7 @@ def ttd_remove_ayon_versions(prj_name: str, version: List[dict]):
 
 def ttd_remove_versions(prj_name: str, versions: List[dict]):
     try:
-        get_products
+        get_products # type: ignore
         logger.debug(f"Ayon detected.")
     except NameError as e:
         logger.debug(f"OpenPype detected.")
