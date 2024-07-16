@@ -39,12 +39,12 @@ from ftrack_api.entity.base import Entity
 
 
 
-class Delivery(BaseAction):
-    identifier = "delivery.action"
-    label = "Delivery"
-    description = "Deliver data to client"
+class CreateCSV(BaseAction):
+    identifier = "deliverycsv.action"
+    label = "Create CSV"
+    description = "Create CSV from versions"
     role_list = ["Pypeclub", "Administrator", "Project manager"]
-    icon = statics_icon("ftrack", "action_icons", "Delivery.png")
+    icon = statics_icon("ftrack", "action_icons", "CreateCsv.png")
     settings_key = "delivery_action"
 
     def discover(self, session, entities, event):
@@ -67,7 +67,7 @@ class Delivery(BaseAction):
 
         create_review_default = self.action_settings["create_client_review_default"]
 
-        title = "Delivery data to Client"
+        title = "Create CSV from delivery"
 
         items = []
 
@@ -138,7 +138,7 @@ class Delivery(BaseAction):
                 items.append({
                     "type": "label",
                     "value": (
-                        "- Selected entity doesn't have components to deliver."
+                        "- Selected entity doesn't have components to craete CSV."
                     )
                 })
             else:
@@ -190,44 +190,6 @@ class Delivery(BaseAction):
                 "name": repre_name
             })
 
-        items.append({
-            "value": "<br><h2><i>Override root location</i></h2>",
-            "type": "label"
-        })
-
-        items.append({
-            "type": "text",
-            "name": "__location_path__",
-            "empty_text": "Type root location path here...(Optional)"
-        })
-
-        if entities[0].entity_type.lower() == "assetversionlist":
-            items.append({
-                "value": "<br><h2><i>Create Optional Review Session</i></h2>",
-                "type": "label"
-            })
-            items.append({
-                "type": "boolean",
-                "value": create_review_default,
-                "label": "Create ReviewSession",
-                "name": "create_review_session"
-            })
-
-        # items.append({
-        #     "type": "boolean",
-        #     "name": "create_only_csv",
-        #     "label": "Only create the CSV (this will prevent any file to be copied "
-        #     "and no client review will be created.",
-        #     "value": "False"
-        # })
-
-        items.append({
-            "type": "boolean",
-            "name": "create_csv",
-            "label": "Create CSV with the details of the delivery.",
-            "value": "False"
-        })
-
         items.append(
             {
             "type": "enumerator",
@@ -249,7 +211,7 @@ class Delivery(BaseAction):
             "items": items,
             "title": title,
             "type": "form",
-            "submit_button_label": "Deliver",
+            "submit_button_label": "Create CSV",
             "width": 500,
             "height": 750
         }
@@ -585,7 +547,7 @@ class Delivery(BaseAction):
             "user": user_entity,
             "status": "running",
             "data": json.dumps({
-                "description": "Delivery processing."
+                "description": "Creating CSV processing."
             })
         })
         session.commit()
@@ -595,7 +557,7 @@ class Delivery(BaseAction):
         except Exception as exc:
             report = {
                 "success": False,
-                "title": "Delivery failed",
+                "title": "Creation of CSV failed",
                 "items": [{
                     "type": "label",
                     "value": (
@@ -668,12 +630,12 @@ class Delivery(BaseAction):
 
 
     def real_launch(self, session, entities, event):
-        self.log.info("Delivery action just started.")
+        self.log.info("Creation of CSV action just started.")
         report_items = collections.defaultdict(list)
 
         values: dict = event["data"]["values"]
 
-        location_path = values.pop("__location_path__")
+        location_path= ""
         anatomy_name = values.pop("__new_anatomies__")
         project_name = values.pop("__project_name__")
 
@@ -696,14 +658,9 @@ class Delivery(BaseAction):
         if not repre_names:
             return {
                 "success": True,
-                "message": "No selected components to deliver."
+                "message": "No selected components to create CSV."
             }
 
-        location_path = location_path.strip()
-        if location_path:
-            location_path = os.path.normpath(location_path)
-            if not os.path.exists(location_path):
-                os.makedirs(location_path)
 
         self.log.debug("Collecting representations to process.")
         version_ids = self._get_interest_version_ids(
@@ -796,7 +753,7 @@ class Delivery(BaseAction):
                 if not new_repre_report_items:
                     resolved = anatomy.format_all({**anatomy_data, **datetime_data})
                     resolved = Path(resolved["delivery"][anatomy_name]).parent.parent
-                    msg = f"Delivery was successfull but the template override "\
+                    msg = f"Creation of CSV was successfull but the template override "\
                     f"\"{anatomy_name}\" failed: delivery used the default config."
                     submsg = f"The delivery was done but the template used"\
                     f" for \"{anatomy_name}\" is <br><br>{resolved}<br><br>"\
@@ -841,6 +798,7 @@ class Delivery(BaseAction):
                 format_dict,
                 report_items,
                 self.log,
+                True,
             )
             if not frame:
                 report, success = deliver_single_file(*args)
@@ -866,9 +824,9 @@ class Delivery(BaseAction):
             file = os.path.basename(
                 [f for f in report.get("created_files", [])[-1:]][0]
             )
+            detected_startframe = None
             delivered_name = os.path.splitext(file)[0]
             detected_frame= re.findall(r"(\d+)", file)[-1] or None
-            detected_startframe = None
             if detected_frame:
                 str_index = file.rindex(detected_frame)
             if file[str_index-1] == "v":
@@ -881,39 +839,19 @@ class Delivery(BaseAction):
         for id_, value in attr_by_version.items():
             value["entity"]["custom_attributes"]["delivery_name"] = value["attr"]
 
-        if values["create_csv"]:
-            handle_csv(
-                report_items,
-                ftrack_list_name,
-                project_name,
-                repres,
-                anatomy_name,
-                values["order"],
-            )
+        handle_csv(
+            report_items,
+            ftrack_list_name,
+            project_name,
+            repres,
+            anatomy_name,
+            values["order"],
+        )
 
         report_items.pop("created_files", "") # removes false positive
         # get final path of repre to be used for attributes
         # and fill custom attributes on list
             
-        if entities[0].entity_type.lower() == "assetversionlist":
-            entities[0]["custom_attributes"]["delivery_package_name"] = ftrack_list_name
-            entities[0]["custom_attributes"]["delivery_type"] = ", ".join(list(set(collected_repres)))
-            if ftrack_list_name in collected_paths[0]:
-                delivery_path = collected_paths[0].split(ftrack_list_name)[0] + ftrack_list_name
-            else:
-                delivery_path = os.path.commonpath(collected_paths)
-            entities[0]["custom_attributes"]["delivery_package_path"] = delivery_path
-            create_list(
-                session,
-                entities,
-                event,
-                client_review = values["create_review_session"],
-                list_name = ftrack_list_name,
-                list_category_name = entities[0]["category"]["name"],
-                log = self.log
-            )
-
-        session.commit()
         return self.report(report_items)
 
 
@@ -946,17 +884,16 @@ class Delivery(BaseAction):
         if not items or list(report_items.keys()) == ["created_files"]:
             return {
                 "success": True,
-                "message": "Delivery Finished"
+                "message": "Creation of CSV Finished"
             }
 
         return {
             "items": items,
-            "title": "Delivery report",
+            "title": "Creation of CSV report",
             "success": False
         }
 
 
 def register(session):
-    '''Register plugin. Called when used as an plugin.'''
-
-    Delivery(session).register()
+    """Register plugin. Called when used as an plugin."""
+    CreateCSV(session).register()
