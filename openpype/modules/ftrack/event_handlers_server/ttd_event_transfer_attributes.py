@@ -7,6 +7,13 @@ from ftrack_api.event.base import Event
 from openpype_modules.ftrack.lib import BaseEvent
 
 def look_for_hierarchical_attrs(entity, attr):
+    """Look for hierarchical attributes in parent's hierarchy.
+    
+    This is done because the ftrack_api may be bugged as stated in the oficial
+    documentation: 
+    https://ftrack-python-api.rtd.ftrack.com/en/latest/example/custom_attribute.html#limitations
+    """
+
     if entity["custom_attributes"][attr] is not None:
         return entity["custom_attributes"][attr]
     parent = entity.get("parent")
@@ -86,7 +93,6 @@ class TTDTransferAttributes(BaseEvent):
     but in the future this can be extended to work with a settings mapping.
     """
 
-    priority = 0
     target_attrs__ = ["frameStart", "frameEnd", "handleStart", "handleEnd"]
 
     def launch(self, session: Session, event: Event):
