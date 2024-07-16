@@ -868,7 +868,7 @@ class Delivery(BaseAction):
             )
             delivered_name = os.path.splitext(file)[0]
             detected_frame= re.findall(r"(\d+)", file)[-1] or None
-            detected_startframe = None
+            detected_startframe = detected_frame
             if detected_frame:
                 str_index = file.rindex(detected_frame)
             if file[str_index-1] == "v":
