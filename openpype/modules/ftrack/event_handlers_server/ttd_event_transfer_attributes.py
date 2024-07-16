@@ -5,33 +5,16 @@ from ftrack_api import Session
 from ftrack_api.entity.base import Entity
 from ftrack_api.event.base import Event
 from openpype_modules.ftrack.lib import BaseEvent
-from openpype.client.operations import OperationsSession
-from openpype.client import get_subset_by_name
 
-"""
-
-[ [{'action': 'update',
-  'changes': {'frameEnd': {'new': '1022', 'old': '1020'}},
-  'entityId': '36a60d41-b4d1-49a6-8ff8-36b3d696df06',
-  'entityType': 'task',
-  'entity_type': 'Shot',
-  'keys': [ 'frameEnd' ],
-  'objectTypeId': 'bad911de-3bd6-47b9-8b46-3476e237cb36',
-  'parentId': '1b88317b-631f-4126-8b60-977d19c85e14',
-  'parents': [{'entityId': '36a60d41-b4d1-49a6-8ff8-36b3d696df06',
-               'entityType': 'task',
-               'entity_type': 'Shot',
-               'parentId': '1b88317b-631f-4126-8b60-977d19c85e14'},
-              {'entityId': '1b88317b-631f-4126-8b60-977d19c85e14',
-               'entityType': 'task',
-               'entity_type': 'Sequence',
-               'parentId': '6b3dc3f3-f781-489e-8837-c0d12ed3aff8'},
-              {'entityId': '6b3dc3f3-f781-489e-8837-c0d12ed3aff8',
-               'entityType': 'show',
-               'entity_type': 'Project',
-               'parentId': None}]}] ]
-"""
-
+def look_for_hierarchical_attrs(entity, attr):
+    if entity["custom_attributes"][attr] is not None:
+        return entity["custom_attributes"][attr]
+    parent = entity.get("parent")
+    if parent is not None:
+        if parent["custom_attributes"][attr] is not None:
+            return parent["custom_attributes"][attr]
+        else:
+            return look_for_hierarchical_attrs(parent, attr)
 
 def transfer_hierarchical_frame_data_in_shot(logger, shot: Entity):
     """Copy hierarchical frame data into fstart and fend attributes in a Ftrack shot
@@ -56,11 +39,15 @@ def transfer_hierarchical_frame_data_in_shot(logger, shot: Entity):
     handle_start = shot["custom_attributes"]["handleStart"]
     handle_end = shot["custom_attributes"]["handleEnd"]
 
+    handle_start = look_for_hierarchical_attrs(shot, "handleStart")
+    handle_end = look_for_hierarchical_attrs(shot, "handleEnd")
+
     try:
-        new_start = shot["custom_attributes"]["frameStart"] - handle_start
-        new_end = shot["custom_attributes"]["frameEnd"] + handle_end
+        new_start = look_for_hierarchical_attrs(shot, "frameStart") - handle_start
+        new_end = look_for_hierarchical_attrs(shot, "frameEnd") + handle_end
     except TypeError as e:
-        logger.info(f"Failed to collect OpenPype frame data {handle_end} in shot {name}")
+        logger.warning(e)
+        logger.info(f"Failed to collect OpenPype frame data {handle_end}, {handle_start} in shot {name}")
         return
 
     new_duration = new_end - new_start + 1
@@ -81,13 +68,14 @@ def transfer_hierarchical_frame_data_in_shot(logger, shot: Entity):
 def transfer_hierarchical_frame_data_in_project(project: str):
     """Copy hierarchical frame data into fstart and fend attrs in all project shots"""
 
-    session = Session(auto_populate=True)
-    where = f"where project.name is {project}"
-    select = "select " + ",".join(["id", "custom_attributes", "name"])
-    shots = session.query(f"{select} from Shot {where}").all()
-    for shot in shots:
-        transfer_hierarchical_frame_data_in_shot(shot)
-    session.commit()
+    session = Session()
+    with session.auto_populating(True):
+        where = f"where project.name is {project}"
+        select = "select " + ",".join(["id", "custom_attributes", "name"])
+        shots = session.query(f"{select} from Shot {where}").all()
+        for shot in shots:
+            transfer_hierarchical_frame_data_in_shot(shot)
+        session.commit()
 
 
 
@@ -107,14 +95,19 @@ class TTDTransferAttributes(BaseEvent):
         if not filtered_entities_info:
             return
 
+        # self.log.info(pformat(filtered_entities_info))
+
         ids_ = [e["entityId"] for e in filtered_entities_info]
         where = f"where id in ({','.join(ids_)})"
         select = "select " + ",".join(["id", "custom_attributes", "name"])
-        session = Session()
-        shots = session.query(f"{select} from Shot {where}").all()
-        for shot in shots:
-            self.log.info(f"Updating frame data in shot {shot['name']}")
-            transfer_hierarchical_frame_data_in_shot(self.log, shot)
+        # session = Session()
+
+        with session.auto_populating(True):
+            shots = session.query(f"{select} from Shot {where}").all()
+            for shot in shots:
+                self.log.info(f"Updating frame data in shot {shot['name']}")
+                transfer_hierarchical_frame_data_in_shot(self.log, shot)
+    
         session.commit()
 
     def filter_entity_info(self, event):
