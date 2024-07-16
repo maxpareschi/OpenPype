@@ -4,7 +4,7 @@ from pprint import pformat
 from ftrack_api import Session
 from ftrack_api.entity.base import Entity
 from ftrack_api.event.base import Event
-from openpype_modules.ftrack.lib import BaseEvent
+from openpype_modules.ftrack.lib import BaseEvent # type: ignore
 
 def look_for_hierarchical_attrs(entity, attr):
     """Look for hierarchical attributes in parent's hierarchy.
