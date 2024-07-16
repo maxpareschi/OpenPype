@@ -1,4 +1,4 @@
-from typing import List, Union
+from typing import List, Union, Dict
 from pathlib import Path
 from logging import getLogger
 from copy import deepcopy
@@ -111,7 +111,7 @@ def return_version_notes_for_csv(version: AssetVersion):
 
     """
 
-    result = defaultdict(str)
+    result: Dict[str,str] = defaultdict(str)
     for note in version["notes"]:
         if note["in_reply_to"]:
             continue
@@ -121,6 +121,13 @@ def return_version_notes_for_csv(version: AssetVersion):
             replies = ". ".join([n["content"] for n in note["replies"]])
             content = content + ". " + replies
         result[note["category"]["name"]] += content
+
+
+    # so that they can do both For Client and FOR CLIENT...
+    for k, v in deepcopy(result).items():
+        if k.upper() not in result.keys():
+            result[k.upper()] = v
+
     return result
 
 
@@ -142,8 +149,9 @@ def augment_repre_with_ftrack_version_data(
         * `notes`
     """
 
-    templates = get_anatomy_settings("TEST_GATHER_NEW")["templates"]
+    templates = get_anatomy_settings(version["project"]["name"])["templates"]
     padding = int(templates["defaults"]["version_padding"])
+    # padding = 3
     name = version["asset"]["name"]
     ctx = repre["context"]
     ctx["submission_name"] = submission_name
@@ -162,7 +170,9 @@ def augment_repre_with_ftrack_version_data(
     ctx["sequence_name"] = return_sequence_from_version(internal_working_version)[
         "name"
     ]
-    ctx["shot_name"] = return_shot_from_version(internal_working_version)["name"]
+    shot = return_shot_from_version(internal_working_version)
+    ctx["shot_name"] = shot["name"]
+    ctx["exr_has_matte"] = shot["custom_attributes"]["exr_has_matte"]
     ctx["status"] = version["status"]["name"]
     ctx["notes"] = return_version_notes_for_csv(version)
 
