@@ -291,7 +291,7 @@ class houdiniSubmitUSDRenderDeadline(pyblish.api.InstancePlugin):
             )
             intermediate_payload["PluginInfo"] = {
                 "Arguments": "\"" + args + "\"",
-                "Executable": "$HFS/bin/hython.exe"
+                "Executable": "hython.exe"
             }
             resp = self.submit(instance, intermediate_payload)
             payload["JobInfo"]["JobDependency0"] = resp.json()["_id"]
