@@ -172,7 +172,7 @@ def augment_repre_with_ftrack_version_data(
     ]
     shot = return_shot_from_version(internal_working_version)
     ctx["shot_name"] = shot["name"]
-    ctx["exr_has_matte"] = shot["custom_attributes"]["exr_has_matte"]
+    ctx["exr_includes_matte"] = shot["custom_attributes"]["exr_includes_matte"]
     ctx["status"] = version["status"]["name"]
     ctx["notes"] = return_version_notes_for_csv(version)
 
