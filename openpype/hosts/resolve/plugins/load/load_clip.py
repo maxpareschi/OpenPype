@@ -23,8 +23,19 @@ class LoadClip(plugin.TimelineItemLoader):
     during conforming to project
     """
 
-    families = ["render2d", "source", "plate", "render", "review"]
-    representations = ["exr", "dpx", "jpg", "jpeg", "png", "h264", "mov"]
+    families = ["render2d", "source", "plate", "render", "review", "gather"]
+    representations = [
+        "exr", "dpx", "jpg", "jpeg", "png",
+        "h264", "mov", "mp4", "dnx", "dnxhd",
+        "exr_main", "exr_source", "exr_fgkey", "exr_editorial",
+        "jpg_proxy", "jpg_source", "jpg_main", "jpg_editorial",
+        "jpeg_proxy", "jpeg_source", "jpeg_main", "jpeg_editorial",
+        "png_proxy", "png_source", "png_main", "png_editorial",
+        "h264_mp4", "h264_editorial", "h264_review",
+        "mp4_h264", "mp4_editorial", "mp4_review",
+        "mov_dnxhd", "mov_dnx", "mov_editorial", "dnxhd_review",
+        "dnxhd_mov", "dnxhd", "dnxhd_editorial", "mov_review"
+    ]
 
     label = "Load as clip"
     order = -10
