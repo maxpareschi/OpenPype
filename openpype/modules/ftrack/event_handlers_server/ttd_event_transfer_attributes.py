@@ -6,7 +6,7 @@ from ftrack_api.entity.base import Entity
 from ftrack_api.event.base import Event
 from openpype_modules.ftrack.lib import BaseEvent # type: ignore
 
-def look_for_hierarchical_attrs(entity: Entity, attr: str):
+def look_for_hierarchical_attrs(entity, attr):
     """Look for hierarchical attributes in parent's hierarchy.
     
     This is done because the ftrack_api may be bugged as stated in the oficial
@@ -14,19 +14,14 @@ def look_for_hierarchical_attrs(entity: Entity, attr: str):
     https://ftrack-python-api.rtd.ftrack.com/en/latest/example/custom_attribute.html#limitations
     """
 
-    asset = entity.get("asset") or entity
-    ancestors = asset.get("ancestors")
-
-    if ancestors is None:
-        raise NotImplementedError(f"The entity type {entity.entity_type} is not implemented.")
-
-    for e in [entity] + ancestors:
-        value = e["custom_attributes"][attr]
-        if value is not None:
-            # print(f"Found attr {attr} at entity {e} with value {value}")
-            return value
-    # print(f"Failed to find attr {attr}")
-
+    if entity["custom_attributes"][attr] is not None:
+        return entity["custom_attributes"][attr]
+    parent = entity.get("parent")
+    if parent is not None:
+        if parent["custom_attributes"][attr] is not None:
+            return parent["custom_attributes"][attr]
+        else:
+            return look_for_hierarchical_attrs(parent, attr)
 
 def transfer_hierarchical_frame_data_in_shot(logger, shot: Entity):
     """Copy hierarchical frame data into fstart and fend attributes in a Ftrack shot
