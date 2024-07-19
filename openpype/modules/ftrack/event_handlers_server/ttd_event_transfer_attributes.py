@@ -1,5 +1,7 @@
 from pprint import pformat
+from logging import getLogger
 
+logger = getLogger(__name__)
 
 from ftrack_api import Session
 from ftrack_api.entity.base import Entity
@@ -23,9 +25,9 @@ def look_for_hierarchical_attrs(entity: Entity, attr: str):
     for e in [entity] + ancestors:
         value = e["custom_attributes"][attr]
         if value is not None:
-            # print(f"Found attr {attr} at entity {e} with value {value}")
+            logger.debug(f"Found attr {attr} at entity {e} with value {value}")
             return value
-    # print(f"Failed to find attr {attr}")
+    logger.debug(f"Failed to find attr {attr}")
 
 
 def transfer_hierarchical_frame_data_in_shot(logger, shot: Entity):
