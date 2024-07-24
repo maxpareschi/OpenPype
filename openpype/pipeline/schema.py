@@ -123,6 +123,13 @@ def _precache():
 
     repos_root = os.environ["OPENPYPE_REPOS_ROOT"]
     schema_dir = os.path.join(repos_root, "schema")
+    
+    if not os.path.isdir(schema_dir):
+        schema_dir =  os.path.join(
+            os.path.dirname(repos_root), "schema"
+        )
+        os.environ["OPENPYPE_REPOS_ROOT"] = os.path.dirname(schema_dir)
+        repos_root = os.environ["OPENPYPE_REPOS_ROOT"]
 
     for schema in os.listdir(schema_dir):
         if schema.startswith(("_", ".")):
