@@ -367,7 +367,7 @@ class ActionModel(QtGui.QStandardItemModel):
 
 class LauncherModel(QtCore.QObject):
     # Refresh interval of projects
-    refresh_interval = 120000
+    refresh_interval = 100000
 
     # Signals
     # Current project has changed
@@ -524,10 +524,6 @@ class LauncherModel(QtCore.QObject):
         if project_name == self.project_name:
             return
         self._dbcon.Session["AVALON_PROJECT"] = project_name
-        if project_name:
-            self._project_docs_by_name.update({
-                project_name: get_project(project_name)
-            })
         self.project_changed.emit(project_name)
 
         self.refresh_assets(force=True)
@@ -542,11 +538,7 @@ class LauncherModel(QtCore.QObject):
         current_project = self.project_name
         project_names = set()
         project_docs_by_name = {}
-        fields = {
-            "name": 1,
-            "data.active": 1
-        }
-        for project_doc in get_projects(fields=fields):
+        for project_doc in get_projects():
             project_name = project_doc["name"]
             project_names.add(project_name)
             project_docs_by_name[project_name] = project_doc
