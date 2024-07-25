@@ -147,8 +147,12 @@ class PypeCommands:
             # Error exit as soon as any error occurs.
             error_format = ("Failed {plugin.__name__}: "
                             "{error} -- {error.traceback}")
-
+            n = 0
+            total = len(plugins)
             for result in pyblish.util.publish_iter():
+                n += 1
+                log.info(f"Running plugin {plugins[n].__name__}: ({n}/{total})")
+                log.info(f"[{plugins[n].__name__}] Progress: {int(100*n/total)}%")
                 if result["error"]:
                     log.error(error_format.format(**result))
                     # uninstall()
