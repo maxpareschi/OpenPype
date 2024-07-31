@@ -149,7 +149,7 @@ def augment_repre_with_ftrack_version_data(
         * `notes`
     """
 
-    templates = get_anatomy_settings(version["project"]["name"])["templates"]
+    templates = get_anatomy_settings(version["project"]["full_name"])["templates"]
     padding = int(templates["defaults"]["version_padding"])
     # padding = 3
     name = version["asset"]["name"]
