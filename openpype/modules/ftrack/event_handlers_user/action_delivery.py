@@ -225,7 +225,7 @@ class Delivery(BaseAction):
             "type": "boolean",
             "name": "create_csv",
             "label": "Create CSV with the details of the delivery.",
-            "value": "False"
+            "value": True
         })
 
         items.append(
