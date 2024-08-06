@@ -6,6 +6,7 @@ import webbrowser
 from datetime import datetime
 from tempfile import NamedTemporaryFile
 from collections import defaultdict
+from re import compile  as recomp
 
 from ftrack_api.entity.asset_version import AssetVersion
 from openpype.settings import get_anatomy_settings
@@ -17,6 +18,9 @@ from openpype.client import get_representations_parents
 from openpype.lib import StringTemplate, get_datetime_data
 from openpype.pipeline import Anatomy
 from openpype.settings import get_project_settings
+
+
+INTENT_REGEX = recomp("(WIP\ [A-Z]+)|PAF(?=\ \-\ )")
 
 
 def augment_representation_context(prj: str, repre: dict, context: dict):
@@ -113,6 +117,8 @@ def return_version_notes_for_csv(version: AssetVersion):
 
     result: Dict[str,str] = defaultdict(str)
     for note in version["notes"]:
+        if note["category"] is None:
+            continue
         if note["in_reply_to"]:
             continue
         content = note["content"]
@@ -122,12 +128,18 @@ def return_version_notes_for_csv(version: AssetVersion):
             content = content + ". " + replies
         result[note["category"]["name"]] += content
 
-
     # so that they can do both For Client and FOR CLIENT...
     for k, v in deepcopy(result).items():
         if k.upper() not in result.keys():
             result[k.upper()] = v
 
+    return result
+
+def return_intent_from_notes(notes: Dict[str,str]):
+    result = dict()
+    for k, v in notes.items():
+        match = INTENT_REGEX.match(v)
+        result[k] = match.group() if match else ""
     return result
 
 
@@ -158,6 +170,7 @@ def augment_repre_with_ftrack_version_data(
     ctx["version_info"] = {
         "name": name,
         "version": version["version"],
+        "padded_version": "v" + str(version["version"]).zfill(padding),
         "full_name": name + "_v" + str(version["version"]).zfill(padding),
     }
 
@@ -175,6 +188,7 @@ def augment_repre_with_ftrack_version_data(
     ctx["exr_includes_matte"] = shot["custom_attributes"]["exr_includes_matte"]
     ctx["status"] = version["status"]["name"]
     ctx["notes"] = return_version_notes_for_csv(version)
+    ctx["intent"] = return_intent_from_notes(ctx["notes"])
 
 
 def get_csv_path(created_files: List[str], pckg_name: str):
