@@ -676,7 +676,7 @@
                         },
                         {
                             "type": "label",
-                            "label": "NOTE: Template keys can be All standard anatomy template data plus:\n- {ftrack[listname]}\n- {ftrack[username]}\n- {ftrack[category]}\n- {asset_data[duration]}\n- {asset_data[frameStart]}\n- {asset_data[frameEnd]}\n- {asset_data[duration]}\n- {asset_data[duration_no_slate]}\n- {asset_data[start]}\n- {asset_data[end]}\n- {episode_name}\n- {shot_name}\n- {status}\n- {version_info[name]}\n- {version_info[version]}\n- {version_info[full_name]}\n- {notes[For Client]}\n- {notes[Client Feedback]}\n- {notes[...]}\n- {exr_includes_matte}"
+                            "label": "NOTE: Template keys can be All standard anatomy template data plus:\n- {ftrack[listname]}\n- {ftrack[username]}\n- {ftrack[category]}\n- {asset_data[duration]}\n- {asset_data[frameStart]}\n- {asset_data[frameEnd]}\n- {asset_data[duration]}\n- {asset_data[duration_no_slate]}\n- {asset_data[start]}\n- {asset_data[end]}\n- {episode_name}\n- {shot_name}\n- {status}\n- {version_info[name]}\n- {version_info[version]}\n- {version_info[full_name]}\n- {version_info[name]}_DOG_{version_info[padded_version]}\n- {notes[For Client]}\n- {notes[Client Feedback]}\n- {notes[...]}\n- {exr_includes_matte}\n- {intent[For Client]}\n- {intent[Submission Notes]}"
                         },
                         {
                             "label":"CSV Template Families",
