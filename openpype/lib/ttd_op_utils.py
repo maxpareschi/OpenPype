@@ -136,10 +136,11 @@ def return_version_notes_for_csv(version: AssetVersion):
     return result
 
 def return_intent_from_notes(notes: Dict[str,str]):
-    result = dict()
+    result = defaultdict(str)
     for k, v in notes.items():
         match = INTENT_REGEX.match(v)
-        result[k] = match.group() if match else ""
+        if match:
+            result[k] = match.group()
     return result
 
 
