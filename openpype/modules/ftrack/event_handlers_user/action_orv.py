@@ -296,6 +296,8 @@ class ORVAction(BaseAction):
         try:
             # retrieve all available components
             assetversions = self.get_all_assetversions(session, entities)
+            if not assetversions:
+                return {"success": False, "message": "There are no versions to play."}
             available_components = self.get_all_available_components(
                 session, assetversions, self.allowed_types)
 
