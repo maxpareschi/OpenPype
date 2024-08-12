@@ -42,7 +42,7 @@ class houdiniSubmitUSDRenderDeadline(pyblish.api.InstancePlugin):
     # presets
     usd_intermediate_on_farm = True
     flush_data_after_each_frame = True
-    suspendPublishJob = False
+    suspendPublishJob = True
     review =  True
     multipartExr =  True
     priority = 50
@@ -69,6 +69,9 @@ class houdiniSubmitUSDRenderDeadline(pyblish.api.InstancePlugin):
         if instance_settings:
             for k, v in instance_settings.items():
                 self.__setattr__(k, v)
+
+
+        instance.data["suspend_publish"] = self.suspendPublishJob
 
         # IMPORTANT FOR REVIEW
         instance.data["review"] = self.review
