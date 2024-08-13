@@ -6,11 +6,30 @@ import json
 import platform
 import tempfile
 import copy
+from logging import getLogger
+
+logger = getLogger(__name__)
 
 import opentimelineio as otio
 
 import pyblish.api
 from openpype.pipeline import publish
+from openpype.settings import get_current_project_settings
+
+
+
+
+
+def check_timecode_is_not_zero(tc: str):
+    # raise ValueError(f"Timecode is {tc}")
+    settings = get_current_project_settings()["global"]["publish"]["ExtractTimecode"]
+    default_tc = settings.get("default_tc", "01:00:00:00")
+    if tc == "00:00:00:00":
+        logger.warning("The timecode seems to be set at '00:00:00:00', "
+            f"setting it back to default timecode: '{default_tc}'")
+        tc = default_tc
+    return tc
+
 
 class SlateCreator:
     """
@@ -572,6 +591,9 @@ class SlateCreator:
         except:
             self.log.debug("OIIO process failed, switching to default tc...")
 
+
+        tc = check_timecode_is_not_zero(tc)
+
         tc = self.offset_timecode(tc, offset)
         self.log.debug("{0}: New timecode for slate: {1}".format(name, tc))
 
@@ -614,6 +636,7 @@ class SlateCreator:
         except:
             self.log.debug("FFPROBE process failed, switching to default tc...")
         
+        tc = check_timecode_is_not_zero(tc)
         tc = self.offset_timecode(tc, offset)
         self.log.debug("{0}: New timecode for slate: {1}".format(name, tc))
 
@@ -795,6 +818,7 @@ class ExtractSlateGlobal(publish.Extractor):
             instance_timecode = "01:00:00:00"
             self.log.debug("instance timecode was not found, defaulted to: {}".format(instance.data["timecode"]))
 
+        instance_timecode = check_timecode_is_not_zero(instance_timecode)
         slate_timecode = slate.offset_timecode(instance_timecode, offset=-1)
         
         self.log.debug("Slate timecode is set to: {}".format(slate_timecode))
