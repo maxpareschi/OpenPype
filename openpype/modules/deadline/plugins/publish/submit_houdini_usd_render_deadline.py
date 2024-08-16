@@ -40,18 +40,21 @@ class houdiniSubmitUSDRenderDeadline(pyblish.api.InstancePlugin):
     targets = ["local"]
 
     # presets
-    usd_intermediate_on_farm = True
-    flush_data_after_each_frame = True
-    suspendPublishJob = False
-    review =  True
-    multipartExr =  True
-    priority = 50
-    chunk_size = 1
-    concurrent_tasks = 1
-    group = ""
-    department = ""
-    primary_pool = ""
-    secondary_pool = ""
+    # NOTE: these defaults are not needed as the create_usdrender.py module
+    # already has defaults
+
+    # usd_intermediate_on_farm = True
+    # flush_data_after_each_frame = True
+    # suspendPublishJob = True
+    # review =  True
+    # multipartExr =  True
+    # priority = 50
+    # chunk_size = 1
+    # concurrent_tasks = 1
+    # group = ""
+    # department = ""
+    # primary_pool = ""
+    # secondary_pool = ""
 
     # TODO Implement other deadline stuff
     # limit_groups = {}
