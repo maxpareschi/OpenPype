@@ -36,7 +36,7 @@ class CreateUSDRender(plugin.HoudiniCreator):
             "usd_intermediate_on_farm": True,
             "flush_data_after_each_frame": False,
             "separator": "separator",
-            "suspendPublishJob": False,
+            "suspendPublishJob": True,
             "review": True,
             "multipartExr": True,
             "priority": hou_cfg["priority"],

@@ -56,6 +56,7 @@ class houdiniSubmitUSDRenderDeadline(pyblish.api.InstancePlugin):
     # primary_pool = ""
     # secondary_pool = ""
 
+
     # TODO Implement other deadline stuff
     # limit_groups = {}
     # env_allowed_keys = []
@@ -72,6 +73,9 @@ class houdiniSubmitUSDRenderDeadline(pyblish.api.InstancePlugin):
         if instance_settings:
             for k, v in instance_settings.items():
                 self.__setattr__(k, v)
+
+
+        instance.data["suspend_publish"] = self.suspendPublishJob
 
         # IMPORTANT FOR REVIEW
         instance.data["review"] = self.review
