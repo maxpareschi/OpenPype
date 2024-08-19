@@ -39,6 +39,14 @@ def augment_representation_context(prj: str, repre: dict, context: dict):
     context["asset_data"]["end"] = end
 
 
+def escape_commas_in_csv_cell(cell: str):
+    if "," in cell:
+        if "\"" in cell:
+            cell = cell.replace("\"", "\"\"") # escape double quotes
+        cell = f"\"{cell}\"" # surrond with double quotes to escape commas
+    return cell
+
+
 def generate_csv_line_from_repre(
     prj: str, repre: dict, anatomy: Anatomy, datetime_data: dict, settings: dict
 ):
@@ -56,6 +64,7 @@ def generate_csv_line_from_repre(
             value = StringTemplate.format_strict_template(t, data)
         except:
             value = ""
+        value = escape_commas_in_csv_cell(value)
         row = row + value + ","
     return row[:-1]
 
@@ -186,7 +195,7 @@ def augment_repre_with_ftrack_version_data(
     ]
     shot = return_shot_from_version(internal_working_version)
     ctx["shot_name"] = shot["name"]
-    ctx["exr_includes_matte"] = shot["custom_attributes"]["exr_includes_matte"]
+    ctx["exr_includes_matte"] = "X" if shot["custom_attributes"]["exr_includes_matte"] else ""
     ctx["status"] = version["status"]["name"]
     ctx["notes"] = return_version_notes_for_csv(version)
     ctx["intent"] = return_intent_from_notes(ctx["notes"])
