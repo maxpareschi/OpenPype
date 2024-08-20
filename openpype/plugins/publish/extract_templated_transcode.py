@@ -406,22 +406,35 @@ class ExtractTemplatedTranscode(publish.Extractor):
         """Returns profile if and how repre should be transcoded."""
         host_name = instance.context.data["hostName"]
         family = instance.data["family"]
+        asset = instance.data["asset"]
         task_data = instance.data["anatomyData"].get("task", {})
         task_name = task_data.get("name")
         task_type = task_data.get("type")
         subset = instance.data["subset"]
         extension = instance.data.get("gather_representation_ext", "")
+        filtering_order = (
+            "families",
+            "assets",
+            "extensions",
+            "subsets",
+            "task_names",
+            "task_types",
+            "hosts"
+        )
         filtering_criteria = {
             "hosts": host_name,
             "families": family,
+            "assets": asset,
             "task_names": task_name,
             "task_types": task_type,
             "subsets": subset,
             "extensions": extension
         }
 
-        profile = filter_profiles(self.profiles, filtering_criteria,
+        profile = filter_profiles(self.profiles, filtering_criteria, filtering_order,
                                   logger=log)
+        
+        self.log.debug(profile)
 
         if not profile:
             self.log.debug((

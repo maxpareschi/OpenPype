@@ -67,6 +67,7 @@
                     "hosts": [
                         "hiero"
                     ],
+                    "assets": [],
                     "task_types": [],
                     "task_names": [],
                     "subsets": [],
