@@ -209,7 +209,7 @@ def get_csv_path(created_files: List[str], pckg_name: str):
 
     if pckg_name and pckg_name in created_files[0]:
         return (
-            created_files[0].split(pckg_name)[0] + f"/{pckg_name}/{pckg_name}_data.csv"
+            created_files[0].split(pckg_name)[0] + f"/{pckg_name}/{pckg_name}.csv"
         )
 
 
