@@ -203,8 +203,8 @@ def create_list(session: Session,
         list_category_name
     )).first() or None
 
-    review_session_folder = session.query("ReviewSessionFolder where name is '{}'".format(
-        list_category_name
+    review_session_folder = session.query("ReviewSessionFolder where name is '{}' and project.id is {}".format(
+        list_category_name, entities[0]["project"]["id"]
     )).first() or None
 
     list_owner = session.query("User where id is '{}'".format(
