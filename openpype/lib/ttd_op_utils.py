@@ -3,6 +3,7 @@ from pathlib import Path
 from logging import getLogger
 from copy import deepcopy
 import webbrowser
+from subprocess import Popen, PIPE
 from datetime import datetime
 from tempfile import NamedTemporaryFile
 from collections import defaultdict
@@ -18,8 +19,10 @@ from openpype.client import get_representations_parents
 from openpype.lib import StringTemplate, get_datetime_data
 from openpype.pipeline import Anatomy
 from openpype.settings import get_project_settings
+from openpype.lib import get_oiio_tools_path, get_ffmpeg_tool_path
 
 
+EMPTY_IMAGE_REGEX = recomp("Stats StdDev: 0.00 0.00 0.00")
 INTENT_REGEX = recomp("(WIP\ [A-Z]+)|PAF(?=\ \-\ )")
 
 
@@ -153,6 +156,57 @@ def return_intent_from_notes(notes: Dict[str,str]):
     return result
 
 
+def extract_channel(ffmpeg_bin: str, source: str, channel: str = "a"):
+    """Use `ffmpeg_bin` to save channel `channel` from `source` into a tempfile.
+
+    `channel` must be a letter in [y, u, v, r, g, b, a]
+    """
+
+    assert channel in "yuvrgba", f"channel must be in {list('yuvrgba')}"
+    assert Path(source).exists()
+
+    tempfile = NamedTemporaryFile(suffix=".jpg", delete=False)
+    cmd = [
+        ffmpeg_bin,
+        "-y",
+        "-i",
+        source,
+        "-filter_complex",
+        f"extractplanes={channel}",
+        tempfile.name,
+    ]
+    p = Popen(cmd, stdout=PIPE, stderr=PIPE, bufsize=10**8)
+    output, error = p.communicate()
+    logger.info(f"{output.decode()}\n{error.decode()}")
+    logger.info(f"Extracted channel {channel} into file {tempfile.name}")
+    return tempfile.name
+
+
+def get_color_data_from_image(iinfo_bin: str, source: str):
+    """Return color stats from `source` using `iinfo_bin`."""
+
+    cmd = [iinfo_bin, "--stats", source]
+    p = Popen(cmd, stdout=PIPE, stderr=PIPE, bufsize=10**8)
+    output, error = p.communicate()
+    return f"{output.decode()}\n{error.decode()}"
+
+
+def is_image_empty(iinfo_bin: str, file: str):
+    """Use `iinfo_bin` to retunr True if `file` is completelly white, else False."""
+
+    out = get_color_data_from_image(iinfo_bin, file)
+    return bool(EMPTY_IMAGE_REGEX.findall(out))
+
+def is_alpha_channel_empty(image: str):
+    """Return True if `image` alpha channel has info, else False.
+    
+    This is used to check whether an EXR has matte
+    """
+    iinfo = get_oiio_tools_path("iinfo")
+    ffmpeg = get_ffmpeg_tool_path("ffmpeg")
+    return is_image_empty(iinfo, extract_channel(ffmpeg, image, "a"))
+
+
 def augment_repre_with_ftrack_version_data(
     repre: dict, version: AssetVersion, submission_name: str = ""
 ):
@@ -195,7 +249,14 @@ def augment_repre_with_ftrack_version_data(
     ]
     shot = return_shot_from_version(internal_working_version)
     ctx["shot_name"] = shot["name"]
-    ctx["exr_includes_matte"] = "X" if shot["custom_attributes"]["exr_includes_matte"] else ""
+
+    file = repre["files"][1] if len(repre["files"]) > 1 else repre["files"][0]
+    data = deepcopy(repre["context"])
+    data["root"] = Anatomy(version["project"]["full_name"]).roots
+
+    file = StringTemplate.format_strict_template(file["path"], data)
+
+    ctx["exr_includes_matte"] = "" if is_alpha_channel_empty(file) else "X"
     ctx["status"] = version["status"]["name"]
     ctx["notes"] = return_version_notes_for_csv(version)
     ctx["intent"] = return_intent_from_notes(ctx["notes"])
