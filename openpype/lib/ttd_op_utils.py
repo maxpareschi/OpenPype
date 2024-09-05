@@ -299,7 +299,7 @@ def handle_csv(
     try:
         csv_file = get_csv_path(report["created_files"], name)
     except IndexError as e:
-        raise NotADirectoryError(report) from e
+        raise NotImplementedError(report) from e
 
     if csv_file is not None:
         generate_csv_from_representations(prj, repres, csv_file, cfg)
