@@ -68,7 +68,8 @@ class Delivery(BaseAction):
         create_review_default = self.action_settings["create_client_review_default"]
 
         title = "Delivery data to Client"
-
+        settings = self.get_ftrack_settings(session, event, entities)["user_handlers"]
+        template_name = settings["create_derived_list_action"]["review_session_template_name"]
         items = []
 
         project_entity = self.get_project_from_entity(entities[0])
@@ -233,17 +234,25 @@ class Delivery(BaseAction):
             "type": "enumerator",
             "name": "order",
             "data": [
-            {
-                'label': 'alphabetically',
-                'value': 'alphabetically'
-            }, {
-                'label': 'version',
-                'value': 'version'
-            }
-        ],
+                {
+                    'label': 'alphabetically',
+                    'value': 'alphabetically'
+                }, {
+                    'label': 'version',
+                    'value': 'version'
+                }
+            ],
             "label": "Order of the versions in the CSV.",
             "value": "alphabetically"
-        })
+            })
+        
+        items.append(
+            {
+            "label": "Review Template Name",
+            "type": "text",
+            "name": "template_name",
+            "value": template_name,
+                })
 
         return {
             "items": items,
@@ -681,6 +690,7 @@ class Delivery(BaseAction):
         # up template values
         ftrack_list_name = None
         ftrack_list_category_name = None
+        
         if entities[0].entity_type == "AssetVersionList":
             ftrack_list_name = entities[0]["name"]
             ftrack_list_category_name = entities[0]["category"]["name"]
@@ -908,6 +918,7 @@ class Delivery(BaseAction):
                 entities,
                 event,
                 client_review = values["create_review_session"],
+                template_name = values["template_name"],
                 list_name = ftrack_list_name,
                 list_category_name = entities[0]["category"]["name"],
                 log = self.log
