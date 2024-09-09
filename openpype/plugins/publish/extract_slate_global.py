@@ -450,7 +450,7 @@ class SlateCreator:
         cmd.append(self.get_chrome_path())
         cmd.append("--headless")
         cmd.append("--disable-logging")
-        cmd.append("--disable-gpu")
+        # cmd.append("--disable-gpu")
         cmd.append("--user-data-dir={}/chrome_logs".format(
             tempfile.gettempdir()
         ))
