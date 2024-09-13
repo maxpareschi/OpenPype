@@ -926,7 +926,7 @@ class ExtractSlateGlobal(publish.Extractor):
                 )
                 thumbnail_path = os.path.join(
                     repre["stagingDir"],
-                    "{}_slate_thumb.png".format(repre["name"])
+                    "{}_slate_thumb.jpg".format(repre["name"])
                 ).replace("\\", "/")
 
                 thumb_out_args = []
