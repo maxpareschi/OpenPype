@@ -451,6 +451,11 @@ class SlateCreator:
         cmd.append("--headless")
         cmd.append("--disable-logging")
         # cmd.append("--disable-gpu")
+        cmd.append("--run-all-compositor-stages-before-draw")
+        cmd.append("--virtual-time-budget=3000")
+        cmd.append("--crash-dumps-dir={}/chrome_dumps".format(
+            tempfile.gettempdir()
+        ))
         cmd.append("--user-data-dir={}/chrome_logs".format(
             tempfile.gettempdir()
         ))
