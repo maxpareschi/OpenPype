@@ -28,6 +28,8 @@ class CollectSlateGlobal(pyblish.api.InstancePlugin):
         publ_settings = context.data["project_settings"]["global"]["publish"]
         version_padding = context.data["anatomy"]["templates"]["defaults"]\
             ["version_padding"]
+        frame_padding = context.data["anatomy"]["templates"]["defaults"]\
+            ["frame_padding"]
 
         if self._slate_settings_name in publ_settings:
 
@@ -77,7 +79,7 @@ class CollectSlateGlobal(pyblish.api.InstancePlugin):
             ).zfill(
                 version_padding
             )
-            slate_data["frame_padding"] = version_padding
+            slate_data["frame_padding"] = frame_padding
             slate_data["intent"] = {
                 "label": "",
                 "value": ""
