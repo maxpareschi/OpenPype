@@ -448,9 +448,14 @@ class SlateCreator:
         
         cmd = []
         cmd.append(self.get_chrome_path())
-        cmd.append("--headless")
+        cmd.append("--headless=old")
         cmd.append("--disable-logging")
-        # cmd.append("--disable-gpu")
+        cmd.append("--disable-gpu")
+        cmd.append("--run-all-compositor-stages-before-draw")
+        cmd.append("--virtual-time-budget=30000")
+        cmd.append("--crash-dumps-dir={}/chrome_dumps".format(
+            tempfile.gettempdir()
+        ))
         cmd.append("--user-data-dir={}/chrome_logs".format(
             tempfile.gettempdir()
         ))
@@ -926,7 +931,7 @@ class ExtractSlateGlobal(publish.Extractor):
                 )
                 thumbnail_path = os.path.join(
                     repre["stagingDir"],
-                    "{}_slate_thumb.png".format(repre["name"])
+                    "{}_slate_thumb.jpg".format(repre["name"])
                 ).replace("\\", "/")
 
                 thumb_out_args = []
