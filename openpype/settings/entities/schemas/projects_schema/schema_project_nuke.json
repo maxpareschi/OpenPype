@@ -43,6 +43,27 @@
                             "label": "Build Workfile"
                         }
                     ]
+                },
+                {
+                    "type": "dict",
+                    "collapsible": true,
+                    "key": "autosave",
+                    "label": "Incremental autosave",
+                    "children": [
+                        {
+                            "type": "boolean",
+                            "key": "enabled",
+                            "label": "Enabled"
+                        },
+                        {
+                            "type": "number",
+                            "key": "increments",
+                            "label": "Number of rotating increments: (autosave1, autosave2...)",
+                            "minimum": 1,
+                            "maximum": 100,
+                            "decimal": 0
+                        }
+                    ]
                 }
             ]
         },

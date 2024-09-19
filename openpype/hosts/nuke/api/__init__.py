@@ -37,6 +37,7 @@ from .utils import (
     get_colorspace_list
 )
 
+from . import autosave
 __all__ = (
     "file_extensions",
     "has_unsaved_changes",
@@ -66,5 +67,6 @@ __all__ = (
     "convert_knob_value_to_correct_type",
 
     "colorspace_exists_on_node",
-    "get_colorspace_list"
+    "get_colorspace_list",
+    "autosave",
 )
