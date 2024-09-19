@@ -14,9 +14,10 @@ logger = Logger.get_logger(__name__)
 ## autosaves roll from 0-9 eg myfile.autosave, myfile.autosave1, myfile.autosave2...
 #
 ## To use just add 'import nukescripts.autosave' in your init.py
+settings = get_current_project_settings()["nuke"]["general"]["autosave"]
+increments = settings["increments"]
 
-
-def onAutoSave(filename, increments):
+def onAutoSave(filename):
 
   ## ignore untiled autosave
   if nuke.root().name() == 'Root':
@@ -65,7 +66,7 @@ def onAutoSaveDelete(filename):
   return None
 
   
-def getAutoSaveFiles(filename, increments):
+def getAutoSaveFiles(filename):
   date_file_list = []
   files = glob.glob(filename + f'[1-{increments}]')
   files.extend( glob.glob(filename) )
@@ -94,9 +95,9 @@ def getAutoSaveFiles(filename, increments):
 #nuke.removeAutoSaveRestoreFilter( onAutoSaveRestore )
 #nuke.removeAutoSaveDeleteFilter( onAutoSaveDelete )
 
-def activate_incremental_autosave(increments):
+def activate_incremental_autosave():
   try:
-      nuke.addAutoSaveFilter( onAutoSave, increments )
+      nuke.addAutoSaveFilter( onAutoSave )
       nuke.addAutoSaveRestoreFilter( onAutoSaveRestore )
       nuke.addAutoSaveDeleteFilter( onAutoSaveDelete )
   except Exception as e:
@@ -104,8 +105,7 @@ def activate_incremental_autosave(increments):
   else:
       logger.info(f"Autosave activated successfully")
 
-settings = get_current_project_settings()["nuke"]["general"]["autosave"]
 if settings["enabled"] and settings["increments"] > 0:
-  activate_incremental_autosave(settings["increments"])
+  activate_incremental_autosave()
 else:
   logger.info(f"Incremental autosave for this project is disabled")
