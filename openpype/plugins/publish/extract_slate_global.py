@@ -448,7 +448,7 @@ class SlateCreator:
         
         cmd = []
         cmd.append(self.get_chrome_path())
-        cmd.append("--headless=old")
+        cmd.append("--headless")
         cmd.append("--disable-logging")
         cmd.append("--disable-gpu")
         cmd.append("--run-all-compositor-stages-before-draw")
