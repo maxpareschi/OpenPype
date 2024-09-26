@@ -33,9 +33,9 @@ class ExtractTimecode(publish.Extractor):
             check=True,
             capture_output=True
         )
-        lines = res.stdout.decode("utf-8").replace(" ", "").splitlines()
+        lines = res.stdout.decode("utf-8", errors="ignore").replace(" ", "").splitlines()
         for line in lines:
-            if line.lower().find("timecode") > 0:
+            if line.find("TimeCode") > 0:
                 vals = line.split(":")
                 vals.reverse()
                 nums = []
