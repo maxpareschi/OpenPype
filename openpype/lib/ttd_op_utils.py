@@ -256,7 +256,8 @@ def augment_repre_with_ftrack_version_data(
 
     file = StringTemplate.format_strict_template(file["path"], data)
 
-    ctx["exr_includes_matte"] = "" if is_alpha_channel_empty(file) else "X"
+    # ctx["exr_includes_matte"] = "" if is_alpha_channel_empty(file) else "X"
+    ctx["exr_includes_matte"] = ""
     ctx["status"] = version["status"]["name"]
     ctx["notes"] = return_version_notes_for_csv(version)
     ctx["intent"] = return_intent_from_notes(ctx["notes"])
