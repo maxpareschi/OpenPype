@@ -743,6 +743,8 @@ class ExtractSlateGlobal(publish.Extractor):
 
         slate_data = instance.data[self._slate_data_name]
 
+        source_pixel_aspect = slate_data["slate_common_data"]["pixelAspect"]
+
         self.log.debug("Base comment: {}".format(
             instance.context.data.get("comment")))
         self.log.debug("Base intent: {}".format(
@@ -785,7 +787,7 @@ class ExtractSlateGlobal(publish.Extractor):
         slate_timecode = None
         
         for repre in instance.data["representations"]:
-            self.log.debug("processing repre: {}".format(json.dumps(repre, indent=4, default=str)))
+            self.log.debug("processing repre: {}".format(repre["name"]))
             if "thumbnail" in repre.get("tags", []) or \
                     repre["name"] == "thumbnail" or \
                     "review" in repre.get("tags", []) or \
@@ -831,17 +833,21 @@ class ExtractSlateGlobal(publish.Extractor):
 
         # loop through repres
         for repre in instance.data["representations"]:
+            self.log.debug("processing repre: {}".format(json.dumps(repre, indent=4, default=str)))
             if repre["name"] in repre_ignore_list:
                 self.log.debug("Representation '{}' was ignored.".format(
                     repre["name"]
                 ))
                 continue
 
+            pixel_aspect = 1.0
+
             if "slate-frame" not in repre.get("tags", []):
                 self.log.debug("Skipping representation {} as it's not tagged for slate extraction...".format(repre["name"]))
                 continue
 
             if "review" not in repre["tags"]:
+                pixel_aspect = 1.0/source_pixel_aspect
                 repre["tags"].remove("slate-frame")
 
             # check if slate is set at tail
@@ -856,6 +862,7 @@ class ExtractSlateGlobal(publish.Extractor):
                     colorspace = instance.data["colorspace"]
                 else:
                     colorspace = "ACES - ACEScg"
+                
             
             colorspace = colorspace.replace(
                     "Input - ", ""
@@ -1018,6 +1025,7 @@ class ExtractSlateGlobal(publish.Extractor):
             }
             slate.data.update(slate_repre_data)
             slate.data.update(oiio_profile)
+            slate.data["pixelAspect"] = pixel_aspect
 
             # set properties for rendering
             slate.set_resolution(

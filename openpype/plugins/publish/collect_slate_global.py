@@ -87,6 +87,11 @@ class CollectSlateGlobal(pyblish.api.InstancePlugin):
             slate_data["comment"] = ""
             slate_data["scope"] = ""
 
+            try:
+                slate_data["pixelAspect"] = float(instance.data["assetEntity"]["data"]["pixelAspect"])
+            except:
+                slate_data["pixelAspect"] = 1.0
+
             ftrack_session = context.data.get("ftrackSession", None)
 
             if ftrack_session:
