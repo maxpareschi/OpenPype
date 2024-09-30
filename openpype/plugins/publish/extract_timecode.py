@@ -53,16 +53,33 @@ class ExtractTimecode(publish.Extractor):
                 get_ffmpeg_tool_path("ffprobe"),
                 "-v",
                 "error",
+                "-select_streams", "v:0",
                 "-show_entries",
-                "format_tags=timecode",
+                "stream_tags=timecode",
                 "-of",
-                "compact=print_section=0:nokey=1",
+                "default=noprint_wrappers=1:nokey=1",
                 input.replace("\\", "/")
             ],
             check=True,
             capture_output=True,
             text=True
-        ).stdout.strip("\n")
+            ).stdout.strip("\n")
+        if tc is None or tc == "":
+            tc = subprocess.run(
+                [
+                    get_ffmpeg_tool_path("ffprobe"),
+                    "-v",
+                    "error",
+                    "-show_entries",
+                    "format_tags=timecode",
+                    "-of",
+                    "compact=print_section=0:nokey=1",
+                    input.replace("\\", "/")
+                ],
+                check=True,
+                capture_output=True,
+                text=True
+            ).stdout.strip("\n")
         return tc
 
     def process(self, instance):
