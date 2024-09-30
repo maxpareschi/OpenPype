@@ -1,4 +1,5 @@
 import os
+import json
 import subprocess
 import pyblish.api
 
@@ -24,12 +25,13 @@ class ExtractTimecode(publish.Extractor):
     active = True
 
     def get_timecode_oiio(self, input):
+        cmd = [
+            get_oiio_tools_path("iinfo"),
+            "-v",
+            input.replace("\\", "/")
+        ],
         res = subprocess.run(
-            [
-                get_oiio_tools_path("iinfo"),
-                "-v",
-                input.replace("\\", "/")
-            ],
+            cmd,
             check=True,
             capture_output=True
         )
@@ -46,40 +48,55 @@ class ExtractTimecode(publish.Extractor):
                 break
         tc = tc.replace("\"", "")
         return tc
+    
+    def _finditems(self, search_dict, field):
+        """
+        Takes a dict with nested lists and dicts,
+        and searches all dicts for a key of the field
+        provided.
+        """
+        fields_found = []
 
-    def get_timecode_ffprobe(self, input):
-        tc = subprocess.run(
-            [
-                get_ffmpeg_tool_path("ffprobe"),
-                "-v",
-                "error",
-                "-select_streams", "v:0",
-                "-show_entries",
-                "stream_tags=timecode",
-                "-of",
-                "default=noprint_wrappers=1:nokey=1",
-                input.replace("\\", "/")
-            ],
-            check=True,
-            capture_output=True,
-            text=True
-            ).stdout.strip("\n")
-        if tc is None or tc == "":
-            tc = subprocess.run(
-                [
-                    get_ffmpeg_tool_path("ffprobe"),
-                    "-v",
-                    "error",
-                    "-show_entries",
-                    "format_tags=timecode",
-                    "-of",
-                    "compact=print_section=0:nokey=1",
-                    input.replace("\\", "/")
-                ],
+        for key, value in search_dict.items():
+
+            if key == field:
+                fields_found.append(value)
+
+            elif isinstance(value, dict):
+                results = self._finditems(value, field)
+                for result in results:
+                    fields_found.append(result)
+
+            elif isinstance(value, list):
+                for item in value:
+                    if isinstance(item, dict):
+                        more_results = self._finditems(item, field)
+                        for another_result in more_results:
+                            fields_found.append(another_result)
+
+        return fields_found
+
+    def get_timecode_ffprobe(self, in_file):
+        cmd = [
+            get_ffmpeg_tool_path("ffprobe"),
+            "-v",
+            "error",
+            "-hide_banner",
+            "-print_format",
+            "json",
+            "-show_streams",
+            "-show_format",
+            in_file.replace("\\", "/")
+        ]
+        res = json.loads(
+            subprocess.run(
+                cmd,
                 check=True,
                 capture_output=True,
                 text=True
-            ).stdout.strip("\n")
+            ).stdout
+        )
+        tc = list(set(self._finditems(res, "timecode")))[0]
         return tc
 
     def process(self, instance):
