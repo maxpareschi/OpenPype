@@ -24,31 +24,6 @@ class ExtractTimecode(publish.Extractor):
     optional = True
     active = True
 
-    def get_timecode_oiio(self, input):
-        cmd = [
-            get_oiio_tools_path("iinfo"),
-            "-v",
-            input.replace("\\", "/")
-        ],
-        res = subprocess.run(
-            cmd,
-            check=True,
-            capture_output=True
-        )
-        lines = res.stdout.decode("utf-8", errors="ignore").replace(" ", "").splitlines()
-        for line in lines:
-            if line.find("TimeCode") > 0:
-                vals = line.split(":")
-                vals.reverse()
-                nums = []
-                for i in range(0, 4):
-                    nums.append(vals[i])
-                nums.reverse()
-                tc = ":".join(nums)
-                break
-        tc = tc.replace("\"", "")
-        return tc
-    
     def _finditems(self, search_dict, field):
         """
         Takes a dict with nested lists and dicts,
@@ -75,6 +50,33 @@ class ExtractTimecode(publish.Extractor):
                             fields_found.append(another_result)
 
         return fields_found
+    
+
+    def get_timecode_oiio(self, in_file):
+        cmd = [
+            get_oiio_tools_path("iinfo"),
+            "-v",
+            in_file.replace("\\", "/")
+        ]
+        res = subprocess.run(
+            cmd,
+            check=True,
+            capture_output=True
+        )
+        lines = res.stdout.decode("utf-8", errors="ignore").replace(" ", "").splitlines()
+        found_timecodes = []
+        tc = None
+        
+        for l in lines:
+            if l.lower().find("timecode") >= 0: # or l.lower().find("tc") >= 0:
+                found_timecodes.append(l)
+
+        for tcode in found_timecodes:
+            if tcode.find("smpte") >= 0:
+                tc = ":".join(tcode.split(":")[-4:])
+
+        return tc
+
 
     def get_timecode_ffprobe(self, in_file):
         cmd = [
@@ -98,6 +100,7 @@ class ExtractTimecode(publish.Extractor):
         )
         tc = list(set(self._finditems(res, "timecode")))[0]
         return tc
+
 
     def process(self, instance):
         settings = get_current_project_settings()["global"]["publish"]["ExtractTimecode"]
