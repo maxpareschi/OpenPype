@@ -1,6 +1,8 @@
 from pprint import pformat
 from logging import getLogger
 
+import json
+
 logger = getLogger(__name__)
 
 from ftrack_api import Session
@@ -127,11 +129,12 @@ class TTDTransferAttributes(BaseEvent):
         entities = []
 
         for entity_info in event["data"].get("entities", []):
-            if entity_info["entity_type"] != "Shot":
+            self.log.debug(json.dumps(entity_info, indent=4, default=str, sort_keys=True))
+            if entity_info.get("entity_type", None) != "Shot":
                 continue
-            if entity_info["entityType"] != "task":
+            if entity_info.get("entityType", None) != "task":
                 continue
-            if all(tag not in entity_info["changes"] for tag in self.target_attrs__):
+            if all(tag not in entity_info.get("changes", []) for tag in self.target_attrs__):
                 continue
             entities.append(entity_info)
 
