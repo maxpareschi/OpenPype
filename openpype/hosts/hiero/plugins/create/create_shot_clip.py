@@ -33,6 +33,30 @@ class CreateShotClip(phiero.Creator):
                     "toolTip": "Launch Ingest on farm",  # noqa
                     "order": 0
                 },
+                "ingestPool": {
+                    "value": "ingest",
+                    "type": "QLineEdit",
+                    "label": "Deadline Pool",
+                    "target": "tag",
+                    "toolTip": "Pool to launch the publishing on",  # noqa
+                    "order": 1
+                },
+                "ingestGroup": {
+                    "value": "ingest",
+                    "type": "QLineEdit",
+                    "label": "Deadline Group",
+                    "target": "tag",
+                    "toolTip": "Group to launch the publishing on",  # noqa
+                    "order": 2
+                },
+                "ingestPriority": {
+                    "value": 50,
+                    "type": "QSpinBox",
+                    "label": "Priority",
+                    "target": "tag",
+                    "toolTip": "Priority to launch the publishing on",  # noqa
+                    "order": 3
+                }
             }
         },
         "renameHierarchy": {

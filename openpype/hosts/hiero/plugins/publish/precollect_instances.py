@@ -140,6 +140,10 @@ class PrecollectInstances(pyblish.api.ContextPlugin):
             if data.get("family") == "plate" and tag_data.get("ingestOnFarm"):
                 data["families"].append("ingest.farm")
                 data["farm"] = True
+                data["primaryPool"] = tag_data.get("ingestPool", "")
+                data["secondaryPool"] = tag_data.get("ingestPool", "")
+                data["ingestGroup"] = tag_data.get("ingestGroup", "")
+                data["priority"] = tag_data.get("ingestPriority", 50)
             
             # create instance
             instance = context.create_instance(**data)

@@ -10,6 +10,7 @@ from openpype.lib.transcoding import (
 )
 from openpype.lib.profiles_filtering import filter_profiles
 from openpype.lib.transcoding import VIDEO_EXTENSIONS
+from openpype.pipeline import Anatomy
 
 
 class IntegrateFtrackInstance(pyblish.api.InstancePlugin):
@@ -61,6 +62,8 @@ class IntegrateFtrackInstance(pyblish.api.InstancePlugin):
 
     def process(self, instance):
         # self.log.debug("instance {}".format(instance))
+
+        self.anatomy = Anatomy(instance.data["projectEntity"]["name"])
 
         instance_repres = instance.data.get("representations")
         if not instance_repres:
@@ -405,7 +408,12 @@ class IntegrateFtrackInstance(pyblish.api.InstancePlugin):
         staging_dir = repre.get("stagingDir")
         if not staging_dir:
             staging_dir = instance.data["stagingDir"]
+        try:
+            staging_dir = self.anatomy.fill_root(staging_dir)
+        except:
+            self.log.debug("No anatomy root key found in staging dir")
         src_path = os.path.normpath(os.path.join(staging_dir, filename))
+        
         if os.path.exists(src_path):
             return src_path
         return None

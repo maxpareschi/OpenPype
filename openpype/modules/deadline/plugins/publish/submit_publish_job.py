@@ -183,11 +183,19 @@ class ProcessSubmittedJobOnFarm(pyblish.api.InstancePlugin):
             "gather_review"
         ],
         "plate": [
+            "priority",
+            "primaryPool",
+            "secondaryPool",
+            "ingestGroup",
             "versionData",
             "timecode",
             "tail_timecode"
         ],
         "instance.farm": [
+            "priority",
+            "primaryPool",
+            "secondaryPool",
+            "ingestGroup",
             "versionData",
             "timecode",
             "tail_timecode"
@@ -315,7 +323,7 @@ class ProcessSubmittedJobOnFarm(pyblish.api.InstancePlugin):
             if mongo_url:
                 environment["OPENPYPE_MONGO"] = mongo_url
 
-        priority = self.deadline_priority or instance.data.get("priority", 50)
+        priority = instance.data.get("priority", self.deadline_priority)
 
         args = [
             "--headless",
@@ -326,7 +334,9 @@ class ProcessSubmittedJobOnFarm(pyblish.api.InstancePlugin):
         ]
 
         if instance.data.get("gather_deadline_group", None):
-            self.deadline_group = instance.data["gather_deadline_group"]
+            self.deadline_group = instance.data.get("gather_deadline_group", "")
+        if instance.data.get("ingestGroup", None):
+            self.deadline_group = instance.data.get("ingestGroup", "")
 
         # Generate the payload for Deadline submission
         payload = {
