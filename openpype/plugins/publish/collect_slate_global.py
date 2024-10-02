@@ -24,6 +24,10 @@ class CollectSlateGlobal(pyblish.api.InstancePlugin):
 
     def process(self, instance):
 
+        if instance.data["family"] == "plate" or "ingest.farm" in instance.data.get("families", []):
+            self.log.debug("Plate publishing detected, skipping slate.")
+            return
+
         context = instance.context
         publ_settings = context.data["project_settings"]["global"]["publish"]
         version_padding = context.data["anatomy"]["templates"]["defaults"]\
@@ -44,8 +48,6 @@ class CollectSlateGlobal(pyblish.api.InstancePlugin):
                 ) or (
                     "gather.farm" in instance.data.get("families")
                 ):
-                self.log.info("Skipping Slate Global Collect, "
-                    "farm mode is on - defer to deadline...")
                 return
 
             self.log.info("ExtractSlateGlobal is active.")

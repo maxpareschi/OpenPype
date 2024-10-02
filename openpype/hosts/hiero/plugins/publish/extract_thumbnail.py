@@ -59,6 +59,9 @@ class ExtractThumnail(publish.Extractor):
                 "thumbnail"
             ]
         }
+        if instance.data.get("farm"):
+            thumb_representation["tags"].append("publish_on_farm")
+        
         instance.data["representations"].append(
             thumb_representation)
         

@@ -32,6 +32,10 @@ class IntegrateFtrackApi(pyblish.api.InstancePlugin):
         if not component_list:
             self.log.info("Instance don't have components to integrate to Ftrack. Skipping...")
             return
+        
+        if "ingest.farm" in instance.data.get("families", []):
+            self.log.debug("Instance is set to farm publishing. Skipping...")
+            return
 
         context = instance.context
         task_entity, parent_entity = self.get_instance_entities(

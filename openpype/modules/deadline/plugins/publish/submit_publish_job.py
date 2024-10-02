@@ -118,10 +118,10 @@ class ProcessSubmittedJobOnFarm(pyblish.api.InstancePlugin):
 
     # fix for houdini
     hosts = ["fusion", "maya", "nuke", "celaction", "aftereffects",
-            "harmony", "houdini", "traypublisher"]
+            "harmony", "houdini", "traypublisher", "hiero"]
 
     # fix for usdrender
-    families = ["render.farm", "prerender.farm", "gather.farm",
+    families = ["render.farm", "prerender.farm", "gather.farm", "ingest.farm",
                 "renderlayer", "imagesequence", "vrayscene", "usdrender"]
 
     # fix for houdini, is it needed?
@@ -182,6 +182,16 @@ class ProcessSubmittedJobOnFarm(pyblish.api.InstancePlugin):
             "gather_task_injection",
             "gather_review"
         ],
+        "plate": [
+            "versionData",
+            "timecode",
+            "tail_timecode"
+        ],
+        "instance.farm": [
+            "versionData",
+            "timecode",
+            "tail_timecode"
+        ],
         "slate": ["slateFrames", "slate"],
         "review": ["lutPath"],
         "render2d": ["bakingNukeScripts", "version"],
@@ -189,7 +199,7 @@ class ProcessSubmittedJobOnFarm(pyblish.api.InstancePlugin):
     }
 
     # list of family names to transfer to new family if present
-    families_transfer = ["render3d", "render2d", "ftrack", "slate", "review"]
+    families_transfer = ["render3d", "render2d", "ftrack", "slate", "review", "clip"]
     plugin_pype_version = "3.0"
 
     # script path for publish_filesequence.py
@@ -254,8 +264,13 @@ class ProcessSubmittedJobOnFarm(pyblish.api.InstancePlugin):
         if "gather" in instance.data.get("families",[]) or "gather.farm" in instance.data.get("families",[]):
             project = instance.data.get("gather_project_name", project)
             asset = instance.data.get("asset", asset)
-            task = instance.data("task", task)
+            task = instance.data.get("task", task)
             family = "gather"
+        if "ingest.farm" in instance.data.get("families",[]):
+            project = instance.data.get("project", project)
+            asset = instance.data.get("asset", asset)
+            task = ""
+            family = "plate"
 
         output_dir = self._get_publish_folder(
             instance.context.data['anatomy'],
@@ -815,6 +830,8 @@ class ProcessSubmittedJobOnFarm(pyblish.api.InstancePlugin):
             family = "prerender"
         if "gather.farm" in instance.data["families"]:
             family = "gather"
+        if "ingest.farm" in instance.data["families"]:
+            family = "plate"
         families = [family]
 
         # pass review to families if marked as review
@@ -882,7 +899,7 @@ class ProcessSubmittedJobOnFarm(pyblish.api.InstancePlugin):
                     ).format(staging_dir))
                     repre["stagingDir"] = staging_dir
 
-            if "publish_on_farm" in repre.get("tags"):
+            if "publish_on_farm" in repre.get("tags", []):
                 # create representations attribute of not there
                 if "representations" not in instance_skeleton_data.keys():
                     instance_skeleton_data["representations"] = []
