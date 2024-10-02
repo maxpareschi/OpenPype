@@ -48,7 +48,6 @@ class IngestSubmitDeadline(pyblish.api.InstancePlugin):
         
         render_path = os.path.dirname(instance.data["originalDirname"])
         self.log.info(f">>>> Render path is {render_path}")
-        context.data["currentFile"] = ""
 
         instance.data["project"] = instance.data['projectEntity']['name']
 
