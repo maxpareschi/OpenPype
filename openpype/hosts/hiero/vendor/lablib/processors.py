@@ -291,7 +291,7 @@ class ColorProcessor:
         self._ocio_config.setDescription(self._description)
         group_transform = OCIO.GroupTransform(self._ocio_transforms)
         look_transform = OCIO.ColorSpaceTransform(
-            src = self.working_space,
+            src = "default",
             dst = self.context
         )
         cspace = OCIO.ColorSpace()
