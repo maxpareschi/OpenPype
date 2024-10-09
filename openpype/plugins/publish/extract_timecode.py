@@ -6,7 +6,8 @@ import pyblish.api
 from openpype.pipeline import publish
 from openpype.lib import (
     get_oiio_tools_path,
-    get_ffmpeg_tool_path
+    get_ffmpeg_tool_path,
+    run_subprocess
 )
 from openpype.settings import get_project_settings, get_current_project_settings
 
@@ -58,12 +59,14 @@ class ExtractTimecode(publish.Extractor):
             "-v",
             in_file.replace("\\", "/")
         ]
-        res = subprocess.run(
-            cmd,
-            check=True,
-            capture_output=True
-        )
-        lines = res.stdout.decode("utf-8", errors="ignore").replace(" ", "").splitlines()
+        # res = subprocess.run(
+        #     cmd,
+        #     check=True,
+        #     capture_output=True
+        # )
+        # lines = res.stdout.decode("utf-8", errors="ignore").replace(" ", "").splitlines()
+        res = run_subprocess(cmd)
+        lines = res.replace(" ", "").splitlines()
         found_timecodes = []
         tc = None
         
@@ -90,14 +93,16 @@ class ExtractTimecode(publish.Extractor):
             "-show_format",
             in_file.replace("\\", "/")
         ]
-        res = json.loads(
-            subprocess.run(
-                cmd,
-                check=True,
-                capture_output=True,
-                text=True
-            ).stdout
-        )
+        # res = json.loads(
+        #     subprocess.run(
+        #         cmd,
+        #         check=True,
+        #         capture_output=True,
+        #         text=True
+        #     ).stdout
+        # )
+        # lines = res.replace(" ", "").splitlines()
+        res = json.loads(run_subprocess(cmd))
         tc = list(set(self._finditems(res, "timecode")))[0]
         return tc
 

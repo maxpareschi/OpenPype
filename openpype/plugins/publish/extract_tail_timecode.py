@@ -9,7 +9,8 @@ import opentimelineio as otio
 from openpype.pipeline import publish
 from openpype.lib import (
     get_oiio_tools_path,
-    get_ffmpeg_tool_path
+    get_ffmpeg_tool_path,
+    run_subprocess
 )
 
 def truncate(number, digits) -> float:
@@ -55,34 +56,55 @@ class ExtractTailTimecode(publish.Extractor):
         return tc
 
     def get_length_ffprobe(self, input):
-        length = subprocess.run([
+        # length = subprocess.run(
+        #     [
+        #         get_ffmpeg_tool_path("ffprobe"),
+        #         "-v",
+        #         "error",
+        #         "-select_streams", "v:0",
+        #         "-count_frames",
+        #         "-show_entries",
+        #         "stream=nb_read_frames",
+        #         "-of", "csv=p=0",
+        #         input.replace("\\", "/")
+        #     ],
+        #     check=True,
+        #         capture_output=True,
+        #         text=True
+        #     ).stdout.strip("\n")
+        cmd = [
             get_ffmpeg_tool_path("ffprobe"),
-                "-v",
-                "error",
-                "-select_streams", "v:0",
-                "-count_frames",
-                "-show_entries",
-                "stream=nb_read_frames",
-                "-of", "csv=p=0",
-                input.replace("\\", "/")
-            ],
-            check=True,
-                capture_output=True,
-                text=True
-            ).stdout.strip("\n")
+            "-v",
+            "error",
+            "-select_streams", "v:0",
+            "-count_frames",
+            "-show_entries",
+            "stream=nb_read_frames",
+            "-of", "csv=p=0",
+            input.replace("\\", "/")
+        ]
+        length = run_subprocess(cmd).strip("\n")
         return length
 
     def get_timecode_oiio(self, input):
-        res = subprocess.run(
-            [
-                get_oiio_tools_path("iinfo"),
-                "-v",
-                input.replace("\\", "/")
-            ],
-            check=True,
-            capture_output=True
-        )
-        lines = res.stdout.decode("utf-8").replace(" ", "").splitlines()
+        tc = "01:00:00:00"
+        # res = subprocess.run(
+        #     [
+        #         get_oiio_tools_path("iinfo"),
+        #         "-v",
+        #         input.replace("\\", "/")
+        #     ],
+        #     check=True,
+        #     capture_output=True
+        # )
+        # lines = res.stdout.decode("utf-8").replace(" ", "").splitlines()
+        cmd = [
+            get_oiio_tools_path("iinfo"),
+            "-v",
+            input.replace("\\", "/")
+        ]
+        res = run_subprocess(cmd)
+        lines = res.replace(" ", "").splitlines()
         for line in lines:
             if line.lower().find("timecode") > 0:
                 vals = line.split(":")
@@ -97,21 +119,32 @@ class ExtractTailTimecode(publish.Extractor):
         return tc
 
     def get_timecode_ffprobe(self, input):
-        tc = subprocess.run(
-            [
-                get_ffmpeg_tool_path("ffprobe"),
-                "-v",
-                "error",
-                "-show_entries",
-                "format_tags=timecode",
-                "-of",
-                "compact=print_section=0:nokey=1",
-                input.replace("\\", "/")
-            ],
-            check=True,
-            capture_output=True,
-            text=True
-        ).stdout.strip("\n")
+        # tc = subprocess.run(
+        #     [
+        #         get_ffmpeg_tool_path("ffprobe"),
+        #         "-v",
+        #         "error",
+        #         "-show_entries",
+        #         "format_tags=timecode",
+        #         "-of",
+        #         "compact=print_section=0:nokey=1",
+        #         input.replace("\\", "/")
+        #     ],
+        #     check=True,
+        #     capture_output=True,
+        #     text=True
+        # ).stdout.strip("\n")
+        cmd = [
+            get_ffmpeg_tool_path("ffprobe"),
+            "-v",
+            "error",
+            "-show_entries",
+            "format_tags=timecode",
+            "-of",
+            "compact=print_section=0:nokey=1",
+            input.replace("\\", "/")
+        ]
+        tc = run_subprocess(cmd).strip("\n")
         return tc
 
     def process(self, instance):
