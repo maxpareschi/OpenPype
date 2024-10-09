@@ -35,6 +35,7 @@ class ValidateWriteLegacy(pyblish.api.InstancePlugin):
         # and only one item should be available
         assert len(family_test) == 1, msg + " > More avalon attributes"
         assert "render" in node[family_test[0]].value() \
+            or "preview" in node[family_test[0]].value() \
             or "still" in node[family_test[0]].value(), msg + \
             " > Not correct family"
         # test if `file` knob in node, this way old
@@ -74,6 +75,8 @@ class ValidateWriteLegacy(pyblish.api.InstancePlugin):
             Create_name = "CreateWriteRender"
         elif family == "prerender":
             Create_name = "CreateWritePrerender"
+        elif family == "preview":
+            Create_name = "CreateWritePreview"
         elif family == "still":
             Create_name = "CreateWriteStill"
 
