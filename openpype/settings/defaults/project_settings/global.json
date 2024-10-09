@@ -586,7 +586,8 @@
                 },
                 {
                     "families": [
-                        "render"
+                        "render",
+                        "preview"
                     ],
                     "hosts": [],
                     "task_types": [],
@@ -604,30 +605,6 @@
                     "task_types": [],
                     "tasks": [],
                     "template": "{family}{Task}_{Renderlayer}_{Renderpass}"
-                },
-                {
-                    "families": [
-                        "review",
-                        "workfile"
-                    ],
-                    "hosts": [
-                        "aftereffects",
-                        "tvpaint"
-                    ],
-                    "task_types": [],
-                    "tasks": [],
-                    "template": "{family}{Task}"
-                },
-                {
-                    "families": [
-                        "renderLocal"
-                    ],
-                    "hosts": [
-                        "aftereffects"
-                    ],
-                    "task_types": [],
-                    "tasks": [],
-                    "template": "render{Task}{Variant}"
                 },
                 {
                     "families": [
