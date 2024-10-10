@@ -1161,6 +1161,8 @@ def create_write_node(
     for knob in imageio_writes["knobs"]:
         if knob["name"] == "file_type":
             representation = knob["value"]
+            if representation == "jpeg":
+                representation = "jpg"
 
     try:
         data.update({

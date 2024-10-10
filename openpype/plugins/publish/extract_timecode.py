@@ -1,11 +1,13 @@
 import os
+import json
 import subprocess
 import pyblish.api
 
 from openpype.pipeline import publish
 from openpype.lib import (
     get_oiio_tools_path,
-    get_ffmpeg_tool_path
+    get_ffmpeg_tool_path,
+    run_subprocess
 )
 from openpype.settings import get_project_settings, get_current_project_settings
 
@@ -23,47 +25,87 @@ class ExtractTimecode(publish.Extractor):
     optional = True
     active = True
 
-    def get_timecode_oiio(self, input):
-        res = subprocess.run(
-            [
-                get_oiio_tools_path("iinfo"),
-                "-v",
-                input.replace("\\", "/")
-            ],
-            check=True,
-            capture_output=True
-        )
-        lines = res.stdout.decode("utf-8").replace(" ", "").splitlines()
-        for line in lines:
-            if line.lower().find("timecode") > 0:
-                vals = line.split(":")
-                vals.reverse()
-                nums = []
-                for i in range(0, 4):
-                    nums.append(vals[i])
-                nums.reverse()
-                tc = ":".join(nums)
-                break
-        tc = tc.replace("\"", "")
+    def _finditems(self, search_dict, field):
+        """
+        Takes a dict with nested lists and dicts,
+        and searches all dicts for a key of the field
+        provided.
+        """
+        fields_found = []
+
+        for key, value in search_dict.items():
+
+            if key == field:
+                fields_found.append(value)
+
+            elif isinstance(value, dict):
+                results = self._finditems(value, field)
+                for result in results:
+                    fields_found.append(result)
+
+            elif isinstance(value, list):
+                for item in value:
+                    if isinstance(item, dict):
+                        more_results = self._finditems(item, field)
+                        for another_result in more_results:
+                            fields_found.append(another_result)
+
+        return fields_found
+    
+
+    def get_timecode_oiio(self, in_file):
+        cmd = [
+            get_oiio_tools_path("iinfo"),
+            "-v",
+            in_file.replace("\\", "/")
+        ]
+        # res = subprocess.run(
+        #     cmd,
+        #     check=True,
+        #     capture_output=True
+        # )
+        # lines = res.stdout.decode("utf-8", errors="ignore").replace(" ", "").splitlines()
+        res = run_subprocess(cmd)
+        lines = res.replace(" ", "").splitlines()
+        found_timecodes = []
+        tc = None
+        
+        for l in lines:
+            if l.lower().find("timecode") >= 0: # or l.lower().find("tc") >= 0:
+                found_timecodes.append(l)
+
+        for tcode in found_timecodes:
+            if tcode.find("smpte") >= 0:
+                tc = ":".join(tcode.split(":")[-4:])
+
         return tc
 
-    def get_timecode_ffprobe(self, input):
-        tc = subprocess.run(
-            [
-                get_ffmpeg_tool_path("ffprobe"),
-                "-v",
-                "error",
-                "-show_entries",
-                "format_tags=timecode",
-                "-of",
-                "compact=print_section=0:nokey=1",
-                input.replace("\\", "/")
-            ],
-            check=True,
-            capture_output=True,
-            text=True
-        ).stdout.strip("\n")
+
+    def get_timecode_ffprobe(self, in_file):
+        cmd = [
+            get_ffmpeg_tool_path("ffprobe"),
+            "-v",
+            "error",
+            "-hide_banner",
+            "-print_format",
+            "json",
+            "-show_streams",
+            "-show_format",
+            in_file.replace("\\", "/")
+        ]
+        # res = json.loads(
+        #     subprocess.run(
+        #         cmd,
+        #         check=True,
+        #         capture_output=True,
+        #         text=True
+        #     ).stdout
+        # )
+        # lines = res.replace(" ", "").splitlines()
+        res = json.loads(run_subprocess(cmd))
+        tc = list(set(self._finditems(res, "timecode")))[0]
         return tc
+
 
     def process(self, instance):
         settings = get_current_project_settings()["global"]["publish"]["ExtractTimecode"]

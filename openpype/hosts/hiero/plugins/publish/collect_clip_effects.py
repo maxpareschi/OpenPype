@@ -114,6 +114,9 @@ class CollectClipEffects(pyblish.api.InstancePlugin):
             )
             data["effects"] = effects
 
+            if data.get("farm"):
+                del data["farm"]
+
             # create new instance
             _instance = instance.context.create_instance(**data)
             self.log.info("Created instance `{}`".format(_instance))

@@ -120,24 +120,24 @@
                 ".exr",
                 ".png",
                 ".dpx",
+                ".png",
                 ".jpg",
-                ".jpeg",
-                ".tiff",
-                ".tif",
-                ".mov",
-                ".mp4",
-                ".avi"
+                ".jpeg"
             ]
         },
         {
-            "family": "playblast",
+            "family": "preview",
             "identifier": "",
-            "label": "Playblast",
+            "label": "Preview (Playblast or Slapcomp)",
             "icon": "mdi.folder-multiple-image",
             "default_variants": [
-                "Main",
+                "Lookdev",
+                "Groom",
+                "FX",
+                "Texture",
+                "Layout",
                 "Previz",
-                "Preview"
+                "Model"
             ],
             "description": "Playblast from DCCs",
             "detailed_description": "Sequence or single file renders",
@@ -146,14 +146,8 @@
             "extensions": [
                 ".exr",
                 ".png",
-                ".dpx",
                 ".jpg",
-                ".jpeg",
-                ".tiff",
-                ".tif",
-                ".mov",
-                ".mp4",
-                ".avi"
+                ".jpeg"
             ]
         },
         {
@@ -192,6 +186,8 @@
             "allow_multiple_items": true,
             "extensions": [
                 ".exr",
+                ".hdr",
+                ".hdri",
                 ".jpg",
                 ".jpeg",
                 ".dpx",
@@ -280,6 +276,7 @@
                 ".dpx",
                 ".cin",
                 ".jpg",
+                ".jpeg",
                 ".tiff",
                 ".tif",
                 ".mov",

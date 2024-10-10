@@ -99,6 +99,8 @@ class ExtractClipEffects(publish.Extractor):
         ))
 
         current_ocio_config = instance.data["versionData"]["colorspaceScript"]["ocioConfigPath"]
+        if os.environ.get("OCIO", False):
+            current_ocio_config = os.environ["OCIO"]
 
         if current_ocio_config and settings["enabled"]:
             self.log.debug("Computing OCIO with base config: '{}'".format(

@@ -35,7 +35,7 @@ class ExtractTemplatedTranscode(publish.Extractor):
     optional = True
 
     # Supported extensions
-    supported_exts = ["exr", "dpx", "jpg", "png", "cin", "mov", "mxf", "mp4", "tiff", "tif"]
+    supported_exts = ["exr", "dpx", "jpg", "jpeg", "png", "cin", "mov", "mxf", "mp4", "tiff", "tif"]
     movie_exts = ["mov", "mxf", "mp4"]
 
     # Configurable by Settings
@@ -158,6 +158,9 @@ class ExtractTemplatedTranscode(publish.Extractor):
                     input_colorspace = new_repre["colorspaceData"]["colorspace"]
                     profile_def["color_conversion"]["input_colorspace"] = input_colorspace
                 output_colorspace = profile_def["color_conversion"]["output_colorspace"].strip()
+                if output_colorspace == "":
+                    output_colorspace = new_repre["colorspaceData"]["colorspace"]
+                    profile_def["color_conversion"]["output_colorspace"] = output_colorspace
                 color_config = new_repre["colorspaceData"]["config"]["path"].strip()
 
                 if transcoding_type == "template":

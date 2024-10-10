@@ -146,6 +146,54 @@
                 },
                 {
                     "plugins": [
+                        "CreateWritePreview"
+                    ],
+                    "nukeNodeClass": "Write",
+                    "knobs": [
+                        {
+                            "type": "text",
+                            "name": "channels",
+                            "value": "rgb"
+                        },
+                        {
+                            "type": "text",
+                            "name": "file_type",
+                            "value": "jpeg"
+                        },
+                        {
+                            "type": "decimal_number",
+                            "name": "_jpeg_quality",
+                            "value": 0.9
+                        },
+                        {
+                            "type": "text",
+                            "name": "_jpeg_sub_sampling",
+                            "value": "4:2:2"
+                        },
+                        {
+                            "type": "color_gui",
+                            "name": "tile_color",
+                            "value": [
+                                10,
+                                171,
+                                171,
+                                255
+                            ]
+                        },
+                        {
+                            "type": "text",
+                            "name": "colorspace",
+                            "value": "color_picking"
+                        },
+                        {
+                            "type": "bool",
+                            "name": "create_directories",
+                            "value": true
+                        }
+                    ]
+                },
+                {
+                    "plugins": [
                         "CreateWriteStill"
                     ],
                     "nukeNodeClass": "Write",
@@ -287,6 +335,22 @@
                 "Fg01",
                 "Branch01",
                 "Part01"
+            ],
+            "reviewable": false,
+            "knobs": [],
+            "prenodes": {}
+        },
+        "CreateWritePreview": {
+            "fpath_template": "{work}/renders/nuke/{subset}/{subset}.{frame}.{ext}",
+            "use_range_limit": true,
+            "defaults": [
+                "Lookdev",
+                "Texture",
+                "Model",
+                "Layout",
+                "Lighting",
+                "Grooming",
+                "FX"
             ],
             "reviewable": false,
             "knobs": [],

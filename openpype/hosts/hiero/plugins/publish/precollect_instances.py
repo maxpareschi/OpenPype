@@ -79,7 +79,7 @@ class PrecollectInstances(pyblish.api.ContextPlugin):
             # add tag data to instance data
             data.update({
                 k: v for k, v in tag_data.items()
-                if k not in ("id", "applieswhole", "label")
+                if k not in ("id", "applieswhole", "label", "ingestOnFarm")
             })
 
             asset = tag_data["asset"]
@@ -137,6 +137,14 @@ class PrecollectInstances(pyblish.api.ContextPlugin):
             # add resolution
             self.get_resolution_to_data(data, context)
 
+            if data.get("family") == "plate" and tag_data.get("ingestOnFarm"):
+                data["families"].append("ingest.farm")
+                data["farm"] = True
+                data["primaryPool"] = tag_data.get("ingestPool", "")
+                data["secondaryPool"] = tag_data.get("ingestPool", "")
+                data["ingestGroup"] = tag_data.get("ingestGroup", "")
+                data["priority"] = tag_data.get("ingestPriority", 50)
+            
             # create instance
             instance = context.create_instance(**data)
 
@@ -224,6 +232,8 @@ class PrecollectInstances(pyblish.api.ContextPlugin):
             "family": family,
             "families": []
         })
+        if data.get("farm"):
+            del data["farm"]
 
         instance = context.create_instance(**data)
         self.log.info("Creating instance: {}".format(instance))

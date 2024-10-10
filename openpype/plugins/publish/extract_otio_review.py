@@ -220,6 +220,8 @@ class ExtractOTIOReview(publish.Extractor):
 
         # creating and registering representation
         representation = self._create_representation(start, duration)
+        if instance.data.get("farm", False):
+            representation["tags"].append("publish_on_farm")
         instance.data["representations"].append(representation)
         self.log.info("Adding representation: {}".format(representation))
 
@@ -243,7 +245,7 @@ class ExtractOTIOReview(publish.Extractor):
             "frameEnd": end,
             "stagingDir": self.staging_dir,
             "tags": ["review", "delete"]
-        }
+        }    
 
         collection = clique.Collection(
             self.temp_file_head,

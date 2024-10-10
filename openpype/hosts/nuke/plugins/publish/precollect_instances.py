@@ -104,7 +104,7 @@ class PreCollectNukeInstances(pyblish.api.ContextPlugin):
                 node.end()
 
             if not families and families_ak and family not in [
-                    "render", "prerender"]:
+                    "render", "prerender", "preview"]:
                 families.append(families_ak.lower())
 
             self.log.debug("__ family: `{}`".format(family))

@@ -15,6 +15,11 @@ import opentimelineio as otio
 import pyblish.api
 from openpype.pipeline import publish
 from openpype.settings import get_current_project_settings
+from openpype.lib import (
+    get_oiio_tools_path,
+    get_ffmpeg_tool_path,
+    run_subprocess
+)
 
 
 
@@ -470,12 +475,15 @@ class SlateCreator:
 
         self.log.debug("Chrome Screenshot: cmd> {}".format(" ".join(cmd)))
         
-        subprocess.run(
-            cmd,
-            shell=False,
-            check=True,
-            capture_output=True
-        )
+        # subprocess.run(
+        #     cmd,
+        #     shell=False,
+        #     check=True,
+        #     capture_output=True
+        # )
+
+        res = run_subprocess(cmd)
+        self.log.debug(res)
 
         os.remove(html_temp_path)
 
@@ -498,7 +506,7 @@ class SlateCreator:
         env = self.set_env(env) if env else self.env
         
         cmd = []
-        cmd.append("oiiotool{}".format(self.exec_ext))
+        cmd.append(get_oiio_tools_path(tool="oiiotool"))
         cmd.extend(in_args)
         cmd.append("-i")
         cmd.append(input)
@@ -508,13 +516,15 @@ class SlateCreator:
 
         self.log.debug("{}: cmd>{}".format(name, " ".join(cmd)))
         
-        res = subprocess.run(
-            cmd,
-            env=env,
-            shell=True if env else False,
-            check=True,
-            capture_output=True
-        )
+        # res = subprocess.run(
+        #     cmd,
+        #     env=env,
+        #     shell=True if env else False,
+        #     check=True,
+        #     capture_output=True
+        # )
+
+        res = run_subprocess(cmd)
 
         return res
     
@@ -533,7 +543,7 @@ class SlateCreator:
         env = self.set_env(env) if env else self.env
         
         cmd = []
-        cmd.append("oiiotool{}".format(self.exec_ext))
+        cmd.append(get_oiio_tools_path(tool="oiiotool"))
         cmd.append(meta_src)
         cmd.append(dest)
         cmd.append("-a")
@@ -546,13 +556,15 @@ class SlateCreator:
 
         self.log.debug("{}: cmd>{}".format(name, " ".join(cmd)))
         
-        res = subprocess.run(
-            cmd,
-            env=env,
-            shell=True if env else False,
-            check=True,
-            capture_output=True
-        )
+        # res = subprocess.run(
+        #     cmd,
+        #     env=env,
+        #     shell=True if env else False,
+        #     check=True,
+        #     capture_output=True
+        # )
+
+        res = run_subprocess(cmd, env=env)
 
         return res
 
@@ -565,7 +577,7 @@ class SlateCreator:
         name = os.path.basename(input.replace("\\", "/"))
         env = self.set_env(env) if env else self.env
         cmd = []
-        cmd.append("iinfo{}".format(self.exec_ext))
+        cmd.append(get_oiio_tools_path(tool="iinfo"))
         cmd.append("-v")
         cmd.append(input)
         tc = self.data["timecode"]
@@ -573,14 +585,18 @@ class SlateCreator:
         self.log.debug("{0}: Starting timecode set at: {1}".format(name, self.data["timecode"]))
         self.log.debug("detected fps: {}".format(self.data["fps"]))
         try:
-            res = subprocess.run(
-                cmd,
-                env=env,
-                shell=True if env else False,
-                check=True,
-                capture_output=True
-            )
-            lines = res.stdout.decode("utf-8").replace(" ", "").splitlines()
+            # res = subprocess.run(
+            #     cmd,
+            #     env=env,
+            #     shell=True if env else False,
+            #     check=True,
+            #     capture_output=True
+            # )
+            # lines = res.stdout.decode("utf-8").replace(" ", "").splitlines()
+
+            res = run_subprocess(cmd, env=env)
+            lines = res.replace(" ", "").splitlines()
+
             for line in lines:
                 if line.lower().find("timecode") > 0:
                     vals = line.split(":")
@@ -615,7 +631,7 @@ class SlateCreator:
         name = os.path.basename(input.replace("\\", "/"))
         env = self.set_env(env) if env else self.env
         cmd = [
-            "ffprobe{}".format(self.exec_ext),
+            get_ffmpeg_tool_path(tool="ffprobe"),
             "-v",
             "error",
             "-show_entries",
@@ -629,14 +645,15 @@ class SlateCreator:
         self.log.debug("detected fps: {}".format(self.data["fps"]))
         cmd.append(input)
         try:
-            tc = subprocess.run(
-                cmd,
-                env=env,
-                shell=True if env else False,
-                check=True,
-                capture_output=True,
-                text=True
-            ).stdout.strip("\n")
+            # tc = subprocess.run(
+            #     cmd,
+            #     env=env,
+            #     shell=True if env else False,
+            #     check=True,
+            #     capture_output=True,
+            #     text=True
+            # ).stdout.strip("\n")
+            tc = run_subprocess(cmd, env=env).strip("\n")
             self.log.debug("{0}: New starting timecode Found: {1}".format(name, tc))
         except:
             self.log.debug("FFPROBE process failed, switching to default tc...")
@@ -655,21 +672,23 @@ class SlateCreator:
         name = os.path.basename(input.replace("\\", "/"))
         env = self.env if not env else env
         cmd = []
-        cmd.append("ffprobe{}".format(self.exec_ext))
+        cmd.append(get_ffmpeg_tool_path(tool="ffprobe"))
         cmd.extend(["-v", "error", "-select_streams", "v:0",
             "-show_entries", "stream=width,height", "-of", "json"])
         cmd.append(input)
         self.log.debug("{}: cmd>{}".format(name, " ".join(cmd)))
-        res = subprocess.run(
-            cmd,
-            env=env,
-            shell=True if env else False,
-            check=True,
-            capture_output=True
-        )
-        resolution = json.loads(
-            res.stdout.decode("utf-8")
-        )["streams"][0]
+        # res = subprocess.run(
+        #     cmd,
+        #     env=env,
+        #     shell=True if env else False,
+        #     check=True,
+        #     capture_output=True
+        # )
+        # resolution = json.loads(
+        #     res.stdout.decode("utf-8")
+        # )["streams"][0]
+        res = run_subprocess(cmd, env=env)
+        resolution = json.loads(res)["streams"][0]
         self.log.debug("{}: File resolution is: {}x{}".format(
             name,
             resolution["width"],
@@ -743,6 +762,8 @@ class ExtractSlateGlobal(publish.Extractor):
 
         slate_data = instance.data[self._slate_data_name]
 
+        source_pixel_aspect = slate_data["slate_common_data"]["pixelAspect"]
+
         self.log.debug("Base comment: {}".format(
             instance.context.data.get("comment")))
         self.log.debug("Base intent: {}".format(
@@ -785,7 +806,7 @@ class ExtractSlateGlobal(publish.Extractor):
         slate_timecode = None
         
         for repre in instance.data["representations"]:
-            self.log.debug("processing repre: {}".format(json.dumps(repre, indent=4, default=str)))
+            self.log.debug("processing repre: {}".format(repre["name"]))
             if "thumbnail" in repre.get("tags", []) or \
                     repre["name"] == "thumbnail" or \
                     "review" in repre.get("tags", []) or \
@@ -831,17 +852,21 @@ class ExtractSlateGlobal(publish.Extractor):
 
         # loop through repres
         for repre in instance.data["representations"]:
+            self.log.debug("processing repre: {}".format(json.dumps(repre, indent=4, default=str)))
             if repre["name"] in repre_ignore_list:
                 self.log.debug("Representation '{}' was ignored.".format(
                     repre["name"]
                 ))
                 continue
 
+            pixel_aspect = 1.0
+
             if "slate-frame" not in repre.get("tags", []):
                 self.log.debug("Skipping representation {} as it's not tagged for slate extraction...".format(repre["name"]))
                 continue
 
             if "review" not in repre["tags"]:
+                pixel_aspect = 1.0/source_pixel_aspect
                 repre["tags"].remove("slate-frame")
 
             # check if slate is set at tail
@@ -856,6 +881,7 @@ class ExtractSlateGlobal(publish.Extractor):
                     colorspace = instance.data["colorspace"]
                 else:
                     colorspace = "ACES - ACEScg"
+                
             
             colorspace = colorspace.replace(
                     "Input - ", ""
@@ -1018,6 +1044,7 @@ class ExtractSlateGlobal(publish.Extractor):
             }
             slate.data.update(slate_repre_data)
             slate.data.update(oiio_profile)
+            slate.data["pixelAspect"] = pixel_aspect
 
             # set properties for rendering
             slate.set_resolution(

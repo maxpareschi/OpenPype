@@ -84,7 +84,7 @@ class CollectNukeWrites(pyblish.api.InstancePlugin):
         )
 
         if [fm for fm in _families_test
-                if fm in ["render", "prerender", "still"]]:
+                if fm in ["render", "prerender", "preview", "still"]]:
             if "representations" not in instance.data:
                 instance.data["representations"] = list()
 

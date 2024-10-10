@@ -662,6 +662,7 @@ class PublishClip:
     vertical_sync_default = True
     driving_layer_default = "Main"
     audio_default = False
+    ingest_on_farm = False
 
     def __init__(self, cls, track_item, **kwargs):
         # populate input cls attribute onto self.[attr]
@@ -760,6 +761,8 @@ class PublishClip:
             "____ self.shot_num: {}".format(self.shot_num))
 
         # ui_inputs data or default values if gui was not used
+        self.ingest_on_farm = self.ui_inputs.get(
+            "ingestOnFarm", {}).get("value") or self.ingest_on_farm
         self.rename = self.ui_inputs.get(
             "clipRename", {}).get("value") or self.rename_default
         self.clip_name = self.ui_inputs.get(
