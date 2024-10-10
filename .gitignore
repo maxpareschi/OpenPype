@@ -44,8 +44,8 @@ Temporary Items
 /vendor/python/*
 /.venv
 /venv/
-/cmds
-/cmds/*
+/ttd
+/ttd/*
 
 # Documentation
 ###############
