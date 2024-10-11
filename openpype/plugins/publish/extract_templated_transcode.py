@@ -35,7 +35,7 @@ class ExtractTemplatedTranscode(publish.Extractor):
     optional = True
 
     # Supported extensions
-    supported_exts = ["exr", "dpx", "jpg", "jpeg", "png", "cin", "mov", "mxf", "mp4", "tiff", "tif"]
+    supported_exts = ["exr", "dpx", "jpg", "jpeg", "png", "cin", "mov", "mxf", "mp4", "tiff", "tif", "hdr", "hdri"]
     movie_exts = ["mov", "mxf", "mp4"]
 
     # Configurable by Settings
