@@ -7,10 +7,10 @@ from subprocess import Popen, PIPE
 from datetime import datetime
 from tempfile import NamedTemporaryFile
 from collections import defaultdict
-from re import compile  as recomp
+from re import compile  as recomp, Pattern
 
 from ftrack_api.entity.asset_version import AssetVersion
-from openpype.settings import get_anatomy_settings
+from openpype.settings import get_anatomy_settings, get_project_settings
 
 
 logger = getLogger(__name__)
@@ -23,7 +23,7 @@ from openpype.lib import get_oiio_tools_path, get_ffmpeg_tool_path
 
 
 EMPTY_IMAGE_REGEX = recomp("Stats StdDev: 0.00 0.00 0.00")
-INTENT_REGEX = recomp("(WIP\ [A-Z]+)|PAF(?=\ \-\ )")
+INTENT_REGEX = "(WIP\ [A-Z]+)|PAF(?=\ \-\ )"
 
 
 def augment_representation_context(prj: str, repre: dict, context: dict):
@@ -147,12 +147,15 @@ def return_version_notes_for_csv(version: AssetVersion):
 
     return result
 
-def return_intent_from_notes(notes: Dict[str,str]):
+def return_intent_from_notes(notes: Dict[str,str], intent_regexes: List[str]):
     result = defaultdict(str)
+    intent_patterns = [recomp(i) for i in intent_regexes]
     for k, v in notes.items():
-        match = INTENT_REGEX.match(v)
-        if match:
-            result[k] = match.group()
+        for regex in intent_patterns:
+            match = regex.match(v)
+            if match:
+                result[k] = match.group()
+                break
     return result
 
 
@@ -224,8 +227,8 @@ def augment_repre_with_ftrack_version_data(
         * `status`
         * `notes`
     """
-
-    templates = get_anatomy_settings(version["project"]["full_name"])["templates"]
+    prj = version["project"]["full_name"]
+    templates = get_anatomy_settings(prj)["templates"]
     padding = int(templates["defaults"]["version_padding"])
     # padding = 3
     name = version["asset"]["name"]
@@ -260,7 +263,22 @@ def augment_repre_with_ftrack_version_data(
     ctx["exr_includes_matte"] = ""
     ctx["status"] = version["status"]["name"]
     ctx["notes"] = return_version_notes_for_csv(version)
-    ctx["intent"] = return_intent_from_notes(ctx["notes"])
+    prj_settings = get_project_settings(prj)["ftrack"]["user_handlers"]
+    try:
+        intent_regexes = prj_settings["delivery_action"]["csv_intent_regex"]
+    except KeyError as e:
+        intent_regexes = [
+                "(WIP\\ [A-Z]+)|PAF(?=\\ \\-\\ )",
+                "(WIP(?=\\ \\-\\ ))",
+                "(FINAL\\ PENDING\\ TECH\\ CHECK(?=\\ \\-\\ ))",
+                "(FINAL\\ TECH\\ CHECKED(?=\\ \\-\\ ))",
+                "(APROVAL(?=\\ \\-\\ ))",
+                "(REFERENCE(?=\\ \\-\\ ))",
+                "(TEMP(?=\\ \\-\\ ))",
+                "(MARKETING(?=\\ \\-\\ ))",
+                "(TEST(?=\\ \\-\\ ))"
+            ]
+    ctx["intent"] = return_intent_from_notes(ctx["notes"], intent_regexes)
 
 
 def get_csv_path(created_files: List[str], pckg_name: str):
