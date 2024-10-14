@@ -80,14 +80,16 @@ def yield_csv_lines_from_repres(
     anatomy = Anatomy(prj)
     datetime_data = get_datetime_data()
     settings = get_project_settings(prj)["ftrack"]["user_handlers"]
-    settings = settings["delivery_action"]["csv_template_families"].get(anatomy_name)
-    if settings is None:
-        settings = [
+    tpl = settings["delivery_action"]["csv_template_families"].get(anatomy_name)
+    if tpl is None:
+        tpl = settings["delivery_action"]["csv_template_families"].get("default")
+    if tpl is None:
+        tpl = [
             {"column_name": "Errors", "column_value": "Failed to find CSV config"}
         ]
-    yield ",".join([d["column_name"] for d in settings])
+    yield ",".join([d["column_name"] for d in tpl])
     for repre in representations:
-        yield generate_csv_line_from_repre(prj, repre, anatomy, datetime_data, settings)
+        yield generate_csv_line_from_repre(prj, repre, anatomy, datetime_data, tpl)
 
 
 def generate_csv_from_representations(
