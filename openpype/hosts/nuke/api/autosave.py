@@ -3,6 +3,7 @@ import time
 import os
 from pprint import pformat
 from openpype.lib import Logger
+from pathlib import Path
 
 import nuke
 
@@ -70,7 +71,10 @@ def on_autosave_delete(filename):
     
 def get_autosave_files(filename):
     date_file_list = []
-    files = glob.glob(filename + f'*autosave[0-{increments}]')
+    # glob(r"X:/prj/OBX/generic/gen/work/render_test/gen_render_test_v006_test*.autosave[0-9]")
+    glob_str = filename.replace(".nk", "*") + f'[0-{increments}]'
+    logger.info(glob_str)
+    files = glob.glob(glob_str)
 
     for file in files:
         logger.debug(file)
