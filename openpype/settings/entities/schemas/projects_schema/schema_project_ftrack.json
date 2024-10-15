@@ -248,8 +248,7 @@
                         {
                             "type": "dict-modifiable",
                             "key": "mapping",
-                            "object_type":
-                            {
+                            "object_type": {
                                 "type": "list",
                                 "object_type": "text"
                             }
@@ -439,13 +438,15 @@
                                     "minimum": 0,
                                     "maximum": 23,
                                     "decimal": 0
-                                }, {
+                                },
+                                {
                                     "label": "M:",
                                     "type": "number",
                                     "minimum": 0,
                                     "maximum": 59,
                                     "decimal": 0
-                                }, {
+                                },
+                                {
                                     "label": "S:",
                                     "type": "number",
                                     "minimum": 0,
@@ -546,11 +547,11 @@
                             "object_type": "text"
                         },
                         {
-                          "type": "separator"
+                            "type": "separator"
                         },
                         {
-                          "type": "label",
-                          "label": "Check \"Create project structure\" by default"
+                            "type": "label",
+                            "label": "Check \"Create project structure\" by default"
                         },
                         {
                             "type": "boolean",
@@ -676,15 +677,25 @@
                         },
                         {
                             "type": "label",
+                            "label": "List of regexes used to find the submission type from the notes written by the Supervisors"
+                        },
+                        {
+                            "type": "list",
+                            "key": "csv_intent_regex",
+                            "label": "CSV Intent Regex",
+                            "object_type": "text"
+                        },
+                        {
+                            "type": "label",
                             "label": "NOTE: Template keys can be All standard anatomy template data plus:\n- {ftrack[listname]}\n- {ftrack[username]}\n- {ftrack[category]}\n- {asset_data[duration]}\n- {asset_data[frameStart]}\n- {asset_data[frameEnd]}\n- {asset_data[duration]}\n- {asset_data[duration_no_slate]}\n- {asset_data[start]}\n- {asset_data[end]}\n- {episode_name}\n- {shot_name}\n- {status}\n- {version_info[name]}\n- {version_info[version]}\n- {version_info[full_name]}\n- {version_info[name]}_DOG_{version_info[padded_version]}\n- {notes[For Client]}\n- {notes[Client Feedback]}\n- {notes[...]}\n- {exr_includes_matte}\n- {intent[For Client]}\n- {intent[Submission Notes]}"
                         },
                         {
-                            "label":"CSV Template Families",
-                            "key":"csv_template_families",
-                            "type":"dict-modifiable",
+                            "label": "CSV Template Families",
+                            "key": "csv_template_families",
+                            "type": "dict-modifiable",
                             "collapsible": true,
                             "use_label_wrap": true,
-                            "object_type":{
+                            "object_type": {
                                 "type": "list",
                                 "collapsible": true,
                                 "object_type": {
@@ -1238,14 +1249,30 @@
                             "type": "enum",
                             "multiselection": true,
                             "enum_items": [
-                                {"openpype_version": "OpenPype version"},
-                                {"frame_start": "Frame start"},
-                                {"frame_end": "Frame end"},
-                                {"duration": "Duration"},
-                                {"width": "Resolution width"},
-                                {"height": "Resolution height"},
-                                {"fps": "FPS"},
-                                {"code": "Codec"}
+                                {
+                                    "openpype_version": "OpenPype version"
+                                },
+                                {
+                                    "frame_start": "Frame start"
+                                },
+                                {
+                                    "frame_end": "Frame end"
+                                },
+                                {
+                                    "duration": "Duration"
+                                },
+                                {
+                                    "width": "Resolution width"
+                                },
+                                {
+                                    "height": "Resolution height"
+                                },
+                                {
+                                    "fps": "FPS"
+                                },
+                                {
+                                    "code": "Codec"
+                                }
                             ]
                         }
                     ]

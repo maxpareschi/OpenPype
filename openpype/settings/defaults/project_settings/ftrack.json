@@ -96,7 +96,9 @@
             "enabled": true,
             "mapping": {},
             "asset_types_to_skip": [],
-            "asset_prefix_to_skip": ["prerender"]
+            "asset_prefix_to_skip": [
+                "prerender"
+            ]
         },
         "next_task_update": {
             "enabled": true,
@@ -207,8 +209,18 @@
                 "Dailies_h264": "{root[delivery]}/{project[name]}/out/dailies/{yyyy}{mm}{dd}/{ftrack[listname]}/Review/{asset}_{task[short]}_DOG_{@version}<.{@frame}>.{ext}"
             },
             "create_client_review_default": false,
-            "csv_template_families":
-            {
+            "csv_intent_regex": [
+                "(WIP\\ [A-Z]+)|PAF(?=\\ \\-\\ )",
+                "(WIP(?=\\ \\-\\ ))",
+                "(FINAL\\ PENDING\\ TECH\\ CHECK(?=\\ \\-\\ ))",
+                "(FINAL\\ TECH\\ CHECKED(?=\\ \\-\\ ))",
+                "(APROVAL(?=\\ \\-\\ ))",
+                "(REFERENCE(?=\\ \\-\\ ))",
+                "(TEMP(?=\\ \\-\\ ))",
+                "(MARKETING(?=\\ \\-\\ ))",
+                "(TEST(?=\\ \\-\\ ))"
+            ],
+            "csv_template_families": {
                 "Finals": [
                     {
                         "column_name": "Vendor",
