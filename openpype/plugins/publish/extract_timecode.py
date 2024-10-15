@@ -3,6 +3,8 @@ import json
 import subprocess
 import pyblish.api
 
+import opentimelineio as otio
+
 from openpype.pipeline import publish
 from openpype.lib import (
     get_oiio_tools_path,
@@ -11,6 +13,11 @@ from openpype.lib import (
 )
 from openpype.settings import get_project_settings, get_current_project_settings
 
+
+def get_frame_from_timecode(tc, fps=24.0):
+    rationaltime = otio.opentime.from_timecode(tc, fps)
+    frames = rationaltime.to_frames(fps)
+    return frames
 
 class ExtractTimecode(publish.Extractor):
     """
@@ -146,7 +153,11 @@ class ExtractTimecode(publish.Extractor):
                 repre["timecode"] = final_tc
         instance.data["timecode"] = final_tc
 
-        self.log.debug("Final timecode for instance set to: '{}'".format(final_tc))
+        self.log.debug(instance.data.get("fps"))
+
+        instance.data["frame_start_tc"] =  get_frame_from_timecode(final_tc, float(instance.data.get("fps", 24.0)))
+
+        self.log.debug("Final timecode for instance set to: '{}', frame number set to: {}".format(final_tc, instance.data["frame_start_tc"]))
 
 
                     
