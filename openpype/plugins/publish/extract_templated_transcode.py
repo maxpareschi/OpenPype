@@ -574,7 +574,7 @@ class ExtractTemplatedTranscode(publish.Extractor):
 
         nukepy = os.path.join(
             os.path.dirname(str(nuke_app.find_executable())),
-            "python" + ext
+            "pythonw" + ext
         ).replace("\\", "/")
 
         nukeexe = str(nuke_app.find_executable())
