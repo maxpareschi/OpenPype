@@ -15,7 +15,7 @@ class ValidateOutputResolution(pyblish.api.InstancePlugin):
 
     order = pyblish.api.ValidatorOrder
     optional = True
-    families = ["render", "render.local", "render.farm"]
+    families = ["render", "render.local", "preview.local", "render.farm"]
     label = "Write Resolution"
     hosts = ["nuke"]
     actions = [RepairAction]
