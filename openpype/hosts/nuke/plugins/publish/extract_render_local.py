@@ -108,7 +108,7 @@ class NukeRenderLocal(publish.Extractor):
             families.remove('prerender.local')
             families.insert(0, "prerender")
             instance.data["anatomyData"]["family"] = "prerender"
-        if "preview.local" in families:
+        elif "preview.local" in families:
             instance.data['family'] = 'preview'
             families.remove('preview.local')
             families.insert(0, "preview")
