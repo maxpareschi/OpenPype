@@ -83,7 +83,7 @@ class ExtractTailTimecode(publish.Extractor):
             "-of", "csv=p=0",
             input.replace("\\", "/")
         ]
-        length = run_subprocess(cmd).strip("\n")
+        length = run_subprocess(cmd, creationflags=subprocess.CREATE_NO_WINDOW).strip("\n")
         return length
 
     def get_timecode_oiio(self, input):
@@ -103,7 +103,7 @@ class ExtractTailTimecode(publish.Extractor):
             "-v",
             input.replace("\\", "/")
         ]
-        res = run_subprocess(cmd)
+        res = run_subprocess(cmd, creationflags=subprocess.CREATE_NO_WINDOW)
         lines = res.replace(" ", "").splitlines()
         for line in lines:
             if line.lower().find("timecode") > 0:
@@ -144,7 +144,7 @@ class ExtractTailTimecode(publish.Extractor):
             "compact=print_section=0:nokey=1",
             input.replace("\\", "/")
         ]
-        tc = run_subprocess(cmd).strip("\n")
+        tc = run_subprocess(cmd, creationflags=subprocess.CREATE_NO_WINDOW).strip("\n")
         return tc
 
     def process(self, instance):
