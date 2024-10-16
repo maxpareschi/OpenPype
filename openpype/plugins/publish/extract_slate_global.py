@@ -482,7 +482,7 @@ class SlateCreator:
         #     capture_output=True
         # )
 
-        res = run_subprocess(cmd)
+        res = run_subprocess(cmd, creationflags=subprocess.CREATE_NO_WINDOW)
         self.log.debug(res)
 
         os.remove(html_temp_path)
@@ -524,7 +524,7 @@ class SlateCreator:
         #     capture_output=True
         # )
 
-        res = run_subprocess(cmd)
+        res = run_subprocess(cmd, creationflags=subprocess.CREATE_NO_WINDOW)
 
         return res
     
@@ -564,7 +564,7 @@ class SlateCreator:
         #     capture_output=True
         # )
 
-        res = run_subprocess(cmd, env=env)
+        res = run_subprocess(cmd, env=env, creationflags=subprocess.CREATE_NO_WINDOW)
 
         return res
 
@@ -594,7 +594,7 @@ class SlateCreator:
             # )
             # lines = res.stdout.decode("utf-8").replace(" ", "").splitlines()
 
-            res = run_subprocess(cmd, env=env)
+            res = run_subprocess(cmd, env=env, creationflags=subprocess.CREATE_NO_WINDOW)
             lines = res.replace(" ", "").splitlines()
 
             for line in lines:
@@ -653,7 +653,7 @@ class SlateCreator:
             #     capture_output=True,
             #     text=True
             # ).stdout.strip("\n")
-            tc = run_subprocess(cmd, env=env).strip("\n")
+            tc = run_subprocess(cmd, env=env, creationflags=subprocess.CREATE_NO_WINDOW).strip("\n")
             self.log.debug("{0}: New starting timecode Found: {1}".format(name, tc))
         except:
             self.log.debug("FFPROBE process failed, switching to default tc...")
@@ -687,7 +687,7 @@ class SlateCreator:
         # resolution = json.loads(
         #     res.stdout.decode("utf-8")
         # )["streams"][0]
-        res = run_subprocess(cmd, env=env)
+        res = run_subprocess(cmd, env=env, creationflags=subprocess.CREATE_NO_WINDOW)
         resolution = json.loads(res)["streams"][0]
         self.log.debug("{}: File resolution is: {}x{}".format(
             name,

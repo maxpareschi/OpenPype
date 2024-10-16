@@ -72,7 +72,7 @@ class ExtractTimecode(publish.Extractor):
         #     capture_output=True
         # )
         # lines = res.stdout.decode("utf-8", errors="ignore").replace(" ", "").splitlines()
-        res = run_subprocess(cmd)
+        res = run_subprocess(cmd, creationflags=subprocess.CREATE_NO_WINDOW)
         lines = res.replace(" ", "").splitlines()
         found_timecodes = []
         tc = None
@@ -109,7 +109,7 @@ class ExtractTimecode(publish.Extractor):
         #     ).stdout
         # )
         # lines = res.replace(" ", "").splitlines()
-        res = json.loads(run_subprocess(cmd))
+        res = json.loads(run_subprocess(cmd, creationflags=subprocess.CREATE_NO_WINDOW))
         tc = list(set(self._finditems(res, "timecode")))[0]
         return tc
 
