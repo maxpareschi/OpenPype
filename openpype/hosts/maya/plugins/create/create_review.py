@@ -8,9 +8,9 @@ from openpype.hosts.maya.api import (
 class CreateReview(plugin.Creator):
     """Single baked camera"""
 
-    name = "reviewDefault"
-    label = "Review"
-    family = "review"
+    name = "previewAnimationMain"
+    label = "Preview (Playblast)"
+    family = "preview"
     icon = "video-camera"
     keepImages = False
     isolate = False

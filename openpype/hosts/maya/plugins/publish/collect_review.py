@@ -1,3 +1,5 @@
+import json
+
 from maya import cmds, mel
 import pymel.core as pm
 
@@ -13,8 +15,8 @@ class CollectReview(pyblish.api.InstancePlugin):
     """
 
     order = pyblish.api.CollectorOrder + 0.3
-    label = 'Collect Review Data'
-    families = ["review"]
+    label = 'Collect Preview Data'
+    families = ["preview"]
     legacy = True
 
     def process(self, instance):
@@ -37,10 +39,10 @@ class CollectReview(pyblish.api.InstancePlugin):
         objectset = instance.context.data['objectsets']
 
         reviewable_subset = None
-        reviewable_subset = list(set(members) & set(objectset))
+        reviewable_subset = list(set(members) and set(objectset))
         if reviewable_subset:
             assert len(reviewable_subset) <= 1, "Multiple subsets for review"
-            self.log.debug('subset for review: {}'.format(reviewable_subset))
+            self.log.debug('subset for preview: {}'.format(reviewable_subset))
 
             i = 0
             for inst in instance.context:
@@ -55,10 +57,12 @@ class CollectReview(pyblish.api.InstancePlugin):
                     continue
 
                 if data.get('families'):
+                    data['families'].append('preview')
                     data['families'].append('review')
                 else:
-                    data['families'] = ['review']
-                self.log.debug('adding review family to {}'.format(
+                    data['families'] = ['preview', 'review']
+                data['families'] = list(set(data['families']))
+                self.log.debug('adding preview family to {}'.format(
                     reviewable_subset))
                 data['review_camera'] = camera
                 # data["publish"] = False
@@ -77,10 +81,10 @@ class CollectReview(pyblish.api.InstancePlugin):
                 cmds.setAttr(str(instance) + '.active', 1)
                 self.log.debug('data {}'.format(instance.context[i].data))
                 instance.context[i].data.update(data)
-                instance.data['remove'] = True
-                self.log.debug('isntance data {}'.format(instance.data))
+                # instance.data['remove'] = True
+                self.log.debug('instance data {}'.format(json.dumps(instance.data, indent=4, default=str)))
         else:
-            legacy_subset_name = task + 'Review'
+            legacy_subset_name = 'preview' + task.capitalize() + 'Main'
             asset_doc = instance.context.data['assetEntity']
             project_name = legacy_io.active_project()
             subset_doc = get_subset_by_name(

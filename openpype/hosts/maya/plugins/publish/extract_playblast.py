@@ -20,7 +20,7 @@ class ExtractPlayblast(publish.Extractor):
 
     label = "Extract Playblast"
     hosts = ["maya"]
-    families = ["review"]
+    families = ["preview"]
     optional = True
     capture_preset = {}
 
@@ -61,6 +61,7 @@ class ExtractPlayblast(publish.Extractor):
         review_instance_width = instance.data.get("review_width")
         review_instance_height = instance.data.get("review_height")
         preset['camera'] = camera
+        extension = capture_presets["Codec"]["compression"]
 
         # Tests if project resolution is set,
         # if it is a value other than zero, that value is
@@ -163,7 +164,7 @@ class ExtractPlayblast(publish.Extractor):
         if "representations" not in instance.data:
             instance.data["representations"] = []
 
-        tags = ["review"]
+        tags = ["preview", "review"]
         if not instance.data.get("keepImages"):
             tags.append("delete")
 
@@ -176,8 +177,8 @@ class ExtractPlayblast(publish.Extractor):
             collected_files = collected_files[0]
 
         representation = {
-            'name': 'png',
-            'ext': 'png',
+            'name': extension,
+            'ext': extension,
             'files': collected_files,
             "stagingDir": stagingdir,
             "frameStart": start,
