@@ -13,6 +13,7 @@ class AddPythonOptionals(PreLaunchHook):
     def execute(self):
 
         env = copy.deepcopy(self.launch_context.env)
+        is_hou_20 = 'houdini/20' in env["AVALON_APP_NAME"]
 
         pythonpath = env.get("PYTHONPATH", [])
         openpype_root = os.getenv("OPENPYPE_REPOS_ROOT")
@@ -22,7 +23,7 @@ class AddPythonOptionals(PreLaunchHook):
                 "openpype",
                 "vendor",
                 "python",
-                "python_310"
+                "python_310" if  is_hou_20 else "python_39"
             )
         )
         if pythonpath:
