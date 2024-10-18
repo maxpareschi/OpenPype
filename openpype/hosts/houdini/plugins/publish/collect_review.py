@@ -7,12 +7,12 @@ import pyblish.api
 class CollectHoudiniReviewData(pyblish.api.InstancePlugin):
     """Collect Review Data."""
 
-    label = "Collect Houdini Review Data"
+    label = "Collect Houdini Preview Data"
     # This specific order value is used so that
     # this plugin runs after CollectRopFrameRange
     order = pyblish.api.CollectorOrder + 0.1
     hosts = ["houdini"]
-    families = ["review"]
+    families = ["preview"]
 
     def process(self, instance):
 

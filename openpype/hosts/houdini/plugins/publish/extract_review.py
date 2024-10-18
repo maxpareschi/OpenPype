@@ -12,8 +12,8 @@ import hou
 class ExtractHoudiniReview(publish.Extractor):
 
     order = pyblish.api.ExtractorOrder - 0.01
-    label = "Extract Houdini review"
-    families = ["review"]
+    label = "Extract Houdini preview"
+    families = ["preview"]
     hosts = ["houdini"]
 
     def process(self, instance):

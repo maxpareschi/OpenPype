@@ -16,8 +16,8 @@ from openpype.lib.attribute_definitions import (
 class CreateHoudiniReview(plugin.HoudiniCreator):
 
     identifier = "io.openpype.creators.houdini.review"
-    label = "Review"
-    family = "review"
+    label = "Preview (Playblast)"
+    family = "preview"
     icon = "video-camera"
 
     def get_pre_create_attr_defs(self):
@@ -60,7 +60,7 @@ class CreateHoudiniReview(plugin.HoudiniCreator):
     def create (self, subset_name, instance_data, pre_create_data):
 
         instance_data.pop("active", None)
-        instance_data["families"] = ["review"]
+        instance_data["families"] = ["preview", "review"]
         instance_data.update({"node_type": "opengl"})
         instance_data["image_format"] = pre_create_data.get("image_format")
         instance_data["keep_images"] = pre_create_data.get("keep_images")
