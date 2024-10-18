@@ -718,6 +718,15 @@ class SlateCreator:
         return tc
 
 
+
+
+
+
+
+
+
+
+
 class ExtractSlateGlobal(publish.Extractor):
     """
     Extractor that creates Slate frames using OIIO.

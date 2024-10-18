@@ -22,7 +22,7 @@ class AddPythonOptionals(PreLaunchHook):
                 "openpype",
                 "vendor",
                 "python",
-                "python_39"
+                "python_310"
             )
         )
         if pythonpath:
