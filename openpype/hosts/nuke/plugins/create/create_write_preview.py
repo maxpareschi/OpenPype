@@ -17,7 +17,6 @@ class CreateWritePreview(plugin.AbstractWriteRender):
     # settings
     fpath_template = "{work}/render/nuke/{subset}/{subset}.{frame}.{ext}"
     defaults = ["Key01", "Bg01", "Fg01", "Branch01", "Part01"]
-    reviewable = True
     use_range_limit = True
 
     def __init__(self, *args, **kwargs):
@@ -37,7 +36,7 @@ class CreateWritePreview(plugin.AbstractWriteRender):
                 self.data["subset"],
                 write_data,
                 input=selected_node,
-                review=self.reviewable,
+                review=True,
                 linked_knobs=["channels", "___", "first", "last", "use_limit"]
             )
         else:
@@ -45,7 +44,7 @@ class CreateWritePreview(plugin.AbstractWriteRender):
                 self.data["subset"],
                 write_data,
                 input=selected_node,
-                review=self.reviewable,
+                review=True,
                 linked_knobs=["channels", "___", "first", "last", "use_limit"]
             )
 
