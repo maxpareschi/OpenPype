@@ -15,6 +15,13 @@ class AddPythonOptionals(PreLaunchHook):
         env = copy.deepcopy(self.launch_context.env)
         is_hou_20 = 'houdini/20' in env["AVALON_APP_NAME"]
 
+        if self.application.name.find("19") == 0:
+            python_env_folder = "python_39"
+        elif self.application.name.find("20") == 0:
+            python_env_folder = "python_310"
+        else:
+            python_env_folder = "python_3"
+
         pythonpath = env.get("PYTHONPATH", [])
         openpype_root = os.getenv("OPENPYPE_REPOS_ROOT")
         python_optional_dir = os.path.normpath(
@@ -23,7 +30,7 @@ class AddPythonOptionals(PreLaunchHook):
                 "openpype",
                 "vendor",
                 "python",
-                "python_310" if  is_hou_20 else "python_39"
+                python_env_folder
             )
         )
         if pythonpath:

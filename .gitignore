@@ -39,6 +39,8 @@ Temporary Items
 /dist/
 
 /openpype/vendor/bin*
+/openpype/vendor/python/python_39
+/openpype/vendor/python/python_310
 /openpype/vendor/certs*
 /vendor/bin/*
 /vendor/python/*
