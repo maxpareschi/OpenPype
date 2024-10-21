@@ -29,6 +29,7 @@ class TrayPublishAddon(OpenPypeModule, IHostAddon, ITrayAction):
     def tray_menu(self, *args, **kwargs):
         super(TrayPublishAddon, self).tray_menu(*args, **kwargs)
         traypublisher = self._experimental_tools.get("traypublisher")
+        traypublisher.enabled = True
         visible = False
         if traypublisher and traypublisher.enabled:
             visible = True
