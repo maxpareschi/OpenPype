@@ -405,8 +405,6 @@ class ExtractReviewSlate(publish.Extractor):
             self.log.debug(
                 "_ representation {}: `{}`".format(
                     idx, inst_data["representations"][idx]))
-            
-            raise ValueError("DONT FUCK WITH THIS!")
 
             # removing temp files
             for f in _remove_at_end:
