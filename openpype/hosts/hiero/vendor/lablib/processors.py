@@ -323,7 +323,7 @@ class ColorProcessor:
         
         self.log.debug(f"Current active views: '{active_views}'")
         self._ocio_config.setActiveViews(
-            "{},{}".format(self.context, active_views))
+            "{},{}".format(active_views, self.context))
 
         self._ocio_config.validate()
         self.log.debug(f"Added active views: '{self._ocio_config.getActiveViews()}'")
