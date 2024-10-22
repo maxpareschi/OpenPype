@@ -21,7 +21,7 @@ class CollectReview(pyblish.api.InstancePlugin):
 
     def process(self, instance):
 
-        self.log.debug('instance: {}'.format(instance))
+        self.log.debug(f'instance: {json.dumps(instance.data, indent=4, default=str)}')
 
         task = legacy_io.Session["AVALON_TASK"]
 
@@ -39,7 +39,7 @@ class CollectReview(pyblish.api.InstancePlugin):
         objectset = instance.context.data['objectsets']
 
         reviewable_subset = None
-        reviewable_subset = list(set(members) and set(objectset))
+        reviewable_subset = list(set(members) & set(objectset))
         if reviewable_subset:
             assert len(reviewable_subset) <= 1, "Multiple subsets for review"
             self.log.debug('subset for preview: {}'.format(reviewable_subset))
@@ -57,7 +57,6 @@ class CollectReview(pyblish.api.InstancePlugin):
                     continue
 
                 if data.get('families'):
-                    data['families'].append('preview')
                     data['families'].append('review')
                 else:
                     data['families'] = ['preview', 'review']
@@ -81,8 +80,8 @@ class CollectReview(pyblish.api.InstancePlugin):
                 cmds.setAttr(str(instance) + '.active', 1)
                 self.log.debug('data {}'.format(instance.context[i].data))
                 instance.context[i].data.update(data)
-                # instance.data['remove'] = True
-                self.log.debug('instance data {}'.format(json.dumps(instance.data, indent=4, default=str)))
+                instance.data['remove'] = True
+                self.log.debug(f'instance data {json.dumps(instance.data, indent=4, default=str)}')
         else:
             legacy_subset_name = 'preview' + task.capitalize() + 'Main'
             asset_doc = instance.context.data['assetEntity']
@@ -104,7 +103,11 @@ class CollectReview(pyblish.api.InstancePlugin):
                 instance.data["frameEndHandle"]
 
             # make ftrack publishable
-            instance.data["families"] = ['ftrack']
+            
+            if not instance.data.get('families'):
+                instance.data['families'] = []
+            
+            instance.data['families'].append('ftrack')
 
             cmds.setAttr(str(instance) + '.active', 1)
 
@@ -143,3 +146,5 @@ class CollectReview(pyblish.api.InstancePlugin):
                         "filename": node.filename.get()
                     }
                 )
+
+        self.log.debug(f"DATA: {json.dumps(instance.data, indent=4, default=str)}")

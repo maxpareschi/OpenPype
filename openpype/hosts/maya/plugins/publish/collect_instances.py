@@ -134,6 +134,11 @@ class CollectInstances(pyblish.api.ContextPlugin):
             if 'families' not in data:
                 data['families'] = [data.get('family')]
 
+            if data.get('family') == 'preview':
+                self.log.debug('This instance is a preview, appending review to families...')
+                data['families'].append('review')
+                # data['family'] = "review"
+
             # Create the instance
             instance = context.create_instance(objset)
             instance[:] = members_hierarchy
@@ -169,6 +174,8 @@ class CollectInstances(pyblish.api.ContextPlugin):
             instance.data["label"] = label
 
             instance.data.update(data)
+
+            
 
             # Produce diagnostic message for any graphical
             # user interface interested in visualising it.
