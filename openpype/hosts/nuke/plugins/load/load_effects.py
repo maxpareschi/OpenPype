@@ -122,8 +122,12 @@ class LoadEffects(load.LoaderPlugin):
                                 node[k].setValueAt(
                                     value,
                                     (workfile_first_frame + i))
+                    elif isinstance(v, dict):
+                        for index, expr in v.items():
+                            node[k].setExpression(expr, int(index))
                     else:
                         node[k].setValue(v)
+
                 node.setInput(0, pre_node)
                 pre_node = node
 
