@@ -22,18 +22,19 @@ class TrayPublishAddon(OpenPypeModule, IHostAddon, ITrayAction):
         self._experimental_tools = None
 
     def tray_init(self):
-        from openpype.tools.experimental_tools import ExperimentalTools
+        # from openpype.tools.experimental_tools import ExperimentalTools
 
-        self._experimental_tools = ExperimentalTools()
+        # self._experimental_tools = ExperimentalTools()
+        return
 
     def tray_menu(self, *args, **kwargs):
         super(TrayPublishAddon, self).tray_menu(*args, **kwargs)
-        traypublisher = self._experimental_tools.get("traypublisher")
-        traypublisher.enabled = True
-        visible = False
-        if traypublisher and traypublisher.enabled:
-            visible = True
-        self._action_item.setVisible(visible)
+        # traypublisher = self._experimental_tools.get("traypublisher")
+        # traypublisher.enabled = True
+        # visible = False
+        # if traypublisher and traypublisher.enabled:
+        #     visible = True
+        self._action_item.setVisible(True)
 
     def on_action_trigger(self):
         self.run_traypublisher()
