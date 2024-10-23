@@ -13,6 +13,7 @@ class AddPythonOptionals(PreLaunchHook):
     def execute(self):
 
         env = copy.deepcopy(self.launch_context.env)
+        is_hou_20 = 'houdini/20' in env["AVALON_APP_NAME"]
 
         if self.application.name.find("19") == 0:
             python_env_folder = "python_39"
