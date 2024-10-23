@@ -1,8 +1,9 @@
 import os
 import json
 import subprocess
-import pyblish.api
+import math
 
+import pyblish.api
 import opentimelineio as otio
 
 from openpype.pipeline import publish
@@ -13,6 +14,16 @@ from openpype.lib import (
 )
 from openpype.settings import get_project_settings, get_current_project_settings
 
+def truncate(number, digits) -> float:
+    # Improve accuracy with floating point operations, to avoid truncate(16.4, 2) = 16.39 or truncate(-1.13, 2) = -1.12
+    try:
+        nbDecimals = len(str(number).split('.')[1])
+    except:
+        nbDecimals = 0
+    if nbDecimals <= digits:
+        return number
+    stepper = 10.0 ** digits
+    return math.trunc(stepper * number) / stepper
 
 def get_frame_from_timecode(tc, fps=24.0):
     rationaltime = otio.opentime.from_timecode(tc, fps)
@@ -153,9 +164,11 @@ class ExtractTimecode(publish.Extractor):
                 repre["timecode"] = final_tc
         instance.data["timecode"] = final_tc
 
-        self.log.debug(instance.data.get("fps"))
+        self.log.debug(f"Found FPS in instance: {instance.data.get('fps')}")
+        instance_fps = truncate(float(instance.data.get("fps", 24.0)), 3)
+        self.log.debug(f"FPS truncated to: {instance_fps}")
 
-        instance.data["frame_start_tc"] =  get_frame_from_timecode(final_tc, float(instance.data.get("fps", 24.0)))
+        instance.data["frame_start_tc"] =  get_frame_from_timecode(final_tc, instance_fps)
 
         self.log.debug("Final timecode for instance set to: '{}', frame number set to: {}".format(final_tc, instance.data["frame_start_tc"]))
 
