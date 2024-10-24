@@ -122,6 +122,8 @@ class ExtractReviewSlate(publish.Extractor):
 
             if instance.data.get("timecode"):
                 input_timecode = instance.data["timecode"]
+                if "no-handles" in p_tags:
+                    input_timecode = instance.data["timecode_no_handles"]
 
             if not input_timecode:
                 input_timecode = video_data["format"]["tags"].get("timecode") or "01:00:00:00"
