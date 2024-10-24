@@ -75,7 +75,7 @@ def transcode_template(data):
     if os.path.isfile(data["save_path"]):
         os.remove(data["save_path"])
 
-    print("\nStart Template:\n")
+    print("Start Template:")
 
     nuke.nodePaste(data["profile_data"]["template_path"]["template"])
 
@@ -127,10 +127,10 @@ def transcode_template(data):
             read["last"].setValue(data["frameEnd"]-data["frameStart"]+1)
             read["origfirst"].setValue(1)
             read["origlast"].setValue(data["frameEnd"]-data["frameStart"]+1)
-        read["frame_mode"].setValue("start at")
-        read["frame"].setValue(str(data["frameStart"]))
         read["raw"].setValue(True)
         read["file"].setValue(data["input_path"])
+        read["frame_mode"].setValue("start at")
+        read["frame"].setValue(str(data["frameStart"]))
         for dep in input_node.dependent(nuke.INPUTS):
             for i in range(dep.inputs()):
                 if dep.input(i) == input_node:
@@ -190,7 +190,7 @@ def transcode_template(data):
     nuke.delete(input_node)
     nuke.delete(output_node)
 
-    print("\nEnd Template.\n")
+    print("End Template.")
 
     return write
 
@@ -199,7 +199,7 @@ def transcode_subsetchain(data):
     if os.path.isfile(data["save_path"]):
         os.remove(data["save_path"])
 
-    print("\nStart Subset Chain:\n")
+    print("Start Subset Chain:")
 
     node_list = []
 
@@ -214,10 +214,10 @@ def transcode_subsetchain(data):
         read["last"].setValue(data["frameEnd"]-data["frameStart"]+1)
         read["origfirst"].setValue(1)
         read["origlast"].setValue(data["frameEnd"]-data["frameStart"]+1)
-    read["frame_mode"].setValue("start at")
-    read["frame"].setValue(str(data["frameStart"]))
     read["raw"].setValue(True)
     read["file"].setValue(data["input_path"])
+    read["frame_mode"].setValue("start at")
+    read["frame"].setValue(str(data["frameStart"]))
     node_list.append(read)
     print("'{}' node created.".format(node_list[-1].name()))
 
@@ -282,7 +282,7 @@ def transcode_subsetchain(data):
                 node.name(), node_list[node_id-1].name()
             ))
     
-    print("\nEnd Subset Chain.\n")
+    print("End Subset Chain.")
 
     return write
 
@@ -291,7 +291,7 @@ def transcode_color_conversion(data):
     if os.path.isfile(data["save_path"]):
         os.remove(data["save_path"])
 
-    print("\nStart Color Conversion:\n")
+    print("Start Color Conversion:")
 
     node_list = []
 
@@ -306,10 +306,10 @@ def transcode_color_conversion(data):
         read["last"].setValue(data["frameEnd"]-data["frameStart"]+1)
         read["origfirst"].setValue(1)
         read["origlast"].setValue(data["frameEnd"]-data["frameStart"]+1)
-    read["frame_mode"].setValue("start at")
-    read["frame"].setValue(str(data["frameStart"]))
     read["colorspace"].setValue(data["profile_data"]["color_conversion"]["input_colorspace"])
     read["file"].setValue(data["input_path"])
+    read["frame_mode"].setValue("start at")
+    read["frame"].setValue(str(data["frameStart"]))
     node_list.append(read)
     print("'{}' node created.".format(node_list[-1].name()))
 
@@ -362,7 +362,7 @@ def transcode_color_conversion(data):
                 node.name(), node_list[node_id-1].name()
             ))
 
-    print("\nEnd Color Conversion.\n")
+    print("End Color Conversion.")
 
     return write
 
@@ -382,6 +382,8 @@ def install_all():
 def process_all(data):
     print("Transcode with arguments:")
     print(data)
+    print("Start Main.")
+
     write_node = None
 
     root_node = nuke.root()
@@ -400,34 +402,32 @@ def process_all(data):
         write_node = transcode_color_conversion(data)
     else:
         raise ValueError("Data not valid!")
-    
-    saved = nuke.scriptSave(data["save_path"])
-    if not saved:
-        raise OSError("Could not save script file!")
 
     if write_node:
         if write_node.knob("metadata"):
             write_node["metadata"].setValue("all metadata")
         if write_node.knob("noprefix"):
             write_node["noprefix"].setValue(True)
-        nuke.execute(write_node)
+        write_node["render_order"].setValue(1)
+        print("End Main.\n")
+        return write_node
     else:
-        raise ValueError("Can't render, invalid write node!")
-    
-    return write_node
+        raise ValueError("Write node was malformed, aborting...")
     
 
 def process_thumb(node, data):
 
-    print("\nStart Thumbnail:\n")
+    print("Start Thumbnail:")
 
-    frame_number = int(data["frameEnd"] - data["frameStart"] // 2) + data["frameStart"]
+    frame_number = int((int(data["frameEnd"]) - int(data["frameStart"])) / 2) + int(data["frameStart"])
 
     thumb_read = nuke.nodes.Read(file = node["file"].getValue())
     thumb_read["name"].setValue("READ_THUMB")
     thumb_read["first"].setValue(data["frameStart"])
     thumb_read["last"].setValue(data["frameEnd"])
     thumb_read["raw"].setValue(True)
+    thumb_read["on_error"].setValue("black")
+    print("'{}' node created.".format(thumb_read.name()))
     
     thumb_write = nuke.nodes.Write(file = data["thumbnail_path"])
     thumb_write["name"].setValue("WRITE_THUMB")
@@ -437,14 +437,20 @@ def process_thumb(node, data):
     thumb_write["last"].setValue(frame_number)
     thumb_write["raw"].setValue(True)
     thumb_write["file_type"].setValue("jpg")
+    thumb_write["render_order"].setValue(2)
+    print("'{}' node created.".format(thumb_write.name()))
     thumb_write.setInput(0, thumb_read)
+    print("'{}' node input connected to '{}' node.".format(
+        thumb_write.name(), thumb_read.name()
+    ))
     
     if thumb_write:
-        nuke.execute(thumb_write, start=frame_number, end=frame_number)
+        print("End Thumbnail.\n")
+        return thumb_write
     else:
-        raise ValueError("Can't render, invalid write node!")
+        raise ValueError("Write node was malformed, aborting...")
 
-    print("\nEnd Thumbnail.\n")
+    
 
 
 if __name__ == "__main__":
@@ -454,13 +460,16 @@ if __name__ == "__main__":
     with open(json_path,"r") as data_json:
         data = json.loads(data_json.read())
 
-    
     install_all()
 
     main_write_node = process_all(data)
     
     if data["profile_data"]["override_thumbnail"]:
-        process_thumb(main_write_node, data)
+        thumb_write_node = process_thumb(main_write_node, data)
+
+    saved = nuke.scriptSave(data["save_path"])
+    if not saved:
+        raise OSError("Could not save script file!")
 
     nuke.scriptExit()
     
