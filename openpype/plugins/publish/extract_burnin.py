@@ -502,12 +502,6 @@ class ExtractBurnin(publish.Extractor):
             "comment": instance.data["comment"]
         })
 
-        if instance.data.get("timecode", None):
-            burnin_data["timecode"] = instance.data["timecode"]
-
-        if instance.data.get("frame_start_tc", None):
-            burnin_data["frame_start_tc"] = instance.data["frame_start_tc"]
-
         intent_label = context.data.get("intent") or ""
         if intent_label and isinstance(intent_label, dict):
             value = intent_label.get("value")
@@ -524,6 +518,22 @@ class ExtractBurnin(publish.Extractor):
             "frame_start_handle": frame_start_handle,
             "frame_end_handle": frame_end_handle
         }
+
+        transfer_tc_data = [
+            "timecode",
+            "timecode_no_handles",
+            "frame_start_tc",
+            "frame_start_tc_no_handles",
+            "tail_timecode",
+            "tail_timecode_no_handles"
+        ]
+
+        self.log.debug("TC >>> Pulling timecode data from instance.data...")
+        for k in transfer_tc_data:
+            v = instance.data.get(k, None)
+            self.log.debug(f"TC >>> {k}: {v}")
+            if v:
+                temp_data[k] = v
 
         self.log.debug(
             "Basic burnin_data: {}".format(json.dumps(burnin_data, indent=4))
@@ -694,10 +704,14 @@ class ExtractBurnin(publish.Extractor):
         if "no-handles" in repre["tags"]:
             burnin_frame_start = temp_data["frame_start"]
             burnin_frame_end = temp_data["frame_end"]
+            timecode = temp_data["timecode_no_handles"]
+            frame_start_tc = temp_data["frame_start_tc_no_handles"]
 
         else:
             burnin_frame_start = temp_data["frame_start_handle"]
             burnin_frame_end = temp_data["frame_end_handle"]
+            timecode = temp_data["timecode"]
+            frame_start_tc = temp_data["frame_start_tc"]
 
         burnin_duration = burnin_frame_end - burnin_frame_start + 1
 
@@ -705,6 +719,8 @@ class ExtractBurnin(publish.Extractor):
             "frame_start": burnin_frame_start,
             "frame_end": burnin_frame_end,
             "duration": burnin_duration,
+            "timecode": timecode,
+            "frame_start_tc": frame_start_tc
         })
         temp_data["duration"] = burnin_duration
 
@@ -729,6 +745,8 @@ class ExtractBurnin(publish.Extractor):
                 burnin_frame_end - burnin_slate_frame_start + 1
             )
         })
+
+        self.log.debug(f"Computed burnin data: {json.dumps(burnin_data, indent=4, default=str)}")
 
     def filter_burnins_defs(self, profile, instance):
         """Filter outputs by their values from settings.

@@ -28,7 +28,7 @@ from openpype.lib import (
 def check_timecode_is_not_zero(tc: str):
     # raise ValueError(f"Timecode is {tc}")
     settings = get_current_project_settings()["global"]["publish"]["ExtractTimecode"]
-    default_tc = settings.get("default_tc", "01:00:00:00")
+    default_tc = settings.get("default_tc", "01:00:00:01")
     if tc == "00:00:00:00":
         logger.warning("The timecode seems to be set at '00:00:00:00', "
             f"setting it back to default timecode: '{default_tc}'")

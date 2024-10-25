@@ -56,22 +56,6 @@ class ExtractTailTimecode(publish.Extractor):
         return tc
 
     def get_length_ffprobe(self, input):
-        # length = subprocess.run(
-        #     [
-        #         get_ffmpeg_tool_path("ffprobe"),
-        #         "-v",
-        #         "error",
-        #         "-select_streams", "v:0",
-        #         "-count_frames",
-        #         "-show_entries",
-        #         "stream=nb_read_frames",
-        #         "-of", "csv=p=0",
-        #         input.replace("\\", "/")
-        #     ],
-        #     check=True,
-        #         capture_output=True,
-        #         text=True
-        #     ).stdout.strip("\n")
         cmd = [
             get_ffmpeg_tool_path("ffprobe"),
             "-v",
@@ -87,17 +71,7 @@ class ExtractTailTimecode(publish.Extractor):
         return length
 
     def get_timecode_oiio(self, input):
-        tc = "01:00:00:00"
-        # res = subprocess.run(
-        #     [
-        #         get_oiio_tools_path("iinfo"),
-        #         "-v",
-        #         input.replace("\\", "/")
-        #     ],
-        #     check=True,
-        #     capture_output=True
-        # )
-        # lines = res.stdout.decode("utf-8").replace(" ", "").splitlines()
+        tc = "01:00:00:01"
         cmd = [
             get_oiio_tools_path("iinfo"),
             "-v",
@@ -119,21 +93,6 @@ class ExtractTailTimecode(publish.Extractor):
         return tc
 
     def get_timecode_ffprobe(self, input):
-        # tc = subprocess.run(
-        #     [
-        #         get_ffmpeg_tool_path("ffprobe"),
-        #         "-v",
-        #         "error",
-        #         "-show_entries",
-        #         "format_tags=timecode",
-        #         "-of",
-        #         "compact=print_section=0:nokey=1",
-        #         input.replace("\\", "/")
-        #     ],
-        #     check=True,
-        #     capture_output=True,
-        #     text=True
-        # ).stdout.strip("\n")
         cmd = [
             get_ffmpeg_tool_path("ffprobe"),
             "-v",
@@ -149,6 +108,7 @@ class ExtractTailTimecode(publish.Extractor):
 
     def process(self, instance):
         timecode = instance.data.get("timecode", None)
+        handle_end = int(instance.data.get("handleEnd", 0))
         if not timecode:
             self.log.warning("No start timecode detected!!!")
             raise ValueError
@@ -199,13 +159,19 @@ class ExtractTailTimecode(publish.Extractor):
         fps = truncate(instance.data.get("fps", instance.context.data.get("fps", 24)), 3)
 
         tail_tc = self.offset_timecode(timecode, fps, offset=final_length)
+        tail_tc_no_handles = self.offset_timecode(timecode, fps, offset=final_length-handle_end)
+
+        tail_tc_data = {
+            "tail_timecode": tail_tc,
+            "tail_timecode_no_handles": tail_tc_no_handles
+        }
 
         for repre in instance.data["representations"]:
             if repre["name"] is not "thumbnail":
-                repre["tail_timecode"] = tail_tc
+                repre.update(tail_tc_data)
 
-        instance.data["tail_timecode"] = tail_tc
-        self.log.debug("Final tail timecode is: {}".format(tail_tc))
+        instance.data.update(tail_tc_data)
+        self.log.debug(f"Extracted tail timecode data: {json.dumps(tail_tc_data, indent=4, default=str)}")
                 
 
 

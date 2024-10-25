@@ -139,6 +139,14 @@ def frames_to_timecode(frames, framerate):
     return _ot.to_timecode(rt)
 
 
+def shift_timecode(timecode, offset, framerate):
+    rt = _ot.from_timecode(str(timecode), float(framerate))
+    fr = _ot.to_frames(rt, framerate)
+    fr += int(offset)
+    new_rt = _ot.from_frames(fr, framerate)
+    return _ot.to_timecode(new_rt)
+
+
 def make_sequence_collection(path, otio_range, metadata):
     """
     Make collection from path otio range and otio metadata.

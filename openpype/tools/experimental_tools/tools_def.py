@@ -90,11 +90,11 @@ class ExperimentalTools:
                 "Combined creation and publishing into one tool.",
                 self._show_publisher
             ),
-            ExperimentalTool(
-                "traypublisher",
-                "New Standalone Publisher",
-                "Standalone publisher using new publisher. Requires restart"
-            )
+            # ExperimentalTool(
+            #     "traypublisher",
+            #     "New Standalone Publisher",
+            #     "Standalone publisher using new publisher. Requires restart"
+            # )
         ]
 
         # Store tools by identifier

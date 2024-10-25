@@ -192,8 +192,17 @@ class CollectClipEffects(pyblish.api.InstancePlugin):
             if knob in _ignoring_keys:
                 continue
 
+            # get expression if node is scripted
+            if node[knob].hasExpression():
+                knob_expr = {}
+                for curve in node[knob].animations():
+                    knob_expr.update({
+                        str(curve.knobIndex()): curve.expression()
+                    })
+                node_serialized[knob] = knob_expr
+
             # get animation if node is animated
-            if node[knob].isAnimated():
+            elif node[knob].isAnimated():
                 # grab animation including handles
                 knob_anim = [node[knob].getValueAt(i)
                              for i in range(

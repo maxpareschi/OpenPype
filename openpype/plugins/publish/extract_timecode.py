@@ -1,8 +1,9 @@
 import os
 import json
 import subprocess
-import pyblish.api
+import math
 
+import pyblish.api
 import opentimelineio as otio
 
 from openpype.pipeline import publish
@@ -13,6 +14,18 @@ from openpype.lib import (
 )
 from openpype.settings import get_project_settings, get_current_project_settings
 
+from openpype.pipeline.editorial import shift_timecode
+
+def truncate(number, digits) -> float:
+    # Improve accuracy with floating point operations, to avoid truncate(16.4, 2) = 16.39 or truncate(-1.13, 2) = -1.12
+    try:
+        nbDecimals = len(str(number).split('.')[1])
+    except:
+        nbDecimals = 0
+    if nbDecimals <= digits:
+        return number
+    stepper = 10.0 ** digits
+    return math.trunc(stepper * number) / stepper
 
 def get_frame_from_timecode(tc, fps=24.0):
     rationaltime = otio.opentime.from_timecode(tc, fps)
@@ -116,7 +129,11 @@ class ExtractTimecode(publish.Extractor):
 
     def process(self, instance):
         settings = get_current_project_settings()["global"]["publish"]["ExtractTimecode"]
-        default_tc = settings.get("default_tc", "01:00:00:00")
+        default_tc = settings.get("default_tc", "01:00:00:01")
+        self.log.debug(f"Default tc is: {default_tc}")
+        self.log.debug(f"Found FPS in instance: {instance.data.get('fps')}")
+        instance_fps = truncate(float(instance.data.get("fps", 24.0)), 3)
+        self.log.debug(f"FPS truncated to: {instance_fps}")
         tc_list = []
         if instance.data.get("representations", None):
             for repre in instance.data["representations"]:
@@ -148,16 +165,26 @@ class ExtractTimecode(publish.Extractor):
         if not final_tc:
             final_tc = default_tc
 
+        final_tc_no_handles = instance.data["timecode_no_handles"] = shift_timecode(
+            final_tc, instance.data.get("handleStart", 0), instance_fps)
+
+        frame_start_tc = get_frame_from_timecode(final_tc, instance_fps)
+        frame_start_tc_no_handles = get_frame_from_timecode(final_tc_no_handles, instance_fps)
+
+        tc_data = {
+            "timecode": final_tc,
+            "timecode_no_handles": final_tc_no_handles,
+            "frame_start_tc": frame_start_tc,
+            "frame_start_tc_no_handles": frame_start_tc_no_handles
+        }
+
+        instance.data.update(tc_data)
+        
         for repre in instance.data["representations"]:
             if repre["ext"] in self.allowed_extensions:
-                repre["timecode"] = final_tc
-        instance.data["timecode"] = final_tc
+                repre.update(tc_data)
 
-        self.log.debug(instance.data.get("fps"))
-
-        instance.data["frame_start_tc"] =  get_frame_from_timecode(final_tc, float(instance.data.get("fps", 24.0)))
-
-        self.log.debug("Final timecode for instance set to: '{}', frame number set to: {}".format(final_tc, instance.data["frame_start_tc"]))
+        self.log.debug(f"Extracted timecode data: {json.dumps(tc_data, indent=4, default=str)}")
 
 
                     

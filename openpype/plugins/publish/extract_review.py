@@ -377,13 +377,7 @@ class ExtractReview(pyblish.api.InstancePlugin):
             output_ext = new_repre["ext"]
             self.log.debug("NEW EXT: {}".format(output_ext))
             # create or update outputName
-            # output_name = new_repre.get("outputName", "")
-            # if output_name:
-            #     output_name += "_"
-            # output_name += output_def["filename_suffix"]
             output_name = output_def["filename_suffix"]
-            if temp_data["without_handles"]:
-                output_name += "_noHandles"
 
             # add outputName to anatomy format fill_data
             fill_data.update({
@@ -457,6 +451,7 @@ class ExtractReview(pyblish.api.InstancePlugin):
 
         frame_start = instance.data["frameStart"]
         frame_end = instance.data["frameEnd"]
+        timecode = repre.get("timecode", "01:00:00:01")
 
         # Try to get handles from instance
         handle_start = instance.data.get("handleStart")
@@ -475,10 +470,11 @@ class ExtractReview(pyblish.api.InstancePlugin):
         if without_handles:
             output_frame_start = frame_start
             output_frame_end = frame_end
+            timecode = repre["timecode_no_handles"]
         else:
             output_frame_start = frame_start_handle
             output_frame_end = frame_end_handle
-
+        
         handles_are_set = handle_start > 0 or handle_end > 0
 
         with_audio = True
@@ -502,17 +498,21 @@ class ExtractReview(pyblish.api.InstancePlugin):
             #   is with or without handles!
             # - handle start is added but how do not know if we should
             output_duration = (output_frame_end - output_frame_start) + 1
-            if (
-                without_handles
-                and len(input_frames) - handle_start >= output_duration
-            ):
-                first_sequence_frame += handle_start
+            source_duration = (frame_end_handle - frame_start_handle) + 1
+            self.log.debug(f"Source duration is: {source_duration}, Output duration is: {output_duration}")
+            if source_duration == len(input_frames):
+                self.log.debug(f"Source duration and input frames are the same, retaining collected data as valid.")
+            else:
+                self.log.warning(f"Mismatch between input frame range ({len(input_frames)}) and Source duration, resetting to input data!")
+                output_frame_start = input_frames[0]
+                output_frame_end = input_frames[-1]
+                timecode = repre.get("timecode", "01:00:00:01")
 
             ext = os.path.splitext(repre["files"][0])[1].replace(".", "")
             if ext.lower() in self.alpha_exts:
                 input_allow_bg = True
 
-        return {
+        collected_data = {
             "fps": float(instance.data["fps"]),
             "frame_start": frame_start,
             "frame_end": frame_end,
@@ -531,8 +531,11 @@ class ExtractReview(pyblish.api.InstancePlugin):
             "input_allow_bg": input_allow_bg,
             "with_audio": with_audio,
             "without_handles": without_handles,
-            "handles_are_set": handles_are_set
+            "handles_are_set": handles_are_set,
+            "timecode": timecode
         }
+        self.log.debug(f"Collected data: {json.dumps(collected_data, indent=4, default=str)}")
+        return collected_data
 
     def _ffmpeg_arguments(
         self, output_def, instance, new_repre, temp_data, fill_data
@@ -607,9 +610,8 @@ class ExtractReview(pyblish.api.InstancePlugin):
             # Set start frame of input sequence (just frame in filename)
             # - definition of input filepath
             # - add handle start if output should be without handles
-            start_number = temp_data["first_sequence_frame"]
-            if temp_data["without_handles"] and temp_data["handles_are_set"]:
-                start_number += temp_data["handle_start"]
+            start_number = temp_data["output_frame_start"]
+            self.log.debug(f"Detected start frame: {start_number}")
             ffmpeg_input_args.extend([
                 "-start_number", str(start_number)
             ])
@@ -674,6 +676,8 @@ class ExtractReview(pyblish.api.InstancePlugin):
             ffmpeg_input_args.extend(audio_in_args)
             ffmpeg_audio_filters.extend(audio_filters)
             ffmpeg_output_args.extend(audio_out_args)
+
+        ffmpeg_output_args.extend(["-timecode", temp_data["timecode"]])
 
         res_filters = self.rescaling_filters(temp_data, output_def, new_repre)
         ffmpeg_video_filters.extend(res_filters)

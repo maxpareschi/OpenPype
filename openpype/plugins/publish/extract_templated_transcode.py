@@ -232,17 +232,18 @@ class ExtractTemplatedTranscode(publish.Extractor):
                     "{}nk".format(repre_out[1])
                 ).replace("\\", "/")
 
+                self.log.debug(f"Frame data, start: {frame_start}, end: {frame_end}")
+
                 try:
-                    frame_start = repre_in[4][0]
-                    self.log.debug("Start frame detected: ({}) updated, script data...".format(frame_start))
+                    duration = frame_end - frame_start + 1
+                    new_duration = repre_in[4][-1] - repre_in[4][0] + 1
+                    if duration != new_duration:
+                        self.log.debug("input duration is longer than default, resetting frame_end value...")
+                        frame_end = frame_start + new_duration - 1
                 except:
-                    self.log.debug("Using frame start data ({}) from generated Instance...".format(frame_start))
-                
-                try:
-                    frame_end = repre_in[4][-1]
-                    self.log.debug("End frame detected: ({}) updated, script data...".format(frame_end))
-                except:
-                    self.log.debug("Using frame end data ({}) from generated Instance...".format(frame_end))
+                    pass
+
+                self.log.debug(f"New frame data, start: {frame_start}, end: {frame_end}")
 
                 processed_data = {
                     "mode": transcoding_type,
@@ -251,7 +252,7 @@ class ExtractTemplatedTranscode(publish.Extractor):
                     "save_path": nuke_script_save_path,
                     "thumbnail_path": os.path.join(
                         os.path.dirname(repre_out[0]),
-                        repre_out[1] + "thumbnail.jpg"
+                        repre_out[1] + "thumbnail.#.jpg"
                     ).replace("\\", "/"),
                     "input_is_sequence": input_is_sequence,
                     "frameStart": frame_start,
@@ -434,8 +435,8 @@ class ExtractTemplatedTranscode(publish.Extractor):
             "extensions": extension
         }
 
-        profile = filter_profiles(self.profiles, filtering_criteria, filtering_order,
-                                  logger=log)
+        profile = filter_profiles(self.profiles, filtering_criteria,
+                                  filtering_order, logger=log)
         
         self.log.debug(profile)
 
@@ -560,14 +561,14 @@ class ExtractTemplatedTranscode(publish.Extractor):
         return template_data
 
     def run_transcode_script(self, data):
-        self.log.debug("TRANSCODE >>> START (Nuke terminal mode)\n")
+        self.log.debug("TRANSCODE >>> START (Nuke terminal)\n")
         return_code = 1
 
         app_manager = ApplicationManager()
         nuke_app = app_manager.find_latest_available_variant_for_group("nuke")
         if not nuke_app:
             self.log.warning("Nuke path not found, no transcoding possible.")
-            return
+            return return_code
         
         if sys.platform == "win32":
             ext = ".exe"
@@ -602,40 +603,45 @@ class ExtractTemplatedTranscode(publish.Extractor):
         with open(json_args, "w") as data_json:
             data_json.write(json.dumps(data, indent=4, default=str))
 
-        cmd = [
-            os.path.abspath(nukepy),
-            os.path.abspath(script_path),
-            os.path.abspath(json_args)
-        ]
-
-        save_log_path = os.path.splitext(data["save_path"])[0] + ".log"
-        self.log.debug("Log file for Nuke python process written to: {}".format(save_log_path))
-        with open(save_log_path, "w") as log:
-            log.write("")
         self.log.debug("Json exchange file written to: {}".format(json_args))
-        self.log.debug("Launcing suprocess: {}".format(" ".join(cmd)))
 
         process_kwargs = {
             "universal_newlines": True,
-            "start_new_session": True,
+            # "start_new_session": True,
             "env": env,
             "bufsize": 1,
             "stdout": subprocess.PIPE,
             "stderr": subprocess.STDOUT
         }
 
-        process = subprocess.Popen(
-            cmd,
-            **process_kwargs
-        )
-        while process.poll() is None:
-            line = process.stdout.readline().strip("\n").strip()
+        build_cmd = [
+            os.path.abspath(nukepy),
+            os.path.abspath(script_path),
+            os.path.abspath(json_args)
+        ]
+        self.log.debug("Launcing build suprocess: {}".format(" ".join(build_cmd)))
+        build_process = subprocess.Popen(build_cmd, **process_kwargs)
+        while build_process.poll() is None:
+            line = build_process.stdout.readline().strip("\n").strip()
             if line and line[0] != ".":
                 self.log.debug(line)
-        
-        self.log.debug("TRANSCODE >>> END (return code: {})\n".format(process.returncode))
+        self.log.debug("TRANSCODE >>> BUILD: {})\n".format(build_process.returncode))
 
-        return process.returncode
+        main_cmd = [
+            os.path.abspath(nukeexe),
+            "-x",
+            "--sro",
+            os.path.abspath(data["save_path"])
+        ]
+        self.log.debug("Launcing main suprocess: {}".format(" ".join(main_cmd)))
+        main_process = subprocess.Popen(main_cmd, **process_kwargs)
+        while main_process.poll() is None:
+            line = main_process.stdout.readline().strip("\n").strip()
+            if line and line[0] != ".":
+                self.log.debug(line)
+        self.log.debug("TRANSCODE >>> END: {})\n".format(main_process.returncode))
+
+        return main_process.returncode
 
     def _mark_original_repre_for_deletion(self, repre, profile):
         """If new transcoded representation created, delete old."""
