@@ -324,32 +324,40 @@ class ExtractTemplatedTranscode(publish.Extractor):
 
                 new_representations.append(new_repre)
 
-                if profile_def["override_thumbnail"] and os.path.exists(processed_data["thumbnail_path"]):
+                if profile_def["override_thumbnail"]:
                     self.log.debug("Starting thumbnail override...")
                     thumb_missing = True
-                    thumb_repre = {
-                        "name": "thumbnail",
-                        "outputName": "thumb",
-                        "ext": os.path.splitext(
-                            os.path.basename(processed_data["thumbnail_path"]))[1].replace(".", ""),
-                        "tags": [
-                            "thumbnail",
-                            "publish_on_farm"
-                        ],
-                        "stagingDir": os.path.dirname(processed_data["thumbnail_path"]).replace("\\", "/"),
-                        "files": os.path.basename(processed_data["thumbnail_path"])
-                    }
+                    thumb_dir = os.path.dirname(processed_data["thumbnail_path"])
+                    for file in os.listdir(thumb_dir):
+                        if file.find("thumbnail") >= 0:
+                            processed_data["thumbnail_path"] = os.path.join(thumb_dir, file)
+                            break
+                    self.log.debug(f"Found override thumbnail path at: {processed_data['thumbnail_path']}")
+                    
+                    if  os.path.exists(processed_data["thumbnail_path"]):
+                        thumb_repre = {
+                            "name": "thumbnail",
+                            "outputName": "thumb",
+                            "ext": os.path.splitext(
+                                os.path.basename(processed_data["thumbnail_path"]))[1].replace(".", ""),
+                            "tags": [
+                                "thumbnail",
+                                "publish_on_farm"
+                            ],
+                            "stagingDir": os.path.dirname(processed_data["thumbnail_path"]).replace("\\", "/"),
+                            "files": os.path.basename(processed_data["thumbnail_path"])
+                        }
 
-                    for repre_id, repre_search in enumerate(instance.data["representations"]):
-                        if repre_search.get("name", "") == "thumbnail" or "thumbnail" in repre_search.get("tags", []):
-                            instance.data["representations"][repre_id] = thumb_repre
-                            thumb_missing = False
-                    
-                    if thumb_missing:
-                        instance.data["representations"].append(thumb_repre)
-                    
-                    self.log.debug("Thumbnail set as representation: {}".format(
-                        json.dumps(thumb_repre, indent=4, default=str)))
+                        for repre_id, repre_search in enumerate(instance.data["representations"]):
+                            if repre_search.get("name", "") == "thumbnail" or "thumbnail" in repre_search.get("tags", []):
+                                instance.data["representations"][repre_id] = thumb_repre
+                                thumb_missing = False
+                        
+                        if thumb_missing:
+                            instance.data["representations"].append(thumb_repre)
+                        
+                        self.log.debug("Thumbnail set as representation: {}".format(
+                            json.dumps(thumb_repre, indent=4, default=str)))
 
             self._mark_original_repre_for_deletion(repre, profile)
 

@@ -426,7 +426,7 @@ def process_thumb(node, data):
     thumb_read["first"].setValue(data["frameStart"])
     thumb_read["last"].setValue(data["frameEnd"])
     thumb_read["raw"].setValue(True)
-    thumb_read["on_error"].setValue("black")
+    thumb_read["on_error"].setValue("nearest frame")
     print("'{}' node created.".format(thumb_read.name()))
     
     thumb_write = nuke.nodes.Write(file = data["thumbnail_path"])

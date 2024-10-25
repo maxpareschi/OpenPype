@@ -25,10 +25,7 @@ from openpype.lib import (
 
 
 
-def check_timecode_is_not_zero(tc: str):
-    # raise ValueError(f"Timecode is {tc}")
-    settings = get_current_project_settings()["global"]["publish"]["ExtractTimecode"]
-    default_tc = settings.get("default_tc", "01:00:00:01")
+def check_timecode_is_not_zero(tc: str, default_tc="01:00:00:01"):
     if tc == "00:00:00:00":
         logger.warning("The timecode seems to be set at '00:00:00:00', "
             f"setting it back to default timecode: '{default_tc}'")
@@ -102,7 +99,7 @@ class SlateCreator:
             self.template_res_path
         )
         if not self.data.get("timecode"):
-            self.set_timecode("01:00:00:00")
+            self.set_timecode("01:00:00:01")
         
         self.task_filter = []
 
@@ -207,10 +204,6 @@ class SlateCreator:
         """
 
         self.data = copy.deepcopy(data)
-
-        # self.log.debug(
-        #     "Data: '{}'".format(json.dumps(self.data, indent=4, default=str))
-        # )
 
     def set_resolution(self, width, height):
         """
@@ -473,14 +466,7 @@ class SlateCreator:
         ))
         cmd.append(html_temp_path)
 
-        self.log.debug("Chrome Screenshot: cmd> {}".format(" ".join(cmd)))
-        
-        # subprocess.run(
-        #     cmd,
-        #     shell=False,
-        #     check=True,
-        #     capture_output=True
-        # )
+        self.log.debug("CHROME SCREENSHOT: cmd> {}".format(" ".join(cmd)))
 
         res = run_subprocess(cmd, creationflags=subprocess.CREATE_NO_WINDOW)
         self.log.debug(res)
@@ -514,15 +500,7 @@ class SlateCreator:
         cmd.append("-o")
         cmd.append(output)
 
-        self.log.debug("{}: cmd>{}".format(name, " ".join(cmd)))
-        
-        # res = subprocess.run(
-        #     cmd,
-        #     env=env,
-        #     shell=True if env else False,
-        #     check=True,
-        #     capture_output=True
-        # )
+        self.log.debug("OIIO RENDER: cmd>{}".format(" ".join(cmd)))
 
         res = run_subprocess(cmd, creationflags=subprocess.CREATE_NO_WINDOW)
 
@@ -533,7 +511,7 @@ class SlateCreator:
         meta_src,
         dest,
         env={},
-        tc="01:00:00:00"
+        tc="01:00:00:01"
     ):
         """
         copies metadata from one image to another, sets timecode, writes.
@@ -554,17 +532,9 @@ class SlateCreator:
         cmd.append("-o")
         cmd.append(dest)
 
-        self.log.debug("{}: cmd>{}".format(name, " ".join(cmd)))
-        
-        # res = subprocess.run(
-        #     cmd,
-        #     env=env,
-        #     shell=True if env else False,
-        #     check=True,
-        #     capture_output=True
-        # )
+        self.log.debug("OIIO COPY META: cmd>{}".format(" ".join(cmd)))
 
-        res = run_subprocess(cmd, env=env, creationflags=subprocess.CREATE_NO_WINDOW)
+        res = run_subprocess(cmd, creationflags=subprocess.CREATE_NO_WINDOW)
 
         return res
 
@@ -581,22 +551,13 @@ class SlateCreator:
         cmd.append("-v")
         cmd.append(input)
         tc = self.data["timecode"]
-        self.log.debug("{}: cmd>{}".format(name, " ".join(cmd)))
+        self.log.debug("OIIO TIMECODE CHECK: cmd>{}".format(" ".join(cmd)))
         self.log.debug("{0}: Starting timecode set at: {1}".format(name, self.data["timecode"]))
         self.log.debug("detected fps: {}".format(self.data["fps"]))
         try:
-            # res = subprocess.run(
-            #     cmd,
-            #     env=env,
-            #     shell=True if env else False,
-            #     check=True,
-            #     capture_output=True
-            # )
-            # lines = res.stdout.decode("utf-8").replace(" ", "").splitlines()
 
-            res = run_subprocess(cmd, env=env, creationflags=subprocess.CREATE_NO_WINDOW)
+            res = run_subprocess(cmd, creationflags=subprocess.CREATE_NO_WINDOW)
             lines = res.replace(" ", "").splitlines()
-
             for line in lines:
                 if line.lower().find("timecode") > 0:
                     vals = line.split(":")
@@ -640,20 +601,12 @@ class SlateCreator:
             "compact=print_section=0:nokey=1"
         ]
         tc = self.data["timecode"]
-        self.log.debug("{}: cmd>{}".format(name, " ".join(cmd)))
+        self.log.debug("FFPROBE TIMECODE CHECK: cmd>{}".format(" ".join(cmd)))
         self.log.debug("{0}: Starting timecode set at: {1}".format(name, self.data["timecode"]))
         self.log.debug("detected fps: {}".format(self.data["fps"]))
         cmd.append(input)
         try:
-            # tc = subprocess.run(
-            #     cmd,
-            #     env=env,
-            #     shell=True if env else False,
-            #     check=True,
-            #     capture_output=True,
-            #     text=True
-            # ).stdout.strip("\n")
-            tc = run_subprocess(cmd, env=env, creationflags=subprocess.CREATE_NO_WINDOW).strip("\n")
+            tc = run_subprocess(cmd, creationflags=subprocess.CREATE_NO_WINDOW).strip("\n")
             self.log.debug("{0}: New starting timecode Found: {1}".format(name, tc))
         except:
             self.log.debug("FFPROBE process failed, switching to default tc...")
@@ -676,20 +629,10 @@ class SlateCreator:
         cmd.extend(["-v", "error", "-select_streams", "v:0",
             "-show_entries", "stream=width,height", "-of", "json"])
         cmd.append(input)
-        self.log.debug("{}: cmd>{}".format(name, " ".join(cmd)))
-        # res = subprocess.run(
-        #     cmd,
-        #     env=env,
-        #     shell=True if env else False,
-        #     check=True,
-        #     capture_output=True
-        # )
-        # resolution = json.loads(
-        #     res.stdout.decode("utf-8")
-        # )["streams"][0]
-        res = run_subprocess(cmd, env=env, creationflags=subprocess.CREATE_NO_WINDOW)
+        self.log.debug("FFPROBE RESOLUTION CHECK: cmd>{}".format(" ".join(cmd)))
+        res = run_subprocess(cmd, creationflags=subprocess.CREATE_NO_WINDOW)
         resolution = json.loads(res)["streams"][0]
-        self.log.debug("{}: File resolution is: {}x{}".format(
+        self.log.debug("{}: File resolution from ffprobe scan is: {}x{}".format(
             name,
             resolution["width"],
             resolution["height"]))
@@ -739,6 +682,7 @@ class ExtractSlateGlobal(publish.Extractor):
     ]
 
     _slate_data_name = "slateGlobal"
+    _main_tc_default = "01:00:00:01"
 
     def process(self, instance):
 
@@ -759,6 +703,8 @@ class ExtractSlateGlobal(publish.Extractor):
             "thumbnail",
             "passing"
         ]
+
+        self._main_tc_default = get_current_project_settings()["global"]["publish"]["ExtractTimecode"].get("timecode", self._main_tc_default)
 
         slate_data = instance.data[self._slate_data_name]
 
@@ -801,55 +747,7 @@ class ExtractSlateGlobal(publish.Extractor):
             data=common_data,
             env=slate_data["slate_env"]
         )
-
-        instance_timecode = None
-        slate_timecode = None
         
-        for repre in instance.data["representations"]:
-            self.log.debug("processing repre: {}".format(repre["name"]))
-            if "thumbnail" in repre.get("tags", []) or \
-                    repre["name"] == "thumbnail" or \
-                    "review" in repre.get("tags", []) or \
-                    repre.get("thumbnail"):
-                self.log.debug("Skipping repre, not main timecode source...")
-                continue
-            file_path = os.path.join(
-                repre["stagingDir"],
-                repre["files"][0] if isinstance(repre["files"], list) else repre["files"]
-            ).replace("\\", "/")
-            try:
-                instance_timecode = slate.get_timecode_oiio(file_path,
-                    tc_frame=int(repre["frameStart"]),
-                    offset=0)
-            except:
-                pass
-            if not instance_timecode:
-                try:
-                    self.log.debug("iinfo coudn't process file, probably due to format not being compatible. Proceeding with ffprobe..")
-                    instance_timecode  = slate.get_timecode_ffprobe(file_path,
-                        tc_frame=int(repre["frameStart"]),
-                        offset=0)
-                except:
-                    pass
-            break
-        
-        if instance.data.get("timecode"):
-            instance_timecode = instance.data["timecode"]
-            self.log.debug("instance timecode was already set at: {}".format(instance.data["timecode"]))
-        elif instance_timecode:
-            instance.data["timecode"] = instance_timecode
-            self.log.debug("instance timecode is set to: {}".format(instance.data["timecode"]))
-        else:
-            instance.data["timecode"] = "01:00:00:00"
-            instance_timecode = "01:00:00:00"
-            self.log.debug("instance timecode was not found, defaulted to: {}".format(instance.data["timecode"]))
-
-        instance_timecode = check_timecode_is_not_zero(instance_timecode)
-        slate_timecode = slate.offset_timecode(instance_timecode, offset=-1)
-        
-        self.log.debug("Slate timecode is set to: {}".format(slate_timecode))
-
-
         # loop through repres
         for repre in instance.data["representations"]:
             self.log.debug("processing repre: {}".format(json.dumps(repre, indent=4, default=str)))
@@ -870,18 +768,18 @@ class ExtractSlateGlobal(publish.Extractor):
                 repre["tags"].remove("slate-frame")
 
             # check if slate is set at tail
-            tailslate = False
-            if "tail-slate" in repre["tags"]:
-                tailslate = True
+            tail_slate = True if "tail-slate" in repre["tags"] else False
 
-            if repre["ext"] in ["jpg", "mov", "png", "mp4", "mxf"]:
+            # check if no-handles tag is present
+            no_handles = True if "no-handles" in repre["tags"] else False
+
+            if repre["ext"] in ["jpg", "jpeg", "png", "mov", "mp4", "mxf"]:
                 colorspace = "Output - Rec.709"
             else:
                 if instance.data.get("colorspace", None):
                     colorspace = instance.data["colorspace"]
                 else:
                     colorspace = "ACES - ACEScg"
-                
             
             colorspace = colorspace.replace(
                     "Input - ", ""
@@ -908,7 +806,7 @@ class ExtractSlateGlobal(publish.Extractor):
             if isinstance(check_file, list):
                 self.log.debug("File list: {}".format(check_file))
                 check_file.sort()
-                if not tailslate:
+                if not tail_slate:
                     check_file = check_file[0]
                 else:
                     check_file = check_file[-1]
@@ -938,7 +836,7 @@ class ExtractSlateGlobal(publish.Extractor):
                 frame_start = int(repre["frameStart"]) - 1
                 frame_end = len(repre["files"]) + frame_start
                 slate_frame = frame_start
-                if tailslate:
+                if tail_slate:
                     slate_frame = frame_end + 1
                 output_name = "{}.{}.{}".format(
                     filename,
@@ -946,7 +844,7 @@ class ExtractSlateGlobal(publish.Extractor):
                         int(common_data["frame_padding"])),
                     ext
                 )
-                self.log.debug("Slate Oputput path is set as: '{}'".format(output_name))
+                self.log.debug("Slate Output path is set as: '{}'".format(output_name))
                 meta_source_name = os.path.join(
                     repre["stagingDir"],
                     "{}.{}.{}".format(
@@ -985,26 +883,24 @@ class ExtractSlateGlobal(publish.Extractor):
                         if tag in profile["families"]:
                             repre_match = tag
             
-            if not instance_timecode:
-                try:
-                    timecode = slate.get_timecode_oiio(file_path,
-                        tc_frame=int(repre["frameStart"]))
-                except:
-                    self.log.debug("iinfo coudn't process file, probably due to format not being compatible. Proceeding with ffprobe..")
-                    timecode = slate.get_timecode_ffprobe(file_path,
-                        tc_frame=int(repre["frameStart"]))
-            else:
-                timecode = instance_timecode
-            if slate_timecode:
-                timecode = slate_timecode
 
-            if tailslate:
-                slate_timecode = instance.data.get("tail_timecode", None)
-                if not slate_timecode:
-                    timecode = "99:59:59:23"
-                else:
-                    timecode = slate_timecode
-                self.log.debug("Slate is set at tail, new slate timecode is '{}'".format(slate_timecode))
+            # Find the correct timecode
+            tc_options_list = ["timecode"]
+            if tail_slate:
+                tc_options_list.insert(0, "tail")
+            if no_handles:
+                tc_options_list.append("no_handles")
+            tc_option = "_".join(tc_options_list)
+
+            instance_timecode = repre.get(tc_option, instance.data.get(tc_option, self._main_tc_default))
+            
+            instance_timecode = check_timecode_is_not_zero(instance_timecode, self._main_tc_default)
+            timecode = slate.offset_timecode(instance_timecode, offset=-1)
+            self.log.debug("Slate timecode on option '{}' is set to: {}".format(tc_option, timecode))
+
+            if no_handles:
+                frame_start += instance.data.get("handleStart", 0)
+                frame_end -= instance.data.get("handleEnd", 0)
 
             resolution = slate.get_resolution_ffprobe(file_path)
 
@@ -1044,6 +940,7 @@ class ExtractSlateGlobal(publish.Extractor):
             }
             slate.data.update(slate_repre_data)
             slate.data.update(oiio_profile)
+            self.log.debug(f"Computed slate data: {json.dumps(slate.data, indent=4, default=str)}")
             slate.data["pixelAspect"] = pixel_aspect
 
             # set properties for rendering
@@ -1082,7 +979,7 @@ class ExtractSlateGlobal(publish.Extractor):
                     slate_final_path,
                     tc=timecode
                 )
-                if not tailslate:
+                if not tail_slate:
                     repre["files"].insert(0, slate.data["slate_file"])
                     repre["frameStart"] = slate.data["real_frameStart"]
                 else:
