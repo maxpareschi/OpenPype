@@ -79,13 +79,8 @@ class ExtractTimecode(publish.Extractor):
             "-v",
             in_file.replace("\\", "/")
         ]
-        # res = subprocess.run(
-        #     cmd,
-        #     check=True,
-        #     capture_output=True
-        # )
-        # lines = res.stdout.decode("utf-8", errors="ignore").replace(" ", "").splitlines()
         res = run_subprocess(cmd, creationflags=subprocess.CREATE_NO_WINDOW)
+        self.log.debug(f"Metadata info: {res}")
         lines = res.replace(" ", "").splitlines()
         found_timecodes = []
         tc = None
@@ -113,15 +108,6 @@ class ExtractTimecode(publish.Extractor):
             "-show_format",
             in_file.replace("\\", "/")
         ]
-        # res = json.loads(
-        #     subprocess.run(
-        #         cmd,
-        #         check=True,
-        #         capture_output=True,
-        #         text=True
-        #     ).stdout
-        # )
-        # lines = res.replace(" ", "").splitlines()
         res = json.loads(run_subprocess(cmd, creationflags=subprocess.CREATE_NO_WINDOW))
         tc = list(set(self._finditems(res, "timecode")))[0]
         return tc
@@ -177,13 +163,12 @@ class ExtractTimecode(publish.Extractor):
             "frame_start_tc": frame_start_tc,
             "frame_start_tc_no_handles": frame_start_tc_no_handles
         }
-
-        instance.data.update(tc_data)
         
         for repre in instance.data["representations"]:
-            if repre["ext"] in self.allowed_extensions:
+            if repre["name"] is not "thumbnail":
                 repre.update(tc_data)
 
+        instance.data.update(tc_data)
         self.log.debug(f"Extracted timecode data: {json.dumps(tc_data, indent=4, default=str)}")
 
 
