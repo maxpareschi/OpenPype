@@ -653,6 +653,12 @@
                                 "multiselection": true
                             },
                             {
+                                "type": "task-types-enum",
+                                "key": "tasks",
+                                "label": "Tasks",
+                                "multiselection": true
+                            },
+                            {
                                 "type": "splitter"
                             },
                             {

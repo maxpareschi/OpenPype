@@ -237,6 +237,7 @@
                 {
                     "families": [],
                     "hosts": [],
+                    "tasks": [],
                     "outputs": {
                         "h264": {
                             "ext": "mp4",

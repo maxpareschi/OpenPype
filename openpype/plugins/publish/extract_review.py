@@ -77,7 +77,7 @@ class ExtractReview(pyblish.api.InstancePlugin):
             self.log.debug("Farm mode enabled, skipping")
             return
 
-        self.log.debug(str(instance.data["representations"]))
+        # self.log.debug(str(instance.data["representations"]))
         # Skip review when requested.
         if not instance.data.get("review", True):
             return
