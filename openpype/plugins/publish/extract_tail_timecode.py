@@ -167,7 +167,7 @@ class ExtractTailTimecode(publish.Extractor):
         }
 
         for repre in instance.data["representations"]:
-            if repre["name"] is not "thumbnail":
+            if repre["name"] != "thumbnail":
                 repre.update(tail_tc_data)
 
         instance.data.update(tail_tc_data)
