@@ -594,20 +594,38 @@ class SlateCreator:
             # )
             # lines = res.stdout.decode("utf-8").replace(" ", "").splitlines()
 
-            res = run_subprocess(cmd, env=env, creationflags=subprocess.CREATE_NO_WINDOW)
-            lines = res.replace(" ", "").splitlines()
+        # OLD IMPLEMENTATION BEFORE 2024/10/25
+        #     res = run_subprocess(cmd, env=env, creationflags=subprocess.CREATE_NO_WINDOW)
+        #     lines = res.replace(" ", "").splitlines()
 
-            for line in lines:
-                if line.lower().find("timecode") > 0:
-                    vals = line.split(":")
-                    vals.reverse()
-                    nums = []
-                    for i in range(0, 4):
-                        nums.append(vals[i])
-                    nums.reverse()
-                    tc = ":".join(nums)
-                    break
-            tc = tc.replace("\"", "")
+        #     for line in lines:
+        #         if line.lower().find("timecode") > 0:
+        #             vals = line.split(":")
+        #             vals.reverse()
+        #             nums = []
+        #             for i in range(0, 4):
+        #                 nums.append(vals[i])
+        #             nums.reverse()
+        #             tc = ":".join(nums)
+        #             break
+        #     tc = tc.replace("\"", "")
+        #     self.log.debug("{0}: New starting timecode Found: {1}".format(name, tc))
+        # except:
+        #     self.log.debug("OIIO process failed, switching to default tc...")
+
+        # NEW IMPLEMENTATION FROM 2024/10/25
+            res = run_subprocess(cmd, creationflags=subprocess.CREATE_NO_WINDOW)
+            lines = res.replace(" ", "").splitlines()
+            found_timecodes = []
+            tc = None
+            
+            for l in lines:
+                if l.lower().find("timecode") >= 0: # or l.lower().find("tc") >= 0:
+                    found_timecodes.append(l)
+
+            for tcode in found_timecodes:
+                if tcode.find("smpte") >= 0:
+                    tc = ":".join(tcode.split(":")[-4:])
             self.log.debug("{0}: New starting timecode Found: {1}".format(name, tc))
         except:
             self.log.debug("OIIO process failed, switching to default tc...")
