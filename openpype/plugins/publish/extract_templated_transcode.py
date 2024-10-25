@@ -198,14 +198,16 @@ class ExtractTemplatedTranscode(publish.Extractor):
 
                 if isinstance(new_repre["files"], list):
                     renamed_files = []
-                    for file_name in orig_file_list:
+                    for idx, file_name in enumerate(orig_file_list):
                         head, _ = os.path.splitext(file_name)
                         frame = re.findall(r"(\d+)", head)[-1]
                         frame_index = str(head).rindex(frame) - 1
                         new_head = head[:frame_index]
+                        padding = len(str(head[frame_index+1:]))
+                        new_frame_number = str((idx + int(frame_start))).zfill(padding)
                         if new_repre.get("outputName"):
                             new_head = new_head + '_{}'.format(new_repre["outputName"])
-                        new_head = new_head + head[frame_index:]
+                        new_head = f"{new_head}.{new_frame_number}" 
                         new_file_name = "{}.{}".format(new_head, new_repre["ext"])
                         renamed_files.append(new_file_name)
                     new_repre["files"] = renamed_files
@@ -232,18 +234,15 @@ class ExtractTemplatedTranscode(publish.Extractor):
                     "{}nk".format(repre_out[1])
                 ).replace("\\", "/")
 
-                self.log.debug(f"Frame data, start: {frame_start}, end: {frame_end}")
+                self.log.debug(f"Input Frame data, start: {repre_in[4][0]}, end: {repre_in[4][-1]}")
 
-                try:
-                    duration = frame_end - frame_start + 1
-                    new_duration = repre_in[4][-1] - repre_in[4][0] + 1
-                    if duration != new_duration:
-                        self.log.debug("input duration is longer than default, resetting frame_end value...")
-                        frame_end = frame_start + new_duration - 1
-                except:
-                    pass
+                duration = frame_end - frame_start + 1
+                new_duration = (int(repre_in[4][-1]) - int(repre_in[4][0])) + 1
+                if duration != new_duration:
+                    self.log.debug("input duration is longer than default, resetting frame_end value...")
+                    frame_end = frame_start + new_duration - 1
 
-                self.log.debug(f"New frame data, start: {frame_start}, end: {frame_end}")
+                self.log.debug(f"Output frame data, start: {repre_out[4][0]}, end: {repre_out[4][-1]}")
 
                 processed_data = {
                     "mode": transcoding_type,
@@ -257,6 +256,8 @@ class ExtractTemplatedTranscode(publish.Extractor):
                     "input_is_sequence": input_is_sequence,
                     "frameStart": frame_start,
                     "frameEnd": frame_end,
+                    "inputFrameStart": int(repre_in[4][0]),
+                    "inputFrameEnd": int(repre_in[4][-1]),
                     "fps": instance.data["fps"],
                     "project": instance.data["anatomyData"]["project"],
                     "asset": instance.data["asset"],

@@ -118,10 +118,10 @@ def transcode_template(data):
     if input_node:
         read = nuke.nodes.Read()
         if data["input_is_sequence"]:
-            read["first"].setValue(data["frameStart"])
-            read["last"].setValue(data["frameEnd"])
-            read["origfirst"].setValue(data["frameStart"])
-            read["origlast"].setValue(data["frameEnd"])
+            read["first"].setValue(data["inputFrameStart"])
+            read["last"].setValue(data["inputFrameEnd"])
+            read["origfirst"].setValue(data["inputFrameStart"])
+            read["origlast"].setValue(data["inputFrameEnd"])
         else:
             read["first"].setValue(1)
             read["last"].setValue(data["frameEnd"]-data["frameStart"]+1)
@@ -131,6 +131,7 @@ def transcode_template(data):
         read["file"].setValue(data["input_path"])
         read["frame_mode"].setValue("start at")
         read["frame"].setValue(str(data["frameStart"]))
+        read["on_error"].setValue("nearest frame")
         for dep in input_node.dependent(nuke.INPUTS):
             for i in range(dep.inputs()):
                 if dep.input(i) == input_node:
@@ -205,10 +206,10 @@ def transcode_subsetchain(data):
 
     read = nuke.nodes.Read()
     if data["input_is_sequence"]:
-        read["first"].setValue(data["frameStart"])
-        read["last"].setValue(data["frameEnd"])
-        read["origfirst"].setValue(data["frameStart"])
-        read["origlast"].setValue(data["frameEnd"])
+        read["first"].setValue(data["inputFrameStart"])
+        read["last"].setValue(data["inputFrameEnd"])
+        read["origfirst"].setValue(data["inputFrameStart"])
+        read["origlast"].setValue(data["inputFrameEnd"])
     else:
         read["first"].setValue(1)
         read["last"].setValue(data["frameEnd"]-data["frameStart"]+1)
@@ -218,6 +219,7 @@ def transcode_subsetchain(data):
     read["file"].setValue(data["input_path"])
     read["frame_mode"].setValue("start at")
     read["frame"].setValue(str(data["frameStart"]))
+    read["on_error"].setValue("nearest frame")
     node_list.append(read)
     print("'{}' node created.".format(node_list[-1].name()))
 
@@ -297,10 +299,10 @@ def transcode_color_conversion(data):
 
     read = nuke.nodes.Read()
     if data["input_is_sequence"]:
-        read["first"].setValue(data["frameStart"])
-        read["last"].setValue(data["frameEnd"])
-        read["origfirst"].setValue(data["frameStart"])
-        read["origlast"].setValue(data["frameEnd"])
+        read["first"].setValue(data["inputFrameStart"])
+        read["last"].setValue(data["inputFrameEnd"])
+        read["origfirst"].setValue(data["inputFrameStart"])
+        read["origlast"].setValue(data["inputFrameEnd"])
     else:
         read["first"].setValue(1)
         read["last"].setValue(data["frameEnd"]-data["frameStart"]+1)
@@ -310,6 +312,7 @@ def transcode_color_conversion(data):
     read["file"].setValue(data["input_path"])
     read["frame_mode"].setValue("start at")
     read["frame"].setValue(str(data["frameStart"]))
+    read["on_error"].setValue("nearest frame")
     node_list.append(read)
     print("'{}' node created.".format(node_list[-1].name()))
 
