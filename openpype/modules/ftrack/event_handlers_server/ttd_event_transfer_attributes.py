@@ -12,23 +12,24 @@ from openpype_modules.ftrack.lib import BaseEvent # type: ignore
 
 def look_for_hierarchical_attrs(entity: Entity, attr: str):
     """Look for hierarchical attributes in parent's hierarchy.
-    
+
     This is done because the ftrack_api may be bugged as stated in the oficial
-    documentation: 
+    documentation:
     https://ftrack-python-api.rtd.ftrack.com/en/latest/example/custom_attribute.html#limitations
     """
 
     asset = entity.get("asset") or entity
     ancestors = asset.get("ancestors")
-
+    msg = f"{entity.entity_type} is not supported yet. Please contact Tech. Dept."
     if ancestors is None:
-        raise NotImplementedError(f"The entity type {entity.entity_type} is not implemented.")
+        raise NotImplementedError(msg)
 
-    for e in [entity] + ancestors:
+    for e in [entity] + list(ancestors):
         value = e["custom_attributes"][attr]
         if value is not None:
             logger.debug(f"Found attr {attr} at entity {e} with value {value}")
             return value
+
     logger.debug(f"Failed to find attr {attr}")
 
 
