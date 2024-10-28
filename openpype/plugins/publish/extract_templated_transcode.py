@@ -620,7 +620,8 @@ class ExtractTemplatedTranscode(publish.Extractor):
             "env": env,
             "bufsize": 1,
             "stdout": subprocess.PIPE,
-            "stderr": subprocess.STDOUT
+            "stderr": subprocess.STDOUT,
+            "creationflags": subprocess.CREATE_NO_WINDOW
         }
 
         build_cmd = [
