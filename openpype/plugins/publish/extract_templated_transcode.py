@@ -187,8 +187,8 @@ class ExtractTemplatedTranscode(publish.Extractor):
 
                 orig_file_list = list(set(copy.deepcopy(new_repre["files"])))
 
-                frame_start = instance.data["frameStart"]-instance.data["handleStart"]
-                frame_end = instance.data["frameEnd"]+instance.data["handleEnd"]
+                frame_start = int(instance.data["frameStart"])-int(instance.data["handleStart"])
+                frame_end = int(instance.data["frameEnd"])+int(instance.data["handleEnd"])
 
                 if not new_repre["ext"] in self.movie_exts and not isinstance(new_repre["files"], list):
                     frame_start = 1
@@ -254,8 +254,8 @@ class ExtractTemplatedTranscode(publish.Extractor):
                         repre_out[1] + "thumbnail.#.jpg"
                     ).replace("\\", "/"),
                     "input_is_sequence": input_is_sequence,
-                    "frameStart": frame_start,
-                    "frameEnd": frame_end,
+                    "frameStart": int(frame_start),
+                    "frameEnd": int(frame_end),
                     "inputFrameStart": int(repre_in[4][0]),
                     "inputFrameEnd": int(repre_in[4][-1]),
                     "fps": instance.data["fps"],
@@ -317,8 +317,8 @@ class ExtractTemplatedTranscode(publish.Extractor):
                 if len(new_repre["files"]) == 1:
                     new_repre["files"] = new_repre["files"][0]
                 else:
-                    new_repre["frameStart"] = repre_out[4][0]
-                    new_repre["frameEnd"] = repre_out[4][-1]
+                    new_repre["frameStart"] = int(repre_out[4][0])
+                    new_repre["frameEnd"] = int(repre_out[4][-1])
 
                 self.log.debug("Adding new representation: {}".format(
                     json.dumps(new_repre, indent=4, default=str)))

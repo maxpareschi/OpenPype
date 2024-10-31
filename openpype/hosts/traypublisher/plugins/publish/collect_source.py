@@ -19,6 +19,7 @@ class CollectSource(pyblish.api.ContextPlugin):
                     "Source of instance \"{}\" is changed to \"{}\""
                 ).format(instance.data["name"], source_name))
             else:
+                instance.data["source"] = source.replace("\\", "/")
                 self.log.info((
-                    "Source of instance \"{}\" was already set to \"{}\""
-                ).format(instance.data["name"], source))
+                    "Source of instance \"{}\" was already set to \"{}\" and sanitized for nt->posix paths"
+                ).format(instance.data["name"], instance.data["source"]))
