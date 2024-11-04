@@ -229,6 +229,9 @@ class ExtractTemplatedTranscode(publish.Extractor):
                 repre_in = self._translate_to_sequence(repre)
                 repre_out = self._translate_to_sequence(new_repre, new_repre["stagingDir"])
 
+                self.log.debug(f"Repre In: {repre_in}")
+                self.log.debug(f"Repre Out: {repre_out}")
+
                 nuke_script_save_path = os.path.join(
                     new_repre["stagingDir"],
                     "{}nk".format(repre_out[1])
@@ -411,7 +414,7 @@ class ExtractTemplatedTranscode(publish.Extractor):
                 repre["files"] = repre["files"][-1]
             head, tail = os.path.splitext(repre["files"])
             return os.path.join(
-                staging_dir, repre["files"]).replace("\\", "/"), head, "", tail, None
+                staging_dir, repre["files"]).replace("\\", "/"), head + ".", "", tail, [1]
 
         return file_name, collection.head, frame_str, collection.tail, frames
 
