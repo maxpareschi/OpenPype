@@ -208,7 +208,6 @@
                 "Dailies": "{root[delivery]}/{project[name]}/out/dailies/{yyyy}{mm}{dd}/{ftrack[listname]}/AVID/{asset}_{task[short]}_DOG_{@version}<.{@frame}>.{ext}",
                 "Dailies_h264": "{root[delivery]}/{project[name]}/out/dailies/{yyyy}{mm}{dd}/{ftrack[listname]}/Review/{asset}_{task[short]}_DOG_{@version}<.{@frame}>.{ext}"
             },
-            "create_client_review_default": false,
             "csv_intent_regex": [
                 "(WIP\\ [A-Z]+)|PAF(?=\\ \\-\\ )",
                 "(WIP(?=\\ \\-\\ ))",
@@ -357,7 +356,8 @@
                         "column_value": "{notes[For Client]}"
                     }
                 ]
-            }
+            },
+            "create_client_review_default": false
         },
         "gather_action": {
             "enabled": true,

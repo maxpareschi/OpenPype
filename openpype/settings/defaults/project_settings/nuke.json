@@ -10,8 +10,7 @@
         "autosave": {
             "enabled": true,
             "increments": 9
-         }
-
+        }
     },
     "imageio": {
         "enabled": false,

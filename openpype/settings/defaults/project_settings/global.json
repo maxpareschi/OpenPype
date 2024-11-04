@@ -200,10 +200,6 @@
             "optional": true,
             "slate_template_path": "",
             "slate_template_res_path": "",
-            "integrate_task_types": [
-                "Paint",
-                "Compositing"
-            ],
             "profiles": [
                 {
                     "families": [
@@ -681,7 +677,7 @@
             "hero_template_name_profiles": []
         }
     },
-    "project_folder_structure": "{\"{root[dataio]}\":{\"{project[name]}\":{\"dataio[ftrack.Folder]\":{\"in[ftrack.Folder]\":{\"from_client[ftrack.Folder]\":{},\"from_vendor[ftrack.Folder]\":{}},\"out[ftrack.Folder]\":{\"to_client[ftrack.Folder]\":{},\"to_vendor[ftrack.Folder]\":{}}}}},\"{root[work]}\":{\"{project[name]}\":{\"_pipeline[ftrack.Folder]\":{\"setups[ftrack.Folder]\":{},\"templates[ftrack.Folder]\":{}},\"_sandbox\":{},\"assets[ftrack.Folder]\":{\"characters[ftrack.Folder]\":{},\"dmp[ftrack.Folder]\":{},\"env[ftrack.Folder]\":{\"buildings[ftrack.Folder]\":{},\"landscape[ftrack.Folder]\":{},\"nature[ftrack.Folder]\":{},\"objects[ftrack.Folder]\":{}},\"fx[ftrack.Folder]\":{},\"props[ftrack.Folder]\":{},\"vehicles[ftrack.Folder]\":{}},\"editorial[ftrack.Folder]\":{\"edit_docs[ftrack.Folder]\":{\"countsheets[ftrack.Folder]\":{},\"reports[ftrack.Folder]\":{}},\"edit_luts[ftrack.Folder]\":{\"cdl[ftrack.Folder]\":{},\"colorspaces[ftrack.Folder]\":{},\"luts[ftrack.Folder]\":{}},\"edit_refs[ftrack.Folder]\":{\"offline[ftrack.Folder]\":{},\"qtrefs[ftrack.Folder]\":{},\"stringouts[ftrack.Folder]\":{}},\"edit_resources[ftrack.Folder]\":{\"audio[ftrack.Folder]\":{},\"edl[ftrack.Folder]\":{},\"plates[ftrack.Folder]\":{}},\"edits[ftrack.Folder]\":{}},\"resources[ftrack.Folder]\":{\"art[ftrack.Folder]\":{},\"misc[ftrack.Folder]\":{},\"on_set_material[ftrack.Folder]\":{},\"received_packages\":{},\"references[ftrack.Folder]\":{},\"storyboards[ftrack.Folder]\":{}},\"shots[ftrack.Folder]\":{}}}}",
+    "project_folder_structure": "{\"{root[dataio]}\": {\"{project[name]}\": {\"dataio[ftrack.Folder]\": {\"in[ftrack.Folder]\": {\"from_client[ftrack.Folder]\": {}, \"from_vendor[ftrack.Folder]\": {}}, \"out[ftrack.Folder]\": {\"to_client[ftrack.Folder]\": {}, \"to_vendor[ftrack.Folder]\": {}}}}}, \"{root[work]}\": {\"{project[name]}\": {\"_pipeline[ftrack.Folder]\": {\"setups[ftrack.Folder]\": {}, \"templates[ftrack.Folder]\": {}}, \"_sandbox\": {}, \"assets[ftrack.Folder]\": {\"characters[ftrack.Folder]\": {}, \"dmp[ftrack.Folder]\": {}, \"env[ftrack.Folder]\": {\"buildings[ftrack.Folder]\": {}, \"landscape[ftrack.Folder]\": {}, \"nature[ftrack.Folder]\": {}, \"objects[ftrack.Folder]\": {}}, \"fx[ftrack.Folder]\": {}, \"props[ftrack.Folder]\": {}, \"vehicles[ftrack.Folder]\": {}}, \"editorial[ftrack.Folder]\": {\"edit_docs[ftrack.Folder]\": {\"countsheets[ftrack.Folder]\": {}, \"reports[ftrack.Folder]\": {}}, \"edit_luts[ftrack.Folder]\": {\"cdl[ftrack.Folder]\": {}, \"colorspaces[ftrack.Folder]\": {}, \"luts[ftrack.Folder]\": {}}, \"edit_refs[ftrack.Folder]\": {\"offline[ftrack.Folder]\": {}, \"qtrefs[ftrack.Folder]\": {}, \"stringouts[ftrack.Folder]\": {}}, \"edit_resources[ftrack.Folder]\": {\"audio[ftrack.Folder]\": {}, \"edl[ftrack.Folder]\": {}, \"plates[ftrack.Folder]\": {}}, \"edits[ftrack.Folder]\": {}}, \"resources[ftrack.Folder]\": {\"art[ftrack.Folder]\": {}, \"misc[ftrack.Folder]\": {}, \"on_set_material[ftrack.Folder]\": {}, \"received_packages\": {}, \"references[ftrack.Folder]\": {}, \"storyboards[ftrack.Folder]\": {}}, \"shots[ftrack.Folder]\": {}}}}",
     "sync_server": {
         "enabled": false,
         "config": {
