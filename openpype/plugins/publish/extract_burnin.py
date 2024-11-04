@@ -704,14 +704,14 @@ class ExtractBurnin(publish.Extractor):
         if "no-handles" in repre["tags"]:
             burnin_frame_start = temp_data["frame_start"]
             burnin_frame_end = temp_data["frame_end"]
-            timecode = temp_data["timecode_no_handles"]
-            frame_start_tc = temp_data["frame_start_tc_no_handles"]
+            timecode = temp_data.get("timecode_no_handles", None)
+            frame_start_tc = temp_data.get("frame_start_tc_no_handles", None)
 
         else:
             burnin_frame_start = temp_data["frame_start_handle"]
             burnin_frame_end = temp_data["frame_end_handle"]
-            timecode = temp_data["timecode"]
-            frame_start_tc = temp_data["frame_start_tc"]
+            timecode = temp_data.get("timecode", None)
+            frame_start_tc = temp_data.get("frame_start_tc", None)
 
         burnin_duration = burnin_frame_end - burnin_frame_start + 1
 

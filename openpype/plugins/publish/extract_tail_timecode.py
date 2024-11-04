@@ -32,7 +32,7 @@ class ExtractTailTimecode(publish.Extractor):
     label = "Extract Tail Timecode"
     order = order = pyblish.api.ExtractorOrder + 0.0189999
     families = ["render", "review", "preview", "gather"]
-    allowed_extensions = ["mov", "mp4", "dpx", "cin", "exr", "jpg", "jpeg", "png"]
+    allowed_extensions = ["mov", "mp4", "dpx", "cin", "exr"]
 
     optional = True
     active = True
@@ -124,7 +124,7 @@ class ExtractTailTimecode(publish.Extractor):
         length_list = []
         for repre in instance.data["representations"]:
             self.log.debug("Processing repre '{}'".format(repre["name"]))
-            if repre["ext"] in self.allowed_extensions and repre["name"] is not "thumbnail":
+            if repre["name"] != "thumbnail" and repre["ext"] in self.allowed_extensions:
                 length = None
                 if isinstance(repre["files"], list):
                     length = len(repre["files"])
@@ -167,7 +167,7 @@ class ExtractTailTimecode(publish.Extractor):
         }
 
         for repre in instance.data["representations"]:
-            if repre["name"] != "thumbnail":
+            if repre["name"] != "thumbnail" and repre["ext"] in self.allowed_extensions:
                 repre.update(tail_tc_data)
 
         instance.data.update(tail_tc_data)

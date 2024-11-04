@@ -24,6 +24,9 @@ from openpype.lib.transcoding import (
     get_transcode_temp_directory,
 )
 
+from openpype.pipeline.editorial import shift_timecode
+from openpype.settings import get_current_project_settings
+
 
 class ExtractReview(pyblish.api.InstancePlugin):
     """Extracting Review mov file for Ftrack
@@ -451,8 +454,7 @@ class ExtractReview(pyblish.api.InstancePlugin):
 
         frame_start = instance.data["frameStart"]
         frame_end = instance.data["frameEnd"]
-        timecode = repre.get("timecode", "01:00:00:01")
-
+        default_tc = get_current_project_settings()["global"]["publish"]["ExtractTimecode"].get("default_tc", "01:00:00:01")
         # Try to get handles from instance
         handle_start = instance.data.get("handleStart")
         handle_end = instance.data.get("handleEnd")
@@ -465,12 +467,27 @@ class ExtractReview(pyblish.api.InstancePlugin):
         frame_start_handle = frame_start - handle_start
         frame_end_handle = frame_end + handle_end
 
+        timecode = repre.get(
+            "timecode",
+            instance.data.get(
+                "timecode",
+                default_tc
+            )
+        )
+        timecode_no_handles = repre.get(
+            "timecode_no_handles",
+            instance.data.get(
+                "timecode_no_handles",
+                shift_timecode(timecode, frame_start-handle_start, instance.data.get("fps", 24.0))
+            )
+        )
+
         # Change output frames when output should be without handles
         without_handles = bool("no-handles" in output_def["tags"])
         if without_handles:
             output_frame_start = frame_start
             output_frame_end = frame_end
-            timecode = repre["timecode_no_handles"]
+            timecode = timecode_no_handles
         else:
             output_frame_start = frame_start_handle
             output_frame_end = frame_end_handle

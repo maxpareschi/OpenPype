@@ -12,7 +12,7 @@ from openpype.lib import (
     get_ffmpeg_tool_path,
     run_subprocess
 )
-from openpype.settings import get_project_settings, get_current_project_settings
+from openpype.settings import get_current_project_settings
 
 from openpype.pipeline.editorial import shift_timecode
 
@@ -39,7 +39,7 @@ class ExtractTimecode(publish.Extractor):
 
     label = "Extract Timecode"
     order = order = pyblish.api.ExtractorOrder + 0.01899
-    families = ["render", "review", "preview"]
+    families = ["render", "review", "preview", "gather"]
     allowed_extensions = ["mov", "mp4", "dpx", "cin", "exr"]
 
     optional = True
@@ -123,7 +123,7 @@ class ExtractTimecode(publish.Extractor):
         tc_list = []
         if instance.data.get("representations", None):
             for repre in instance.data["representations"]:
-                if repre["ext"] in self.allowed_extensions:
+                if repre["name"] != "thumbnail" and repre["ext"] in self.allowed_extensions:
                     tc = default_tc
                     file = os.path.join(
                         repre["stagingDir"],
@@ -165,7 +165,7 @@ class ExtractTimecode(publish.Extractor):
         }
         
         for repre in instance.data["representations"]:
-            if repre["name"] != "thumbnail":
+            if repre["name"] != "thumbnail" and repre["ext"] in self.allowed_extensions:
                 repre.update(tc_data)
 
         instance.data.update(tc_data)
