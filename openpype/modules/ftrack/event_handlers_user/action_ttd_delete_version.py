@@ -9,8 +9,9 @@ from logging import getLogger
 logger = getLogger(__name__)
 
 from openpype_modules.ftrack.lib import BaseAction, statics_icon # type: ignore
-from openpype.client import get_subsets, get_versions, get_representations
+from openpype.client import get_subsets, get_versions, get_representations, get_project, get_asset_by_id
 from openpype.pipeline.anatomy import Anatomy
+from openpype.lib.ttd_delete_utils import load
 from openpype.client.operations import OperationsSession
 from ftrack_api.event.base import Event
 from ftrack_api import Session
@@ -117,7 +118,7 @@ def ttd_remove_versions(prj_name: str, versions: List[dict]):
     else:
         ttd_remove_ayon_versions(prj_name, versions)
 
-def delete_versions(versions: List[AssetVersion]):
+def delete_versions(versions: List[AssetVersion], use_op_delete = False):
     op_versions = list()
     for version in versions:
         prj = version["project"]["full_name"]
@@ -140,7 +141,30 @@ def delete_versions(versions: List[AssetVersion]):
             continue
         op_versions.append(op_version)
 
-    ttd_remove_versions(prj, op_versions)
+        if use_op_delete:
+
+            subset_entity = list(get_subsets(
+                prj, asset_ids=[asset_mongo_id], subset_names=[subset_name]
+            ))[0]
+            asset_entity = get_asset_by_id(prj, asset_mongo_id)
+            project_entity = get_project(prj)
+
+
+            load(
+                [
+                    {
+                        "subset": subset_entity,
+                        "asset": asset_entity,
+                        "project": project_entity,
+                    }
+                ],
+                version_ids=[op_version["_id"]],
+                versions_to_keep=0,
+            )
+
+    if not use_op_delete:
+        ttd_remove_versions(versions[0]["project"]["full_name"], op_versions)
+
 
 
 class DeleteVersionAction(BaseAction):
@@ -202,6 +226,13 @@ class DeleteVersionAction(BaseAction):
             "type":"label",
             "value": vlist + "</ul>"
         })
+        gui.append({
+            "type":"boolean",
+            "value": False,
+            "label": "Use OpenPype Loader Delete",
+            "name": "use_op_delete"
+        })
+
 
         return gui
 
@@ -255,7 +286,7 @@ class DeleteVersionAction(BaseAction):
             versions_to_delete = self.session.query(query).all()
             if not versions_to_delete:
                 continue
-            delete_versions(versions_to_delete)
+            delete_versions(versions_to_delete, event["data"]["values"]["use_op_delete"])
             for version in versions_to_delete:
                 session.delete(version)
             session.commit()
