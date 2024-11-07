@@ -5,7 +5,7 @@ from logging import getLogger
 from os import remove, rmdir
 
 from logging import getLogger
-
+getLogger().setLevel("DEBUG")
 logger = getLogger(__name__)
 
 from openpype_modules.ftrack.lib import BaseAction, statics_icon # type: ignore
@@ -17,6 +17,7 @@ from ftrack_api.event.base import Event
 from ftrack_api import Session
 from ftrack_api.entity.asset_version import AssetVersion
 from ftrack_api.entity.base import Entity
+
 
 
 def get_op_version_from_ftrack_assetversion(
@@ -289,7 +290,7 @@ class DeleteVersionAction(BaseAction):
             delete_versions(versions_to_delete, event["data"]["values"]["use_op_delete"])
             for version in versions_to_delete:
                 session.delete(version)
-            session.commit()
+            # session.commit()
             # msg = f"Removing versions {[v['id'] for v in versions_to_delete]}"
         return { "success" : True, "message" : "Versions removed correctly."}
 

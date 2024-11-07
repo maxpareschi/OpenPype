@@ -150,8 +150,8 @@ def get_data(context, versions_count, version_ids = None):
     logger.debug("Collected versions ({})".format(len(versions)))
 
     # Filter latest versions
-    for version in all_last_versions:
-        versions.remove(version)
+    # for version in all_last_versions:
+    #     versions.remove(version)
 
     # Update versions_by_parent without filtered versions
     versions_by_parent = collections.defaultdict(list)
