@@ -185,7 +185,7 @@ class ExtractTemplatedTranscode(publish.Extractor):
 
                 self.log.debug("Destination staging dir is set as '{}'".format(new_repre["stagingDir"]))
 
-                orig_file_list = list(set(copy.deepcopy(new_repre["files"])))
+                orig_file_list = sorted(list(set(copy.deepcopy(new_repre["files"]))))
 
                 frame_start = int(instance.data["frameStart"])-int(instance.data["handleStart"])
                 frame_end = int(instance.data["frameEnd"])+int(instance.data["handleEnd"])
