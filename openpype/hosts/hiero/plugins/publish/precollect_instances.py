@@ -4,6 +4,7 @@ import pyblish
 from openpype.pipeline.editorial import is_overlapping_otio_ranges
 from openpype.hosts.hiero import api as phiero
 from openpype.hosts.hiero.api.otio import hiero_export
+from openpype.pipeline.editorial import truncate
 import hiero
 
 # # developer reload modules
@@ -116,7 +117,7 @@ class PrecollectInstances(pyblish.api.ContextPlugin):
                 "item": track_item,
                 "families": families,
                 "publish": tag_data["publish"],
-                "fps": context.data["fps"],
+                "fps": truncate(context.data["fps"], 3),
 
                 # clip's effect
                 "clipEffectItems": subtracks,

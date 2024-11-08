@@ -55,6 +55,9 @@ class ExtractTemplatedTranscode(publish.Extractor):
         if "representations" not in instance.data:
             self.log.debug("No representations, skipping.")
             return
+        
+        if instance.data.get("fps", None):
+            instance.data["fps"] = truncate(instance.data["fps"], 3)
 
         extensions = []
         for repre in instance.data.get("representations"):
@@ -94,6 +97,8 @@ class ExtractTemplatedTranscode(publish.Extractor):
                 pass
         if force_tc:
             final_tc = force_tc
+            self.log.debug(final_tc)
+            self.log.debug(float(instance.data["fps"]))
             final_tc_no_handles = shift_timecode(
                 final_tc, int(instance.data.get("handleStart", 0)), float(instance.data["fps"])
             )
