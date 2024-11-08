@@ -160,7 +160,6 @@ def delete_versions(versions: List[AssetVersion], use_op_delete = False):
                     }
                 ],
                 version_ids=[op_version["_id"]],
-                versions_to_keep=0,
             )
 
     if not use_op_delete:
@@ -229,8 +228,8 @@ class DeleteVersionAction(BaseAction):
         })
         gui.append({
             "type":"boolean",
-            "value": True,
-            "label": "Use OpenPype Loader Delete",
+            "value": False,
+            "label": "DONT CHECK (BUGGY)",
             "name": "use_op_delete"
         })
 

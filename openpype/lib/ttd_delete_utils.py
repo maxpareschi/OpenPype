@@ -418,9 +418,8 @@ def main(project_name, data, remove_publish_folder):
 
 
 
-def load(contexts, versions_to_keep = 0, remove_publish_folder = False, version_ids = None):
-    versions_to_keep = 2
-    remove_publish_folder = False
+def load(contexts, versions_to_keep = 1, remove_publish_folder = True, version_ids = None):
+
     try:
         size = 0
         for count, context in enumerate(contexts):
