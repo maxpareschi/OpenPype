@@ -229,7 +229,7 @@ class DeleteVersionAction(BaseAction):
         })
         gui.append({
             "type":"boolean",
-            "value": False,
+            "value": True,
             "label": "Use OpenPype Loader Delete",
             "name": "use_op_delete"
         })
@@ -290,7 +290,7 @@ class DeleteVersionAction(BaseAction):
             delete_versions(versions_to_delete, event["data"]["values"]["use_op_delete"])
             for version in versions_to_delete:
                 session.delete(version)
-            # session.commit()
+            session.commit()
             # msg = f"Removing versions {[v['id'] for v in versions_to_delete]}"
         return { "success" : True, "message" : "Versions removed correctly."}
 
