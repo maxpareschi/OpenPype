@@ -27,6 +27,10 @@ class CollectSlateGlobal(pyblish.api.InstancePlugin):
         if instance.data["family"] == "plate" or "ingest.farm" in instance.data.get("families", []):
             self.log.debug("Plate publishing detected, skipping slate.")
             return
+        
+        if instance.data["family"] == "image":
+            self.log.debug("Image publishing detected, skipping slate.")
+            return
 
         context = instance.context
         publ_settings = context.data["project_settings"]["global"]["publish"]
