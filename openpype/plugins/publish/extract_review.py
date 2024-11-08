@@ -474,6 +474,7 @@ class ExtractReview(pyblish.api.InstancePlugin):
                 default_tc
             )
         )
+        self.log.debug(f"TC: {timecode}, FPS: {instance.data.get('fps')}, Frame offset: {frame_start-handle_start}")
         timecode_no_handles = repre.get(
             "timecode_no_handles",
             instance.data.get(

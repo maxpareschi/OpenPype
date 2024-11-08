@@ -1,9 +1,46 @@
 import os
 import re
+import math
 import clique
 
 import opentimelineio as otio
 from opentimelineio import opentime as _ot
+
+
+def truncate(number, digits) -> float:
+    # Improve accuracy with floating point operations, to avoid truncate(16.4, 2) = 16.39 or truncate(-1.13, 2) = -1.12
+    try:
+        nbDecimals = len(str(number).split('.')[1])
+    except:
+        nbDecimals = 0
+    if nbDecimals <= digits:
+        return number
+    stepper = 10.0 ** digits
+    return float(math.trunc(stepper * number) / stepper)
+
+
+def sanitize_frame_sequence(file_list,
+                            frame_start=0,
+                            suffix=None,
+                            suffix_delimiter="_",
+                            extension=None,
+                            frame_delimiter="."):
+    renamed_files = []
+    for idx, file_name in enumerate(file_list):
+        head, tail = os.path.splitext(file_name)
+        frame = re.findall(r"(\d+)", head)[-1]
+        frame_index = str(head).rindex(frame) - 1
+        new_head = head[:frame_index]
+        padding = len(str(head[frame_index+1:]))
+        new_frame_number = str((idx + int(frame_start))).zfill(padding)
+        if suffix:
+            new_head = new_head + f"{suffix_delimiter}{suffix}"
+        new_ext = tail[1:]
+        if extension:
+            new_ext = extension
+        new_head = f"{new_head}{frame_delimiter}{new_frame_number}"
+        renamed_files.append(f"{new_head}.{new_ext}")
+    return renamed_files
 
 
 def otio_range_to_frame_range(otio_range):
@@ -136,15 +173,20 @@ def frames_to_seconds(frames, framerate):
 
 def frames_to_timecode(frames, framerate):
     rt = _ot.from_frames(frames, framerate)
-    return _ot.to_timecode(rt)
+    return _ot.to_timecode(rt, framerate)
+
+
+def timecode_to_frames(timecode, framerate):
+    rt = _ot.from_timecode(timecode, framerate)
+    return _ot.to_frames(rt, framerate)
 
 
 def shift_timecode(timecode, offset, framerate):
-    rt = _ot.from_timecode(str(timecode), float(framerate))
+    rt = _ot.from_timecode(timecode, framerate)
     fr = _ot.to_frames(rt, framerate)
-    fr += int(offset)
+    fr += offset
     new_rt = _ot.from_frames(fr, framerate)
-    return _ot.to_timecode(new_rt)
+    return _ot.to_timecode(new_rt, framerate)
 
 
 def make_sequence_collection(path, otio_range, metadata):

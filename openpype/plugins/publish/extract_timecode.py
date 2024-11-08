@@ -14,23 +14,8 @@ from openpype.lib import (
 )
 from openpype.settings import get_current_project_settings
 
-from openpype.pipeline.editorial import shift_timecode
+from openpype.pipeline.editorial import shift_timecode, timecode_to_frames, truncate
 
-def truncate(number, digits) -> float:
-    # Improve accuracy with floating point operations, to avoid truncate(16.4, 2) = 16.39 or truncate(-1.13, 2) = -1.12
-    try:
-        nbDecimals = len(str(number).split('.')[1])
-    except:
-        nbDecimals = 0
-    if nbDecimals <= digits:
-        return number
-    stepper = 10.0 ** digits
-    return math.trunc(stepper * number) / stepper
-
-def get_frame_from_timecode(tc, fps=24.0):
-    rationaltime = otio.opentime.from_timecode(tc, fps)
-    frames = rationaltime.to_frames(fps)
-    return frames
 
 class ExtractTimecode(publish.Extractor):
     """
@@ -151,11 +136,12 @@ class ExtractTimecode(publish.Extractor):
         if not final_tc:
             final_tc = default_tc
 
-        final_tc_no_handles = instance.data["timecode_no_handles"] = shift_timecode(
-            final_tc, instance.data.get("handleStart", 0), instance_fps)
+        final_tc_no_handles = shift_timecode(
+            final_tc, int(instance.data.get("handleStart", 0)), float(instance_fps)
+        )
 
-        frame_start_tc = get_frame_from_timecode(final_tc, instance_fps)
-        frame_start_tc_no_handles = get_frame_from_timecode(final_tc_no_handles, instance_fps)
+        frame_start_tc = timecode_to_frames(final_tc, float(instance_fps))
+        frame_start_tc_no_handles = timecode_to_frames(final_tc_no_handles, float(instance_fps))
 
         tc_data = {
             "timecode": final_tc,

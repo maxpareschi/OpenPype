@@ -21,6 +21,7 @@ from openpype.pipeline import (
 from openpype.pipeline.template_data import get_template_data_with_names
 from openpype.lib.applications import ApplicationManager
 from openpype.lib.profiles_filtering import filter_profiles
+from openpype.pipeline.editorial import shift_timecode, timecode_to_frames, truncate
 
 
 class ExtractTemplatedTranscode(publish.Extractor):
@@ -76,9 +77,9 @@ class ExtractTemplatedTranscode(publish.Extractor):
         template_format_data = self._get_template_data_format()
 
         force_tc = profile.get("force_tc", None).strip()
-        force_fps = profile.get("force_fps", None)
+        force_fps = truncate(profile.get("force_fps", None), 3)
         if force_fps:
-            instance.data["fps"] = float(force_fps)
+            instance.data["fps"] = force_fps
             try:
                 instance.data["anatomyData"]["fps"] = force_fps
             except:
@@ -92,7 +93,23 @@ class ExtractTemplatedTranscode(publish.Extractor):
             except:
                 pass
         if force_tc:
-            instance.data["timecode"] = force_tc
+            final_tc = force_tc
+            final_tc_no_handles = shift_timecode(
+                final_tc, int(instance.data.get("handleStart", 0)), float(instance.data["fps"])
+            )
+            frame_start_tc = timecode_to_frames(final_tc, instance.data["fps"])
+            frame_start_tc_no_handles = timecode_to_frames(final_tc_no_handles, instance.data["fps"])
+            tc_data = {
+                "timecode": final_tc,
+                "timecode_no_handles": final_tc_no_handles,
+                "frame_start_tc": frame_start_tc,
+                "frame_start_tc_no_handles": frame_start_tc_no_handles
+            }
+            for repre in instance.data["representations"]:
+                if repre["name"] != "thumbnail" and repre["ext"] in ["mov", "mp4", "dpx", "cin", "exr"]:
+                    repre.update(tc_data)
+            instance.data.update(tc_data)
+            self.log.debug(f"Overridden timecode data: {json.dumps(tc_data, indent=4, default=str)}")
 
         new_representations = []
         repres = instance.data["representations"]
