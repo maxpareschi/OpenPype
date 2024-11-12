@@ -110,5 +110,7 @@ tools/run_eventserver.*
 
 #  Developer tools
 tools/dev_*
+ttd/*
+openpype/vendor/*
 
 .github_changelog_generator
