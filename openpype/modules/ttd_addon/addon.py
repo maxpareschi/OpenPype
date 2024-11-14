@@ -29,7 +29,7 @@ class TTDAddonSettingsDef(JsonFilesSettingsDef):
     #   recommended as schemas and templates may have name clashes across
     #   multiple addons
     # - it is also recommended that prefix has addon name in it
-    schema_prefix = "example_addon"
+    schema_prefix = "ttd_addon"
 
     def get_settings_root_path(self):
         """Implemented abstract class of JsonFilesSettingsDef.
@@ -58,7 +58,7 @@ class TTDAddon(OpenPypeAddOn, IPluginPaths, ITrayAction):
         """Initialization of addon."""
         module_settings = settings[self.name]
         # Enabled by settings
-        self.enabled = module_settings.get("enabled", False)
+        # self.enabled = module_settings.get("enabled", False)
 
         # Prepare variables that can be used or set afterwards
         self._connected_modules = None
@@ -131,7 +131,7 @@ def nothing():
 
 @cli_main.command()
 def show_dialog():
-    """Show ExampleAddon dialog.
+    """Show TTDAddon dialog.
 
     We don't have access to addon directly through cli so we have to create
     it again.
@@ -139,6 +139,6 @@ def show_dialog():
     from openpype.tools.utils.lib import qt_app_context
 
     manager = ModulesManager()
-    example_addon = manager.modules_by_name[TTDAddon.name]
+    ttd_addon = manager.modules_by_name[TTDAddon.name]
     with qt_app_context():
-        example_addon.show_dialog()
+        ttd_addon.show_dialog()

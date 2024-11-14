@@ -1,0 +1,37 @@
+{
+    "type": "dict",
+    "collapsible": true,
+    "key": "publish_plugins",
+    "label": "Publish Plugins",
+    "children": [
+        {
+            "type": "label",
+            "label": "<i><b>Collect Plugins</b></i>"
+        },
+        {
+            "type": "splitter"
+        },
+        {
+            "type": "label",
+            "label": "<i><b>Validate Plugins</b></i>"
+        },
+        {
+            "type": "splitter"
+        },
+        {
+            "type": "label",
+            "label": "<i><b>Extract Plugins</b></i>"
+        },
+        {
+            "type": "schema",
+            "name": "ttd_addon/extract_transcode"
+        },
+        {
+            "type": "splitter"
+        },
+        {
+            "type": "label",
+            "label": "<i><b>Integrate Plugins</b></i>"
+        }
+    ]
+}

@@ -1,0 +1,211 @@
+{
+    "project_settings/ttd_addon": {
+        "color_management": {
+            "enabled": true,
+            "profiles": [
+                {
+                    "hosts": [],
+                    "task_types": [],
+                    "task_names": [],
+                    "configs": [
+                        {
+                            "mode": "subset_search",
+                            "subset": "effectPlateLook",
+                            "representation": "effectOcio"
+                        },
+                        {
+                            "mode": "load_path",
+                            "path": "R:/ocioconfigs/aces_1.2/config.ocio"
+                        }
+                    ]
+                }
+            ]
+        },
+        "publish_plugins": {
+            "extract_transcode": {
+                "enabled": true,
+                "presets": {
+                    "passthrough": {
+                        "input_overrides": {
+                            "enabled": false,
+                            "colorspace": "",
+                            "metadata": {}
+                        },
+                        "extension": "passthrough",
+                        "operations": [],
+                        "write_settings": [],
+                        "override_thumbnail": false,
+                        "output_name": {
+                            "naming_mode": "use_prefix_suffix",
+                            "prefix": "",
+                            "suffix": "source"
+                        },
+                        "tags": [],
+                        "custom_tags": []
+                    },
+                    "to_ACEScg": {
+                        "input_overrides": {
+                            "enabled": false,
+                            "colorspace": "",
+                            "metadata": {}
+                        },
+                        "extension": "exr",
+                        "operations": [
+                            {
+                                "operation_type": "color_conversion",
+                                "from_colorspace": "",
+                                "to_colorspace": "scene_linear"
+                            }
+                        ],
+                        "write_settings": [],
+                        "override_thumbnail": false,
+                        "output_name": {
+                            "naming_mode": "use_prefix_suffix",
+                            "prefix": "",
+                            "suffix": "main"
+                        },
+                        "tags": [],
+                        "custom_tags": []
+                    },
+                    "to_Rec709": {
+                        "input_overrides": {
+                            "enabled": false,
+                            "colorspace": "",
+                            "metadata": {}
+                        },
+                        "extension": "jpg",
+                        "operations": [
+                            {
+                                "operation_type": "color_conversion",
+                                "from_colorspace": "",
+                                "to_colorspace": "color_picking"
+                            },
+                            {
+                                "operation_type": "reformat",
+                                "box_width": 1920,
+                                "box_height": 1080,
+                                "box_pixel_aspect": 1.0,
+                                "resize": "width",
+                                "filter": "Lanczos4",
+                                "black_outside": false
+                            }
+                        ],
+                        "write_settings": [],
+                        "override_thumbnail": true,
+                        "output_name": {
+                            "naming_mode": "use_prefix_suffix",
+                            "prefix": "",
+                            "suffix": "proxy"
+                        },
+                        "tags": [],
+                        "custom_tags": []
+                    },
+                    "preview_LUT": {
+                        "input_overrides": {
+                            "enabled": false,
+                            "colorspace": "",
+                            "metadata": {}
+                        },
+                        "extension": "jpg",
+                        "operations": [
+                            {
+                                "operation_type": "process_subset",
+                                "loader": "LoadEffects",
+                                "subset": "effectPlateLook",
+                                "representation": "effectJson"
+                            },
+                            {
+                                "operation_type": "process_subset",
+                                "loader": "LoadEffects",
+                                "subset": "effectPlateRepo",
+                                "representation": "effectJson"
+                            },
+                            {
+                                "operation_type": "reformat",
+                                "box_width": 1920,
+                                "box_height": 1080,
+                                "box_pixel_aspect": 1.0,
+                                "resize": "width",
+                                "filter": "Lanczos4",
+                                "black_outside": false
+                            }
+                        ],
+                        "write_settings": [],
+                        "override_thumbnail": true,
+                        "output_name": {
+                            "naming_mode": "use_prefix_suffix",
+                            "prefix": "",
+                            "suffix": "preview"
+                        },
+                        "tags": [
+                            "review",
+                            "delete"
+                        ],
+                        "custom_tags": []
+                    },
+                    "reverse_plate": {
+                        "input_overrides": {
+                            "enabled": false,
+                            "colorspace": "",
+                            "metadata": {}
+                        },
+                        "extension": "passthrough",
+                        "operations": [
+                            {
+                                "operation_type": "process_subset",
+                                "loader": "LoadEffects",
+                                "subset": "effectPlateReverseconversion",
+                                "representation": "effectJson"
+                            }
+                        ],
+                        "write_settings": [],
+                        "override_thumbnail": false,
+                        "output_name": {
+                            "naming_mode": "use_prefix_suffix",
+                            "prefix": "",
+                            "suffix": ""
+                        },
+                        "tags": [
+                            "slate-frame"
+                        ],
+                        "custom_tags": []
+                    }
+                },
+                "profiles": {
+                    "plate": {
+                        "families": [
+                            "plate"
+                        ],
+                        "hosts": [],
+                        "assets": [],
+                        "task_types": [],
+                        "task_names": [],
+                        "subsets": [],
+                        "delete_original": true,
+                        "linked_presets": [
+                            "passthrough",
+                            "to_ACEScg",
+                            "to_Rec709"
+                        ]
+                    },
+                    "gather": {
+                        "families": [
+                            "gather"
+                        ],
+                        "hosts": [],
+                        "assets": [],
+                        "task_types": [],
+                        "task_names": [],
+                        "subsets": [],
+                        "delete_original": true,
+                        "linked_presets": [
+                            "reverse_plate",
+                            "preview_LUT"
+                        ]
+                    }
+                }
+            }
+        },
+        "ftrack": {}
+    }
+}

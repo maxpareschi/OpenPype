@@ -1,0 +1,20 @@
+{
+    "type": "dict",
+    "key": "ttd_addon",
+    "label": "TTD Addon",
+    "collapsible": true,
+    "children": [
+        {
+            "type": "schema",
+            "name": "ttd_addon/color_management_ocio"
+        },
+        {
+            "type": "schema",
+            "name": "ttd_addon/publish_plugins"
+        },
+        {
+            "type": "schema",
+            "name": "ttd_addon/ftrack"
+        }
+    ]
+}

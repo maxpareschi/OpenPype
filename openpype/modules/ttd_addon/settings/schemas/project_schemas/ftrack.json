@@ -1,0 +1,7 @@
+{
+    "type": "dict",
+    "collapsible": true,
+    "key": "ftrack",
+    "label": "TTD Ftrack Extensions",
+    "children": []
+}

@@ -1,0 +1,27 @@
+{
+    "type": "dict",
+    "collapsible": true,
+    "key": "extract_transcode",
+    "label": "Extract Transcode",
+    "checkbox_key": "enabled",
+    "children": [
+        {
+            "type": "boolean",
+            "key": "enabled",
+            "label": "Enabled"
+        },
+        {
+            "type": "label",
+            "label": "Build presets and link them to profiles for maximum flexibility."
+        },
+        {
+            "type": "schema",
+            "name": "ttd_addon/extract_transcode_presets"
+        },
+        {
+            "type": "schema",
+            "name": "ttd_addon/extract_transcode_profiles"
+        }
+    ]
+
+}
