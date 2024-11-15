@@ -825,6 +825,8 @@ class ExtractSlateGlobal(publish.Extractor):
             filename = check_file.split(".")[0]
             ext = check_file.split(".")[-1]
 
+            repre_match = instance.data["family"]
+
             # if sequence render out a slate before first frame
             # else sequence find matching tags and transfer
             # also constructs final slate name and metadata
