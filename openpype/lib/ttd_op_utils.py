@@ -7,7 +7,7 @@ from subprocess import Popen, PIPE
 from datetime import datetime
 from tempfile import NamedTemporaryFile
 from collections import defaultdict
-from re import compile  as recomp, Pattern
+from re import compile  as recomp, Pattern, sub
 
 from ftrack_api.entity.asset_version import AssetVersion
 from openpype.settings import get_anatomy_settings, get_project_settings
@@ -295,6 +295,24 @@ def get_csv_path(created_files: List[str], pckg_name: str):
         )
 
 
+def modify_csv_file_name(prj: str, csv_file: str):
+    """Created as a request by Prod to give more control over the name of the
+    CSV filenames. This is done through a regex substitution pairs.
+    """
+
+    settings = get_project_settings(prj)["ftrack"]["user_handlers"]["delivery_action"]
+    inputs = settings["csv_filename_regex_sub_pairs"]["inputs"]
+
+    for item in inputs:
+        regex = item["regex"]
+        subs = item["substitution"]
+        logger.debug(f"CSV substitution regex is: {regex}")
+        logger.debug(f"CSV substitution string is: {subs}")
+        logger.debug(f"CSV filename is: {csv_file}")
+        csv_file = sub(regex, subs, csv_file)
+    
+    return csv_file
+
 def create_csv_in_download_folder(
     prj: str, name: str, repres: List[dict], anatomy_name: str
 ):
@@ -382,11 +400,18 @@ def handle_csv(
         csv_file = get_csv_path(report["created_files"], name)
     except IndexError as e:
         raise NotImplementedError(report) from e
+    
 
     if csv_file is not None:
+
+        try:
+            modify_csv_file_name(prj, csv_file)
+        except Exception as e:
+            logger.critical(f"Failed to apply mods on CSV name due to: {e}")        
         generate_csv_from_representations(prj, repres, csv_file, cfg)
         logger.info(f"CSV saved in {csv_file}")
     else:
+        name = modify_csv_file_name(prj, name)
         try:
             create_csv_in_download_folder(prj, name, repres, cfg)
         except:
