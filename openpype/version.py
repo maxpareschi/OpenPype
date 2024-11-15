@@ -1,4 +1,4 @@
 # -*- coding: utf-8 -*-
 """Package declaring Pype version."""
-__version__ = "3.14.11-22dogs.139"
-# __version__ = "3.14.11-22dogs.139+staging"
+__version__ = "3.14.11-22dogs.140"
+# __version__ = "3.14.11-22dogs.140+staging"
