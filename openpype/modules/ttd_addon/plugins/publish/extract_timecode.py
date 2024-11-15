@@ -11,7 +11,7 @@ class ExtractTimecode(publish.Extractor):
         for movie filetypes.
     """
 
-    label = "Extract Timecode (TTD)"
+    label = "Extract Timecode - TTD"
     order = pyblish.api.ExtractorOrder
 
     profiles = None

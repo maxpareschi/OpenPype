@@ -4,7 +4,7 @@ If addon class or settings definition won't be here their definition won't
 be found by OpenPype discovery.
 """
 
-from .addon import (
+from .ttd_addon import (
     TTDAddonSettingsDef,
     TTDAddon
 )

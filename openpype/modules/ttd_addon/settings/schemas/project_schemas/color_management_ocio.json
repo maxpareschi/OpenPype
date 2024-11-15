@@ -1,7 +1,7 @@
 {
     "type": "dict",
     "collapsible": true,
-    "key": "color_management",
+    "key": "color_management_ocio",
     "label": "Color Management (Global OCIO)",
     "checkbox_key": "enabled",
     "children": [

@@ -11,7 +11,7 @@ class ExtractEffectOCIO(publish.Extractor):
         to also feature an effectOcio entry to be published
     """
 
-    label = "Extract Effect OCIO (TTD)"
+    label = "Extract Effect OCIO - TTD"
     order = pyblish.api.ExtractorOrder
 
     profiles = None
@@ -20,3 +20,5 @@ class ExtractEffectOCIO(publish.Extractor):
 
         self.log.debug(self.profiles)
         self.log.debug(f"{self.label} was run!")
+
+        raise

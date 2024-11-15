@@ -68,24 +68,6 @@
                                     "enum_label": "Operation Type",
                                     "enum_children": [
                                         {
-                                            "key": "color_conversion",
-                                            "label": "Color Conversion",
-                                            "children": [
-                                                {
-                                                    "type": "text",
-                                                    "key": "from_colorspace",
-                                                    "label": "From Colorspace",
-                                                    "default": ""
-                                                },
-                                                {
-                                                    "type": "text",
-                                                    "key": "to_colorspace",
-                                                    "label": "To Colorspace",
-                                                    "default": "scene_linear"
-                                                }
-                                            ]
-                                        },
-                                        {
                                             "key": "process_subset",
                                             "label": "Process Subset",
                                             "children": [
@@ -123,6 +105,163 @@
                                                     "key": "path",
                                                     "label": "Template Path",
                                                     "default": "{root[work]}/{project[name]}/_pipeline/templates"
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "key": "OCIOColorSpace",
+                                            "label": "OCIO ColorSpace",
+                                            "children": [
+                                                {
+                                                    "type": "text",
+                                                    "key": "in_colorspace",
+                                                    "label": "In Colorspace",
+                                                    "default": ""
+                                                },
+                                                {
+                                                    "type": "text",
+                                                    "key": "out_colorspace",
+                                                    "label": "Out Colorspace",
+                                                    "default": "scene_linear"
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "key": "OCIOCDLTransform",
+                                            "label": "OCIO CDLTransform",
+                                            "children": [
+                                                {
+                                                    "type": "list-strict",
+                                                    "key": "slope",
+                                                    "label": "Slope",
+                                                    "object_types": [
+                                                        {
+                                                            "type": "number",
+                                                            "key": "r",
+                                                            "default": 1,
+                                                            "decimal": 5,
+                                                            "minimum": 0,
+                                                            "maximum": 10
+                                                        },
+                                                        {
+                                                            "type": "number",
+                                                            "key": "g",
+                                                            "default": 1,
+                                                            "decimal": 5,
+                                                            "minimum": 0,
+                                                            "maximum": 10
+                                                        },
+                                                        {
+                                                            "type": "number",
+                                                            "key": "b",
+                                                            "default": 1,
+                                                            "decimal": 5,
+                                                            "minimum": 0,
+                                                            "maximum": 10
+                                                        }
+                                                    ]
+                                                },
+                                                {
+                                                    "type": "list-strict",
+                                                    "key": "offset",
+                                                    "label": "Offset",
+                                                    "object_types": [
+                                                        {
+                                                            "type": "number",
+                                                            "key": "r",
+                                                            "default": 0,
+                                                            "decimal": 5,
+                                                            "minimum": -1,
+                                                            "maximum": 1
+                                                        },
+                                                        {
+                                                            "type": "number",
+                                                            "key": "g",
+                                                            "default": 0,
+                                                            "decimal": 5,
+                                                            "minimum": -1,
+                                                            "maximum": 1
+                                                        },
+                                                        {
+                                                            "type": "number",
+                                                            "key": "b",
+                                                            "default": 0,
+                                                            "decimal": 5,
+                                                            "minimum": -1,
+                                                            "maximum": 1
+                                                        }
+                                                    ]
+                                                },
+                                                {
+                                                    "type": "list-strict",
+                                                    "key": "power",
+                                                    "label": "Power",
+                                                    "object_types": [
+                                                        {
+                                                            "type": "number",
+                                                            "key": "r",
+                                                            "default": 1,
+                                                            "decimal": 5,
+                                                            "minimum": 0,
+                                                            "maximum": 10
+                                                        },
+                                                        {
+                                                            "type": "number",
+                                                            "key": "g",
+                                                            "default": 1,
+                                                            "decimal": 5,
+                                                            "minimum": 0,
+                                                            "maximum": 10
+                                                        },
+                                                        {
+                                                            "type": "number",
+                                                            "key": "b",
+                                                            "default": 1,
+                                                            "decimal": 5,
+                                                            "minimum": 0,
+                                                            "maximum": 10
+                                                        }
+                                                    ]
+                                                },
+                                                {
+                                                    "type": "number",
+                                                    "key": "saturation",
+                                                    "label": "Saturation",
+                                                    "default": 1,
+                                                    "decimal": 5,
+                                                    "minimum": 0,
+                                                    "maximum": 10
+                                                },
+                                                {
+                                                    "type": "splitter"
+                                                },
+                                                {
+                                                    "type": "boolean",
+                                                    "key": "read_from_file",
+                                                    "label": "Read From File",
+                                                    "default": false
+                                                },
+                                                {
+                                                    "type": "text",
+                                                    "key": "file",
+                                                    "label": "File"
+                                                },
+                                                {
+                                                    "type": "text",
+                                                    "key": "cccid",
+                                                    "label": "cccd"
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "key": "OCIOFileTransform",
+                                            "label": "OCIO FileTransform",
+                                            "children": [
+                                                {
+                                                    "type": "text",
+                                                    "key": "file",
+                                                    "label": "File",
+                                                    "default": ""
                                                 }
                                             ]
                                         },

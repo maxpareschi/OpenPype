@@ -1,6 +1,6 @@
 {
     "project_settings/ttd_addon": {
-        "color_management": {
+        "color_management_ocio": {
             "enabled": true,
             "profiles": [
                 {
@@ -52,9 +52,9 @@
                         "extension": "exr",
                         "operations": [
                             {
-                                "operation_type": "color_conversion",
-                                "from_colorspace": "",
-                                "to_colorspace": "scene_linear"
+                                "operation_type": "OCIOColorSpace",
+                                "in_colorspace": "",
+                                "out_colorspace": "scene_linear"
                             }
                         ],
                         "write_settings": [],
@@ -76,9 +76,9 @@
                         "extension": "jpg",
                         "operations": [
                             {
-                                "operation_type": "color_conversion",
-                                "from_colorspace": "",
-                                "to_colorspace": "color_picking"
+                                "operation_type": "OCIOColorSpace",
+                                "in_colorspace": "",
+                                "out_colorspace": "color_picking"
                             },
                             {
                                 "operation_type": "reformat",
