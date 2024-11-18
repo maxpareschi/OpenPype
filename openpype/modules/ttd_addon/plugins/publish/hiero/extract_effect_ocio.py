@@ -15,6 +15,9 @@ class ExtractEffectOCIO(publish.Extractor):
     order = pyblish.api.ExtractorOrder
 
     profiles = None
+    
+    hosts = ["hiero"]
+    families = ["effect"]
 
     def process(self, instance):
 
