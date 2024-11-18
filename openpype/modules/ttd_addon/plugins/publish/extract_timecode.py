@@ -43,24 +43,23 @@ class ExtractTimecode(publish.Extractor):
         self.log.debug(f"FPS truncated to: {instance_fps}")
 
         tc_list = []
-        if instance.data.get("representations", None):
-            for repre in instance.data["representations"]:
-                if repre["name"] != "thumbnail" and repre["ext"] in self.supported_exts:
-                    tc = default_tc
-                    file = os.path.join(
-                        repre["stagingDir"],
-                        repre["files"][0] if isinstance(repre["files"], list) else repre["files"]
-                    )
-                    self.log.debug("Extracting timecode on file: '{}'".format(file))
+        for repre in instance.data.get("representations", []):
+            if repre["name"] != "thumbnail" and repre["ext"] in self.supported_exts:
+                tc = default_tc
+                file = os.path.join(
+                    repre["stagingDir"],
+                    repre["files"][0] if isinstance(repre["files"], list) else repre["files"]
+                )
+                self.log.debug("Extracting timecode on file: '{}'".format(file))
+                try:
+                    tc = get_timecode_oiio(file)
+                except:
+                    self.log.debug("No timecode found using iinfo, trying ffprobe...")
                     try:
-                        tc = get_timecode_oiio(file)
+                        tc = get_timecode_ffprobe(file)
                     except:
-                        self.log.debug("No timecode found using iinfo, trying ffprobe...")
-                        try:
-                            tc = get_timecode_ffprobe(file)
-                        except:
-                            self.log.debug("No timecode found using ffprobe...")
-                    tc_list.append(tc)
+                        self.log.debug("No timecode found using ffprobe...")
+                tc_list.append(tc)
 
         final_tc = None
         final_tc_list = list(set(tc_list))
