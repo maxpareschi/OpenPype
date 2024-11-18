@@ -8,8 +8,7 @@ from openpype.lib.profiles_filtering import filter_profiles
 
 # Absolute import, replace with new dir structure if changing location
 from openpype.modules.ttd_addon.lib.pipeline import (
-    find_in_project_settings,
-    validate_field
+    find_in_project_settings
 )
 
 
@@ -20,35 +19,6 @@ class ExtractTranscode(publish.Extractor):
     Ideal for farm or multi output. Works with any video or image
     
     Inherits from pyblish.Plugin
-
-    Attributes:
-        hosts: Optionally limit a plug-in to one or more hosts
-        families: Optionally limit a plug-in to one or more families
-        label: Printed name of plug-in
-        active: Whether or not to use plug-in during processing
-        version: Optional version for forwards-compatibility.
-            Pyblish is (currently not) using the version to allow
-            for plug-ins incompatible with a particular running
-            instance of Pyblish to co-exist alongside compatible
-            versions.
-        order: Order in which this plug-in is processed. This is
-            used internally to control which plug-ins are processed
-            before another so as to allow plug-ins to communicate
-            with each other. E.g. one plug-in may provide critical
-            information to another and so must be allowed to be
-            processed first.
-        optional: Whether or not plug-in can be skipped by the user.
-        requires: Which version of Pyblish is required by this plug-in.
-            Plug-ins requiring a version newer than the current version
-            will not be loaded. 1.0.8 was when :attr:`Plugin.requires`
-            was first introduced.
-        actions: Actions associated to this plug-in
-        id: Unique ID as str
-        match: Family matching algorithm - Intersection, Subset or Exact
-            Intersection -> set(a).intersection(b)
-            Subset       -> set(a).issubset(b)
-            Exact        -> a == b
-
     """
 
     label = "Extract Transcodes - TTD"

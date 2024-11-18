@@ -3,8 +3,16 @@ from typing import Union
 from openpype.settings import get_project_settings
 
 
-
 def search_paths_recursive(path: str) -> dict:
+    """
+    Scans recursively in directory for nested
+    directories and return those paths.
+
+    Useful for adding plugins in arbitrary trees
+    and adding them to the search paths.
+
+    Returns a lits of paths in string format.
+    """
     plugin_paths = {}
     for dir in os.scandir(path):
         if dir.is_dir():
@@ -24,7 +32,7 @@ def search_paths_recursive(path: str) -> dict:
     return plugin_paths
 
 
-def find_key_recursive(settings: dict, search_key: str) -> Union[dict, None]:
+def find_key_recursive(search_dict: dict, search_key: str) -> Union[dict, None]:
     """
     Takes a dict with nested lists and dicts, searches all dicts
     for a key of the field provided.
@@ -32,21 +40,46 @@ def find_key_recursive(settings: dict, search_key: str) -> Union[dict, None]:
     Returns value of first matched key or None if no match is found.
     """
     result = None
-    for key in settings.keys():
+    for key in search_dict.keys():
         if key == search_key:
-            result = settings[key]
+            result = search_dict[key]
             break
-        elif isinstance(settings[key], dict):
-            result = find_key_recursive(settings[key], search_key)
+        elif isinstance(search_dict[key], dict):
+            result = find_key_recursive(search_dict[key], search_key)
             if result:
                 break
-        elif isinstance(settings[key], (list, tuple)):
-            for item in settings[key]:
+        elif isinstance(search_dict[key], (list, tuple)):
+            for item in search_dict[key]:
                 if isinstance(item, dict):
                     result = find_key_recursive(item, search_key)
                     if result:
                         break
     return result
+
+
+def find_all_keys_recursive(search_dict: dict, search_key: str) -> list:
+        """
+        Takes a dict with nested lists and dicts,
+        and searches all dicts for a key of the field
+        provided.
+
+        Returns a list of matching values found .
+        """
+        fields_found = []
+        for key, value in search_dict.items():
+            if key == search_key:
+                fields_found.append(value)
+            elif isinstance(value, dict):
+                results = find_all_keys_recursive(value, search_key)
+                for result in results:
+                    fields_found.append(result)
+            elif isinstance(value, (list, tuple)):
+                for item in value:
+                    if isinstance(item, dict):
+                        more_results = find_all_keys_recursive(item, search_key)
+                        for another_result in more_results:
+                            fields_found.append(another_result)
+        return fields_found
 
 
 def find_in_project_settings(search_key: str) -> Union[dict, None]:

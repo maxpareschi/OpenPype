@@ -23,6 +23,25 @@
             "label": "<i><b>Extract Plugins</b></i>"
         },
         {
+            "type": "dict",
+            "key": "extract_timecode",
+            "label": "Extract Timecode",
+            "checkbox_key": "enabled",
+            "children": [
+                {
+                    "type": "boolean",
+                    "key": "enabled",
+                    "label": "Enabled"
+                },
+                {
+                    "type": "text",
+                    "key": "default_timecode",
+                    "label": "Default Timecode",
+                    "default": "01:00:00:01"
+                }
+            ]
+        },
+        {
             "type": "schema",
             "name": "ttd_addon/extract_transcode"
         },

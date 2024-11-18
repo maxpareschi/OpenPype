@@ -22,6 +22,10 @@
             ]
         },
         "publish_plugins": {
+            "extract_timecode": {
+                "enabled": true,
+                "default_timecode": "01:00:00:01"
+            },
             "extract_transcode": {
                 "enabled": true,
                 "presets": {
