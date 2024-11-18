@@ -25,9 +25,10 @@ class ExtractTimecode(publish.Extractor):
 
     label = "Extract Timecode - TTD"
     order = order = pyblish.api.ExtractorOrder + 0.01899
-    families = ["render", "review", "preview", "gather"]
-    supported_exts = ["mov", "mp4", "dpx", "cin", "exr"]
 
+    families = ["render", "review", "preview", "gather"]
+    supported_exts = ["mov", "mp4", "mxf", "dpx", "cin", "exr"]
+    
     settings = find_in_project_settings("extract_timecode")
     optional = True
     active = True

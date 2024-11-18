@@ -20,9 +20,27 @@
                         "default": false
                     },
                     {
+                        "type": "label",
+                        "label": "Standard override parameters in metadata only include 'frame_rate' and 'timecode'.\nOther metadata will be overridden and/or appended in exr output only.\n\nEmpty values (or 0.0 for numerical inputs) will inherit source metadata."
+                    },
+                    {
                         "type": "text",
                         "key": "colorspace",
-                        "label": "Input Colorspace"
+                        "label": "Colorspace"
+                    },
+                    {
+                        "type": "text",
+                        "key": "timecode",
+                        "label": "Timecode"
+                    },
+                    {
+                        "type": "number",
+                        "key": "fps",
+                        "label": "Fps",
+                        "default": 1,
+                        "decimal": 3,
+                        "minimum": 0,
+                        "maximum": 2000
                     },
                     {
                         "type": "dict-modifiable",

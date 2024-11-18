@@ -14,14 +14,11 @@ class ExtractEffectOCIO(publish.Extractor):
     label = "Extract Effect OCIO - TTD"
     order = pyblish.api.ExtractorOrder
 
-    profiles = None
-    
     hosts = ["hiero"]
     families = ["effect"]
 
     def process(self, instance):
-
-        self.log.debug(self.profiles)
+        
         self.log.debug(f"{self.label} was run!")
 
         raise

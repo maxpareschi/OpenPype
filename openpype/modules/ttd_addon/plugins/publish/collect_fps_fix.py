@@ -14,8 +14,9 @@ class CollectFpsFix(pyblish.api.InstancePlugin):
     label = "Collect Fps Fix"
     order = pyblish.api.CollectorOrder
 
-    def process(self, instance):
 
+    def process(self, instance):
+        
         truncated_fps = truncate(float(instance.data.get("fps", 24.0)), 3)
         instance.data["fps"] = truncated_fps
         instance.context.data["fps"] = truncated_fps
