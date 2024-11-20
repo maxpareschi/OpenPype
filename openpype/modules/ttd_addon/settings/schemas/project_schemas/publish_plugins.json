@@ -24,6 +24,27 @@
         },
         {
             "type": "dict",
+            "key": "extract_effect_ocio",
+            "label": "Extract Effect OCIO (Hiero)",
+            "checkbox_key": "enabled",
+            "children": [
+                {
+                    "type": "boolean",
+                    "key": "enabled",
+                    "label": "Enabled"
+                },
+                {
+                    "type": "list",
+                    "key": "active_views",
+                    "label": "Active Views",
+                    "object_type": {
+                        "type": "text"
+                    }
+                }
+            ]
+        },
+        {
+            "type": "dict",
             "key": "extract_timecode",
             "label": "Extract Timecode",
             "checkbox_key": "enabled",

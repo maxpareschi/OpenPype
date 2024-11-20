@@ -2,6 +2,7 @@ import os
 
 import pyblish.api
 from openpype.pipeline import publish
+
 from openpype.modules.ttd_addon.lib.pipeline import (
     find_in_project_settings
 )

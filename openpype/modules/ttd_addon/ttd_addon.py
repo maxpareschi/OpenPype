@@ -59,13 +59,12 @@ class TTDAddon(OpenPypeAddOn, IPluginPaths, ITrayAction):
         self.show_dialog()
 
     def get_plugin_paths(self):
-        plugins_dir = os.path.join(
-            os.path.dirname(
-                os.path.abspath(__file__)
-            ),
-            "plugins"
-        )
-        return pipeline.search_paths_recursive(plugins_dir)
+        publish_plugins_dir = os.path.join(
+            os.path.dirname(os.path.abspath(__file__)), "plugins", "publish")
+        plugin_paths = {
+            "publish": pipeline.search_paths_recursive(publish_plugins_dir)
+        }
+        return plugin_paths
 
     def cli(self, click_group):
         click_group.add_command(cli_main)

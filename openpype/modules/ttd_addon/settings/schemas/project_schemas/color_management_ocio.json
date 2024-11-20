@@ -12,6 +12,14 @@
             "default": false
         },
         {
+            "type": "text",
+            "key": "default_ocio_config_path",
+            "label": "Default OCIO config Path"
+        },
+        {
+            "type": "splitter"
+        },
+        {
             "type": "list",
             "key": "profiles",
             "label": "Profiles",

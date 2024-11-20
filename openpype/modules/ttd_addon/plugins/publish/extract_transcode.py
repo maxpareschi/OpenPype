@@ -1,6 +1,7 @@
+from typing import Union, Any
+
 import os
 import re
-
 
 import pyblish.api
 from openpype.pipeline import publish
@@ -8,7 +9,8 @@ from openpype.lib.profiles_filtering import filter_profiles
 
 # Absolute import, replace with new dir structure if changing location
 from openpype.modules.ttd_addon.lib.pipeline import (
-    find_in_project_settings
+    find_in_project_settings,
+    get_profile
 )
 
 
@@ -48,6 +50,21 @@ class ExtractTranscode(publish.Extractor):
         if not self.validate_instance(instance):
             return
 
+        instance_profile = self.get_instance_profile(instance)
+        profile = get_profile(self.profiles, instance_profile, logger=self.log)
+        if not profile:
+            return
+        
+        presets = profile["linked_presets"]
+        
+        new_representations = []
+        
+        for repre in instance.data.get("representations", []):
+            if not self.validate_representation(repre):
+                continue
+
+        instance.data["representations"] = new_representations
+
     
     def validate_instance(self, instance: pyblish.api.Instance) -> bool:
         """
@@ -75,8 +92,7 @@ class ExtractTranscode(publish.Extractor):
 
         return True
 
-
-    def validate_representation(self, representation: dict) -> bool:
+    def validate_representation(self, representation: 'dict[str, Any]') -> bool:
         """
         Validate if representation should be processed.
         Needed to skip or enable processing depending on features.
@@ -117,7 +133,6 @@ class ExtractTranscode(publish.Extractor):
     
         return True
         
-
     def process_representation_colorspace(self,
                                           instance: pyblish.api.Instance,
                                           representation: dict,
@@ -153,6 +168,16 @@ class ExtractTranscode(publish.Extractor):
         
         return representation["colorspace"]
     
+    def get_instance_profile(self, instance: pyblish.api.Instance) -> 'dict[str, str]':
+        profile = {
+            "hosts": instance.context.data["hostName"],
+            "families": instance.data["family"],
+            "assets": instance.data["asset"],
+            "task_names": instance.data["anatomyData"].get("task", {}).get("name", ""),
+            "task_types": instance.data["anatomyData"].get("task", {}).get("type", ""),
+            "subsets": instance.data["subset"]
+        }
+        return profile
 
     def update_representation_metadata(self,
                                        representation: dict,

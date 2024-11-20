@@ -1,443 +1,465 @@
 
 {
-    "type": "dict-modifiable",
-    "key": "presets",
+    "type": "collapsible-wrap",
     "label": "Transcode Presets",
-    "object_type": {
-        "type": "dict",
-        "children": [
-            {
+    "collapsible": true,
+    "collapsed": true,
+    "children": [
+        {
+            "type": "label",
+            "label": "IMPORTANT: preset name 'fallback' is a reserved keyword in case the correct preset can't be applied.\nIn case there is no 'fallback' preset specified Transcode presets may fail to execute correctly."
+        },
+        {
+            "type": "dict-modifiable",
+            "key": "presets",
+            "collapsible": false,
+            "collapsed": false,
+            "label": "Presets",
+            "object_type": {
                 "type": "dict",
-                "collapsible": true,
-                "key": "input_overrides",
-                "label": "Input Overrides",
-                "checkbox_key": "enabled",
                 "children": [
                     {
-                        "type": "boolean",
-                        "key": "enabled",
-                        "label": "Enabled",
-                        "default": false
-                    },
-                    {
-                        "type": "label",
-                        "label": "Standard override parameters in metadata only include 'frame_rate' and 'timecode'.\nOther metadata will be overridden and/or appended in exr output only.\n\nEmpty values (or 0.0 for numerical inputs) will inherit source metadata."
-                    },
-                    {
-                        "type": "text",
-                        "key": "colorspace",
-                        "label": "Colorspace"
-                    },
-                    {
-                        "type": "text",
-                        "key": "timecode",
-                        "label": "Timecode"
-                    },
-                    {
-                        "type": "number",
-                        "key": "fps",
-                        "label": "Fps",
-                        "default": 1,
-                        "decimal": 3,
-                        "minimum": 0,
-                        "maximum": 2000
-                    },
-                    {
-                        "type": "dict-modifiable",
-                        "key": "metadata",
-                        "label": "Metadata",
-                        "object_type": {
-                            "type": "text",
-                            "key": "value"
-                        }
-                    }
-                ]
-            },
-            {
-                "type": "collapsible-wrap",
-                "label": "Settings",
-                "collapsible": true,
-                "collapsed": true,
-                "children": [
-                    {
-                        "type": "enum",
-                        "key": "extension",
-                        "label": "Extension",
-                        "enum_items": [
-                            { "passthrough": "passthrough" },
-                            { "exr": "exr" },
-                            { "jpg": "jpg" },
-                            { "png": "png" }
-                        ],
-                        "default": "passthrough"
-                    },
-                    {
-                        "type": "collapsible-wrap",
-                        "label": "Operations",
+                        "type": "dict",
                         "collapsible": true,
-                        "collapsed": true,
+                        "key": "input_overrides",
+                        "label": "Input Overrides",
+                        "checkbox_key": "enabled",
                         "children": [
                             {
-                                "type": "list",
-                                "key": "operations",
+                                "type": "boolean",
+                                "key": "enabled",
+                                "label": "Enabled",
+                                "default": false
+                            },
+                            {
+                                "type": "label",
+                                "label": "Standard override parameters in metadata only include 'frame_rate' and 'timecode'.\nOther metadata will be overridden and/or appended in exr output only.\n\nEmpty values (or 0.0 for numerical inputs) will inherit source metadata.\nColorspace can also override read colorspace globally. Use with caution."
+                            },
+                            {
+                                "type": "text",
+                                "key": "colorspace",
+                                "label": "Colorspace"
+                            },
+                            {
+                                "type": "text",
+                                "key": "timecode",
+                                "label": "Timecode"
+                            },
+                            {
+                                "type": "number",
+                                "key": "fps",
+                                "label": "Fps",
+                                "default": 1,
+                                "decimal": 3,
+                                "minimum": 0,
+                                "maximum": 2000
+                            },
+                            {
+                                "type": "dict-modifiable",
+                                "key": "metadata",
+                                "label": "Metadata",
                                 "object_type": {
-                                    "type": "dict-conditional",
-                                    "enum_key": "operation_type",
-                                    "enum_label": "Operation Type",
-                                    "enum_children": [
-                                        {
-                                            "key": "process_subset",
-                                            "label": "Process Subset",
-                                            "children": [
-                                                {
-                                                    "type": "enum",
-                                                    "key": "loader",
-                                                    "label": "Loader Plugin",
-                                                    "enum_items": [
-                                                        { "LoadEffects": "LoadEffects" },
-                                                        { "LoadClip": "LoadClip" },
-                                                        { "LoadImage": "LoadImage" }
-                                                    ],
-                                                    "default": "LoadEffects"
-                                                },
-                                                {
-                                                    "type": "text",
-                                                    "key": "subset",
-                                                    "label": "Subset Name",
-                                                    "default": "effectPlateLook"
-                                                },
-                                                {
-                                                    "type": "text",
-                                                    "key": "representation",
-                                                    "label": "Representation Name",
-                                                    "default": "effectJson"
-                                                }
-                                            ]
-                                        },
-                                        {
-                                            "key": "process_template",
-                                            "label": "Process Template",
-                                            "children": [
-                                                {
-                                                    "type": "text",
-                                                    "key": "path",
-                                                    "label": "Template Path",
-                                                    "default": "{root[work]}/{project[name]}/_pipeline/templates"
-                                                }
-                                            ]
-                                        },
-                                        {
-                                            "key": "OCIOColorSpace",
-                                            "label": "OCIO ColorSpace",
-                                            "children": [
-                                                {
-                                                    "type": "text",
-                                                    "key": "in_colorspace",
-                                                    "label": "In Colorspace",
-                                                    "default": ""
-                                                },
-                                                {
-                                                    "type": "text",
-                                                    "key": "out_colorspace",
-                                                    "label": "Out Colorspace",
-                                                    "default": "scene_linear"
-                                                }
-                                            ]
-                                        },
-                                        {
-                                            "key": "OCIOCDLTransform",
-                                            "label": "OCIO CDLTransform",
-                                            "children": [
-                                                {
-                                                    "type": "list-strict",
-                                                    "key": "slope",
-                                                    "label": "Slope",
-                                                    "object_types": [
-                                                        {
-                                                            "type": "number",
-                                                            "key": "r",
-                                                            "default": 1,
-                                                            "decimal": 5,
-                                                            "minimum": 0,
-                                                            "maximum": 10
-                                                        },
-                                                        {
-                                                            "type": "number",
-                                                            "key": "g",
-                                                            "default": 1,
-                                                            "decimal": 5,
-                                                            "minimum": 0,
-                                                            "maximum": 10
-                                                        },
-                                                        {
-                                                            "type": "number",
-                                                            "key": "b",
-                                                            "default": 1,
-                                                            "decimal": 5,
-                                                            "minimum": 0,
-                                                            "maximum": 10
-                                                        }
-                                                    ]
-                                                },
-                                                {
-                                                    "type": "list-strict",
-                                                    "key": "offset",
-                                                    "label": "Offset",
-                                                    "object_types": [
-                                                        {
-                                                            "type": "number",
-                                                            "key": "r",
-                                                            "default": 0,
-                                                            "decimal": 5,
-                                                            "minimum": -1,
-                                                            "maximum": 1
-                                                        },
-                                                        {
-                                                            "type": "number",
-                                                            "key": "g",
-                                                            "default": 0,
-                                                            "decimal": 5,
-                                                            "minimum": -1,
-                                                            "maximum": 1
-                                                        },
-                                                        {
-                                                            "type": "number",
-                                                            "key": "b",
-                                                            "default": 0,
-                                                            "decimal": 5,
-                                                            "minimum": -1,
-                                                            "maximum": 1
-                                                        }
-                                                    ]
-                                                },
-                                                {
-                                                    "type": "list-strict",
-                                                    "key": "power",
-                                                    "label": "Power",
-                                                    "object_types": [
-                                                        {
-                                                            "type": "number",
-                                                            "key": "r",
-                                                            "default": 1,
-                                                            "decimal": 5,
-                                                            "minimum": 0,
-                                                            "maximum": 10
-                                                        },
-                                                        {
-                                                            "type": "number",
-                                                            "key": "g",
-                                                            "default": 1,
-                                                            "decimal": 5,
-                                                            "minimum": 0,
-                                                            "maximum": 10
-                                                        },
-                                                        {
-                                                            "type": "number",
-                                                            "key": "b",
-                                                            "default": 1,
-                                                            "decimal": 5,
-                                                            "minimum": 0,
-                                                            "maximum": 10
-                                                        }
-                                                    ]
-                                                },
-                                                {
-                                                    "type": "number",
-                                                    "key": "saturation",
-                                                    "label": "Saturation",
-                                                    "default": 1,
-                                                    "decimal": 5,
-                                                    "minimum": 0,
-                                                    "maximum": 10
-                                                },
-                                                {
-                                                    "type": "splitter"
-                                                },
-                                                {
-                                                    "type": "boolean",
-                                                    "key": "read_from_file",
-                                                    "label": "Read From File",
-                                                    "default": false
-                                                },
-                                                {
-                                                    "type": "text",
-                                                    "key": "file",
-                                                    "label": "File"
-                                                },
-                                                {
-                                                    "type": "text",
-                                                    "key": "cccid",
-                                                    "label": "cccd"
-                                                }
-                                            ]
-                                        },
-                                        {
-                                            "key": "OCIOFileTransform",
-                                            "label": "OCIO FileTransform",
-                                            "children": [
-                                                {
-                                                    "type": "text",
-                                                    "key": "file",
-                                                    "label": "File",
-                                                    "default": ""
-                                                }
-                                            ]
-                                        },
-                                        {
-                                            "key": "reformat",
-                                            "label": "Reformat",
-                                            "children": [
-                                                {
-                                                    "type": "number",
-                                                    "key": "box_width",
-                                                    "label": "Width",
-                                                    "decimal": 0,
-                                                    "minimum": 320,
-                                                    "maximum": 15360,
-                                                    "default": 1920
-                                                },
-                                                {
-                                                    "type": "number",
-                                                    "key": "box_height",
-                                                    "label": "Height",
-                                                    "decimal": 0,
-                                                    "minimum": 192,
-                                                    "maximum": 8640,
-                                                    "default": 1080
-                                                },
-                                                {
-                                                    "type": "number",
-                                                    "key": "box_pixel_aspect",
-                                                    "label": "Pixel Aspect",
-                                                    "decimal": 2,
-                                                    "minimum": 0.1,
-                                                    "maximum": 3.0,
-                                                    "default": 1.0
-                                                },
-                                                {
-                                                    "type": "enum",
-                                                    "key": "resize",
-                                                    "label": "Resize Type",
-                                                    "enum_items": [
-                                                        { "none": "none" },
-                                                        { "width": "width" },
-                                                        { "height": "height" },
-                                                        { "fit": "fit" },
-                                                        { "fill": "fill" },
-                                                        { "distort": "distort" }
-                                                    ],
-                                                    "default": "width"
-                                                },
-                                                {
-                                                    "type": "enum",
-                                                    "key": "filter",
-                                                    "label": "Filter",
-                                                    "enum_items": [
-                                                        { "impulse": "impulse" },
-                                                        { "cubic": "cubic" },
-                                                        { "Keys": "Keys" },
-                                                        { "Simon": "Simon" },
-                                                        { "Rifman": "Rifman" },
-                                                        { "Mitchell": "Mitchell" },
-                                                        { "Parzen": "Parzen" },
-                                                        { "notch": "notch" },
-                                                        { "Lanczos4": "Lanczos4" },
-                                                        { "Lanczos6": "Lanczos6" },
-                                                        { "sinc4": "sinc4" }
-                                                    ],
-                                                    "default": "Lanczos4"
-                                                },
-                                                {
-                                                    "key": "black_outside",
-                                                    "label": "Black Outside",
-                                                    "type": "boolean",
-                                                    "default": false
-                                                }
-                                            ]
-                                        }
-                                    ]
+                                    "type": "text",
+                                    "key": "value"
                                 }
                             }
                         ]
                     },
                     {
-                        "type": "schema_template",
-                        "name": "template_nuke_knob_inputs",
-                        "template_data": [
+                        "type": "collapsible-wrap",
+                        "label": "Settings",
+                        "collapsible": true,
+                        "collapsed": true,
+                        "children": [
                             {
-                                "label": "Write Settings",
-                                "key": "write_settings"
-                            }
-                        ]
-                    },
-                    {
-                        "type": "splitter"
-                    },
-                    {
-                        "type": "boolean",
-                        "key": "override_thumbnail",
-                        "label": "Override/Create thumbnail",
-                        "default": false
-                    },
-                    {
-                        "type": "dict-conditional",
-                        "key": "output_name",
-                        "label": "Override Name",
-                        "enum_key": "naming_mode",
-                        "enum_children": [
+                                "type": "enum",
+                                "key": "extension",
+                                "label": "Extension",
+                                "enum_items": [
+                                    { "passthrough": "passthrough" },
+                                    { "exr": "exr" },
+                                    { "jpg": "jpg" },
+                                    { "png": "png" }
+                                ],
+                                "default": "passthrough"
+                            },
                             {
-                                "key": "use_preset_name",
-                                "label": "Use Preset Name",
+                                "type": "collapsible-wrap",
+                                "label": "Operations",
+                                "collapsible": true,
+                                "collapsed": true,
                                 "children": [
+                                    {
+                                        "type": "list",
+                                        "key": "operations",
+                                        "object_type": {
+                                            "type": "dict-conditional",
+                                            "enum_key": "operation_type",
+                                            "enum_label": "Operation Type",
+                                            "enum_children": [
+                                                {
+                                                    "key": "process_subset",
+                                                    "label": "Process Subset",
+                                                    "children": [
+                                                        {
+                                                            "type": "enum",
+                                                            "key": "loader",
+                                                            "label": "Loader Plugin",
+                                                            "enum_items": [
+                                                                { "LoadEffects": "LoadEffects" },
+                                                                { "LoadClip": "LoadClip" },
+                                                                { "LoadImage": "LoadImage" }
+                                                            ],
+                                                            "default": "LoadEffects"
+                                                        },
+                                                        {
+                                                            "type": "text",
+                                                            "key": "subset",
+                                                            "label": "Subset Name",
+                                                            "default": "effectPlateLook"
+                                                        },
+                                                        {
+                                                            "type": "text",
+                                                            "key": "representation",
+                                                            "label": "Representation Name",
+                                                            "default": "effectJson"
+                                                        }
+                                                    ]
+                                                },
+                                                {
+                                                    "key": "process_template",
+                                                    "label": "Process Template",
+                                                    "children": [
+                                                        {
+                                                            "type": "text",
+                                                            "key": "path",
+                                                            "label": "Template Path",
+                                                            "default": "{root[work]}/{project[name]}/_pipeline/templates"
+                                                        }
+                                                    ]
+                                                },
+                                                {
+                                                    "key": "OCIOColorSpace",
+                                                    "label": "OCIO ColorSpace",
+                                                    "children": [
+                                                        {
+                                                            "type": "text",
+                                                            "key": "in_colorspace",
+                                                            "label": "In Colorspace",
+                                                            "default": ""
+                                                        },
+                                                        {
+                                                            "type": "text",
+                                                            "key": "out_colorspace",
+                                                            "label": "Out Colorspace",
+                                                            "default": "scene_linear"
+                                                        }
+                                                    ]
+                                                },
+                                                {
+                                                    "key": "OCIOCDLTransform",
+                                                    "label": "OCIO CDLTransform",
+                                                    "children": [
+                                                        {
+                                                            "type": "list-strict",
+                                                            "key": "slope",
+                                                            "label": "Slope",
+                                                            "object_types": [
+                                                                {
+                                                                    "type": "number",
+                                                                    "key": "r",
+                                                                    "default": 1,
+                                                                    "decimal": 5,
+                                                                    "minimum": 0,
+                                                                    "maximum": 10
+                                                                },
+                                                                {
+                                                                    "type": "number",
+                                                                    "key": "g",
+                                                                    "default": 1,
+                                                                    "decimal": 5,
+                                                                    "minimum": 0,
+                                                                    "maximum": 10
+                                                                },
+                                                                {
+                                                                    "type": "number",
+                                                                    "key": "b",
+                                                                    "default": 1,
+                                                                    "decimal": 5,
+                                                                    "minimum": 0,
+                                                                    "maximum": 10
+                                                                }
+                                                            ]
+                                                        },
+                                                        {
+                                                            "type": "list-strict",
+                                                            "key": "offset",
+                                                            "label": "Offset",
+                                                            "object_types": [
+                                                                {
+                                                                    "type": "number",
+                                                                    "key": "r",
+                                                                    "default": 0,
+                                                                    "decimal": 5,
+                                                                    "minimum": -1,
+                                                                    "maximum": 1
+                                                                },
+                                                                {
+                                                                    "type": "number",
+                                                                    "key": "g",
+                                                                    "default": 0,
+                                                                    "decimal": 5,
+                                                                    "minimum": -1,
+                                                                    "maximum": 1
+                                                                },
+                                                                {
+                                                                    "type": "number",
+                                                                    "key": "b",
+                                                                    "default": 0,
+                                                                    "decimal": 5,
+                                                                    "minimum": -1,
+                                                                    "maximum": 1
+                                                                }
+                                                            ]
+                                                        },
+                                                        {
+                                                            "type": "list-strict",
+                                                            "key": "power",
+                                                            "label": "Power",
+                                                            "object_types": [
+                                                                {
+                                                                    "type": "number",
+                                                                    "key": "r",
+                                                                    "default": 1,
+                                                                    "decimal": 5,
+                                                                    "minimum": 0,
+                                                                    "maximum": 10
+                                                                },
+                                                                {
+                                                                    "type": "number",
+                                                                    "key": "g",
+                                                                    "default": 1,
+                                                                    "decimal": 5,
+                                                                    "minimum": 0,
+                                                                    "maximum": 10
+                                                                },
+                                                                {
+                                                                    "type": "number",
+                                                                    "key": "b",
+                                                                    "default": 1,
+                                                                    "decimal": 5,
+                                                                    "minimum": 0,
+                                                                    "maximum": 10
+                                                                }
+                                                            ]
+                                                        },
+                                                        {
+                                                            "type": "number",
+                                                            "key": "saturation",
+                                                            "label": "Saturation",
+                                                            "default": 1,
+                                                            "decimal": 5,
+                                                            "minimum": 0,
+                                                            "maximum": 10
+                                                        },
+                                                        {
+                                                            "type": "splitter"
+                                                        },
+                                                        {
+                                                            "type": "boolean",
+                                                            "key": "read_from_file",
+                                                            "label": "Read From File",
+                                                            "default": false
+                                                        },
+                                                        {
+                                                            "type": "text",
+                                                            "key": "file",
+                                                            "label": "File"
+                                                        },
+                                                        {
+                                                            "type": "text",
+                                                            "key": "cccid",
+                                                            "label": "cccd"
+                                                        }
+                                                    ]
+                                                },
+                                                {
+                                                    "key": "OCIOFileTransform",
+                                                    "label": "OCIO FileTransform",
+                                                    "children": [
+                                                        {
+                                                            "type": "text",
+                                                            "key": "file",
+                                                            "label": "File",
+                                                            "default": ""
+                                                        }
+                                                    ]
+                                                },
+                                                {
+                                                    "key": "reformat",
+                                                    "label": "Reformat",
+                                                    "children": [
+                                                        {
+                                                            "type": "number",
+                                                            "key": "box_width",
+                                                            "label": "Width",
+                                                            "decimal": 0,
+                                                            "minimum": 320,
+                                                            "maximum": 15360,
+                                                            "default": 1920
+                                                        },
+                                                        {
+                                                            "type": "number",
+                                                            "key": "box_height",
+                                                            "label": "Height",
+                                                            "decimal": 0,
+                                                            "minimum": 192,
+                                                            "maximum": 8640,
+                                                            "default": 1080
+                                                        },
+                                                        {
+                                                            "type": "number",
+                                                            "key": "box_pixel_aspect",
+                                                            "label": "Pixel Aspect",
+                                                            "decimal": 2,
+                                                            "minimum": 0.1,
+                                                            "maximum": 3.0,
+                                                            "default": 1.0
+                                                        },
+                                                        {
+                                                            "type": "enum",
+                                                            "key": "resize",
+                                                            "label": "Resize Type",
+                                                            "enum_items": [
+                                                                { "none": "none" },
+                                                                { "width": "width" },
+                                                                { "height": "height" },
+                                                                { "fit": "fit" },
+                                                                { "fill": "fill" },
+                                                                { "distort": "distort" }
+                                                            ],
+                                                            "default": "width"
+                                                        },
+                                                        {
+                                                            "type": "enum",
+                                                            "key": "filter",
+                                                            "label": "Filter",
+                                                            "enum_items": [
+                                                                { "impulse": "impulse" },
+                                                                { "cubic": "cubic" },
+                                                                { "Keys": "Keys" },
+                                                                { "Simon": "Simon" },
+                                                                { "Rifman": "Rifman" },
+                                                                { "Mitchell": "Mitchell" },
+                                                                { "Parzen": "Parzen" },
+                                                                { "notch": "notch" },
+                                                                { "Lanczos4": "Lanczos4" },
+                                                                { "Lanczos6": "Lanczos6" },
+                                                                { "sinc4": "sinc4" }
+                                                            ],
+                                                            "default": "Lanczos4"
+                                                        },
+                                                        {
+                                                            "key": "black_outside",
+                                                            "label": "Black Outside",
+                                                            "type": "boolean",
+                                                            "default": false
+                                                        }
+                                                    ]
+                                                }
+                                            ]
+                                        }
+                                    }
                                 ]
                             },
                             {
-                                "key": "use_prefix_suffix",
-                                "label": "Use Extension With Prefix/Suffix",
-                                "children": [
+                                "type": "schema_template",
+                                "name": "template_nuke_knob_inputs",
+                                "template_data": [
                                     {
-                                        "type": "text",
-                                        "key": "prefix",
-                                        "label": "Prefix",
-                                        "default": ""
+                                        "label": "Write Settings",
+                                        "key": "write_settings"
+                                    }
+                                ]
+                            },
+                            {
+                                "type": "splitter"
+                            },
+                            {
+                                "type": "text",
+                                "key": "fallback_preset",
+                                "label": "Fallback Preset"
+                            },
+                            {
+                                "type": "splitter"
+                            },
+                            {
+                                "type": "boolean",
+                                "key": "override_thumbnail",
+                                "label": "Override/Create thumbnail",
+                                "default": false
+                            },
+                            {
+                                "type": "dict-conditional",
+                                "key": "output_name",
+                                "label": "Override Name",
+                                "enum_key": "naming_mode",
+                                "enum_children": [
+                                    {
+                                        "key": "use_preset_name",
+                                        "label": "Use Preset Name",
+                                        "children": [
+                                        ]
                                     },
                                     {
-                                        "type": "text",
-                                        "key": "suffix",
-                                        "label": "Suffix",
-                                        "default": ""
+                                        "key": "use_prefix_suffix",
+                                        "label": "Use Extension With Prefix/Suffix",
+                                        "children": [
+                                            {
+                                                "type": "text",
+                                                "key": "prefix",
+                                                "label": "Prefix",
+                                                "default": ""
+                                            },
+                                            {
+                                                "type": "text",
+                                                "key": "suffix",
+                                                "label": "Suffix",
+                                                "default": ""
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "key": "use_custom_name",
+                                        "label": "Use Custom Name",
+                                        "children": [
+                                            {
+                                                "type": "text",
+                                                "key": "name",
+                                                "label": "Name",
+                                                "default": ""
+                                            }
+                                        ]
                                     }
                                 ]
                             },
                             {
-                                "key": "use_custom_name",
-                                "label": "Use Custom Name",
-                                "children": [
-                                    {
-                                        "type": "text",
-                                        "key": "name",
-                                        "label": "Name",
-                                        "default": ""
-                                    }
-                                ]
+                                "type": "splitter"
+                            },
+                            {
+                                "type": "schema",
+                                "name": "schema_representation_tags"
+                            },
+                            {
+                                "key": "custom_tags",
+                                "label": "Custom Tags",
+                                "type": "list",
+                                "object_type": "text"
                             }
                         ]
-                    },
-                    {
-                        "type": "splitter"
-                    },
-                    {
-                        "type": "schema",
-                        "name": "schema_representation_tags"
-                    },
-                    {
-                        "key": "custom_tags",
-                        "label": "Custom Tags",
-                        "type": "list",
-                        "object_type": "text"
                     }
                 ]
             }
-        ]
-    }
+        }
+    ]
 }
