@@ -1,7 +1,9 @@
 from typing import Union, Any
 
 import os
+import re
 import logging
+import clique
 
 try:
     from openpype.settings import get_current_project_settings
@@ -10,6 +12,60 @@ except:
     logging.basicConfig()
     logging.debug("Testing 'ttd_addon/lib/pipeline.py' as standalone script.")
 
+
+class SequenceInfo:
+    
+    def __init__(self, frames: 'list[str]' = list()) -> None:
+        self.frames = frames,
+        self.frame_start: int = 0
+        self.frame_end: int = 0
+        self.length: int = 0
+        self.head: str = ""
+        self.tail: str = ""
+        self.padding: int = 0
+        self.frame_digits: 'tuple[int, int]' = (0, 0)
+        self.frame_divider = "."
+        self.tail_divider = "."
+        self._frame_pattern: str = r'[._]{0}\.\D+\d?$'.format(clique.DIGITS_PATTERN)
+
+    def assemble(self) -> None:
+        collections, remainders = clique.assemble(self.frames,
+                                                  patterns=[self._frame_pattern],
+                                                  assume_padded_when_ambiguous=True)
+        self.frame_start = collections[0].indexes[0]
+        self.frame_end = collections[0].indexes[-1]
+        self.length = len(collections[0].indexes)
+        self.head = collections[0].head.replace(".", "")
+        self.tail = collections[0].tail.replace(".", "")
+        self.padding = collections[0].padding
+        self.frame_digits = (len(str(self.frame_start)), len(str(self.frame_end)))
+
+    def find(self, path: str) -> None:
+        files = os.listdir(path)
+        self.frames = files
+        self.assemble()
+
+    def resample(self,
+                 start_frame: int = 1001,
+                 length: int = 0,
+                 prefix: str = "",
+                 suffix: str = "",
+                 padding: int = 4) -> 'list[str]':
+        
+        frames = []
+
+        if length == 0:
+            length = self.length
+
+        for f in range(length):
+            frames.append((
+                f"{self.head}{self.frame_divider}"
+                f"{str(f+start_frame).zfill(padding)}"
+                f"{self.tail_divider}{self.tail}" 
+            ))
+
+        return frames
+        
 
 def search_paths_recursive(path: str) -> 'list[str]':
     """
@@ -174,6 +230,30 @@ def get_profile(profiles: 'Union[list[dict[str, list[str]]], dict[str, dict[str,
     return selected_profile
 
 
+def assemble_file_sequence(files: 'list[str]') -> None:
+    """
+    Find file sequences
+    
+    Returns a settings dict or None if no settings are found.
+    """
+
+    frame_pattern = r'[._]{0}\.\D+\d?$'.format(clique.DIGITS_PATTERN)
+
+    sequence_data = {
+
+    }
+
+    collections, remainders = clique.assemble(files, patterns=[frame_pattern], assume_padded_when_ambiguous=True)
+
+    for coll in collections:
+        print(coll.format())
+        print(f"{coll.head} - {coll.padding} - {coll.tail}")
+        
+
+    print(remainders)
+    print("---")
+
+
 
 ##########################
 ##         TESTS        ##
@@ -198,3 +278,12 @@ if __name__ == "__main__":
     }
 
     profile_points = get_profile(profiles, test_data)
+
+    dirs = [
+        "X:/prj/DEMETER/editorial/edit_resources/plates/20241024/PKG_DEMT401_20241023/PKG_DEMT401_20241023/DMR401_060_340",
+        "X:/prj/DEMETER/editorial/edit_resources/plates/20241007_2/PKG-DEMT402_VFX Pull_22Dogs_2024.10.04/DMR402_Sc006_FXPULL_241003-plates_22dogs/DMR402_006_060_FG1",
+        "X:/prj/OBX/editorial/plates/rain_elements_exr/Generic_Rain_Lens_01/RainOnLens",
+        "C:/Users/max.pareschi/Desktop/ihjsd"
+    ]
+    for d in dirs:
+        assemble_file_sequence(os.listdir(d))
