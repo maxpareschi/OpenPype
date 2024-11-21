@@ -35,14 +35,16 @@ class ExtractTimecode(publish.Extractor):
     active = True
 
 
-    def process(self, instance):
+    def process(self, instance: pyblish.api.Instance) -> None:
 
         default_tc = self.settings.get("default_timecode", "01:00:00:01")
-        self.log.debug(f"Default tc is: {default_tc}")
-        self.log.debug(f"Found FPS in instance: {instance.data.get('fps')}")
+        self.log.debug(f"Default tc is: {default_tc}") #type: ignore
+        self.log.debug(f"Found FPS in instance: {instance.data.get('fps')}") #type: ignore
+
+        instance.data["default_timecode"] = default_tc
 
         instance_fps = truncate(float(instance.data.get("fps", 24.0)), 3)
-        self.log.debug(f"FPS truncated to: {instance_fps}")
+        self.log.debug(f"FPS truncated to: {instance_fps}") #type: ignore
 
         tc_list = []
         for repre in instance.data.get("representations", []):
@@ -52,29 +54,29 @@ class ExtractTimecode(publish.Extractor):
                     repre["stagingDir"],
                     repre["files"][0] if isinstance(repre["files"], list) else repre["files"]
                 )
-                self.log.debug("Extracting timecode on file: '{}'".format(file))
+                self.log.debug("Extracting timecode on file: '{}'".format(file)) #type: ignore
                 try:
                     tc = get_timecode_oiio(file)
                 except:
-                    self.log.debug("No timecode found using iinfo, trying ffprobe...")
+                    self.log.debug("No timecode found using iinfo, trying ffprobe...") #type: ignore
                     try:
                         tc = get_timecode_ffprobe(file)
                     except:
-                        self.log.debug("No timecode found using ffprobe...")
+                        self.log.debug("No timecode found using ffprobe...") #type: ignore
                 tc_list.append(tc)
 
         final_tc = None
         final_tc_list = list(set(tc_list))
-        self.log.debug("Timecodes found: '{}'".format(final_tc_list))
+        self.log.debug("Timecodes found: '{}'".format(final_tc_list)) #type: ignore
         for tc in final_tc_list:
             if tc and tc != default_tc:
-                self.log.debug("New timecode found: '{}'".format(tc))
+                self.log.debug("New timecode found: '{}'".format(tc)) #type: ignore
                 final_tc = tc
         if not final_tc:
             final_tc = default_tc
 
         instance.data["timecode"] = final_tc
-        self.log.info(f"Extracted Timecode data: {instance.data['timecode']}")
+        self.log.info(f"Extracted Timecode data: {instance.data['timecode']}") #type: ignore
 
 
     

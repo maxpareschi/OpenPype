@@ -4,11 +4,11 @@ import os
 import logging
 
 try:
-    from openpype.settings import get_project_settings
+    from openpype.settings import get_current_project_settings
 except:
     logging.root.setLevel(logging.NOTSET)
     logging.basicConfig()
-    logging.debug("Testing as standalone script.")
+    logging.debug("Testing 'ttd_addon/lib/pipeline.py' as standalone script.")
 
 
 def search_paths_recursive(path: str) -> 'list[str]':
@@ -35,7 +35,8 @@ def search_paths_recursive(path: str) -> 'list[str]':
     return plugin_paths
 
 
-def find_key_recursive(search_dict: dict, search_key: str) -> 'dict[str, Any]':
+def find_key_recursive(search_dict: dict,
+                       search_key: str) -> 'dict[str, Any]':
     """
     Takes a dict with nested lists and dicts, searches all dicts
     for a key of the field provided.
@@ -60,7 +61,8 @@ def find_key_recursive(search_dict: dict, search_key: str) -> 'dict[str, Any]':
     return result
 
 
-def find_all_keys_recursive(search_dict: dict, search_key: str) -> list:
+def find_all_keys_recursive(search_dict: dict,
+                            search_key: str) -> list:
         """
         Takes a dict with nested lists and dicts,
         and searches all dicts for a key of the field
@@ -93,7 +95,7 @@ def find_in_project_settings(search_key: str) -> 'dict[str, Any]':
     
     Returns a settings dict or None if no settings are found.
     """
-    project_settings = get_project_settings(os.environ["AVALON_PROJECT"]) #type: ignore
+    project_settings = get_current_project_settings() #type: ignore
     return find_key_recursive(project_settings, search_key)
     
 
@@ -178,9 +180,6 @@ def get_profile(profiles: 'Union[list[dict[str, list[str]]], dict[str, dict[str,
 ##########################
 
 if __name__ == "__main__":
-
-    
-    
 
     import json
 

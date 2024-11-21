@@ -35,10 +35,10 @@ class ExtractEffectOCIO(publish.Extractor):
 
         current_ocio_config = os.environ.get("OCIO", False)
 
+        for 
+
         if current_ocio_config and self.settings.get("enabled"):
-            self.log.debug("Computing OCIO with base config: '{}'".format(
-                current_ocio_config
-            ))
+            self.log.debug(f"Computing OCIO with base config: '{current_ocio_config}'")
             epr = EffectsFileProcessor(effect_file)
             if epr.color_operators:
                 self.log.debug("Found color operators: '{}'".format(
