@@ -4,6 +4,7 @@ import re
 import traceback
 from typing import Callable, List, Tuple, Optional, Iterator
 from pathlib import Path
+from re import sub
 
 import ftrack_api
 from ftrack_api import Session
@@ -235,7 +236,16 @@ class ORVAction(BaseAction):
         seen = list()
         for i, cpath in enumerate(comp_locations):
             path = Path(cpath.get("resource_identifier"))
-            if path is None or not path.exists():
+            if path is None:
+                self.log.warning(f"File {path} from {cpath['component']['name']} failed to be found. Ignoring it.")
+                continue
+            path_2 = Path(sub("(?<=[\.])\d{4,}(?=[\.]|$)", "1001", path.as_posix()))
+            if not path.exists() and path_2.exists():
+                # path may be with frame 1000 in Ftrack and that frame may not exist
+                # in the file system we need to check for frame 1001 instead
+                self.log.info(f"{path} failed to be found, using {path_2} instead.")
+                path = path_2
+            elif not path.exists():
                 self.log.warning(f"File {path} from {cpath['component']['name']} failed to be found. Ignoring it.")
                 continue
             if cpath['component']["version_id"] not in seen:
