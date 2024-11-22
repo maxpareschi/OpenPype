@@ -469,7 +469,7 @@ class ORVAction(BaseAction):
         env = return_ttd_envs()
         if not user_values["load_ocio_files"]:
             ocio_files = list()
-            env["OCIO"] = "R:/ocioconfigs/aces_1.2/config.ocio",
+            env["OCIO"] = "R:/ocioconfigs/aces_1.2/config.ocio"
         # if ocio_files:
         #     env["OCIO"] = ocio_files[0]
         
