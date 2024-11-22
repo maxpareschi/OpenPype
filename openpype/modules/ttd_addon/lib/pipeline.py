@@ -1,4 +1,4 @@
-from typing import Union, Any
+from typing import Union, Optional, Any
 
 import os
 import re
@@ -13,59 +13,124 @@ except:
     logging.debug("Testing 'ttd_addon/lib/pipeline.py' as standalone script.")
 
 
+SEQUENCE_FRAME_PATTERN = fr"[._]{clique.DIGITS_PATTERN}\.\D+\d?$"
+
+
 class SequenceInfo:
-    
-    def __init__(self, frames: 'list[str]' = list()) -> None:
-        self.frames = frames,
-        self.frame_start: int = 0
-        self.frame_end: int = 0
-        self.length: int = 0
-        self.head: str = ""
-        self.tail: str = ""
-        self.padding: int = 0
-        self.frame_digits: 'tuple[int, int]' = (0, 0)
-        self.frame_divider = "."
-        self.tail_divider = "."
-        self._frame_pattern: str = r'[._]{0}\.\D+\d?$'.format(clique.DIGITS_PATTERN)
+    """
+    Compose a sequence object with useful properties
+    for further processing. Uses clique to assemble frames.
+    """
+    def __init__(self,
+                 frames: 'Optional[list[str]]' = None,
+                 logger: 'Optional[logging.Logger]' = None) -> None:
 
-    def assemble(self) -> None:
-        collections, remainders = clique.assemble(self.frames,
-                                                  patterns=[self._frame_pattern],
-                                                  assume_padded_when_ambiguous=True)
-        self.frame_start = collections[0].indexes[0]
-        self.frame_end = collections[0].indexes[-1]
-        self.length = len(collections[0].indexes)
-        self.head = collections[0].head.replace(".", "")
-        self.tail = collections[0].tail.replace(".", "")
-        self.padding = collections[0].padding
-        self.frame_digits = (len(str(self.frame_start)), len(str(self.frame_end)))
-
-    def find(self, path: str) -> None:
-        files = os.listdir(path)
-        self.frames = files
+        self.root: 'Optional[str]' = None
+        self.frames: 'Optional[list[str]]' = frames
+        self.frame_start: Optional[int] = None
+        self.frame_end: Optional[int] = None
+        self.length: Optional[int] = None
+        self.head: Optional[str] = None
+        self.tail: Optional[str] = None
+        self.padding: Optional[int] = None
+        self.indexes: 'Optional[list[int]]' = None
+        self.frame_digits: 'Optional[tuple[int, int]]' = None
+        self.frame_divider: str = "KKK"
+        self.log: logging.Logger = logger if logger else (
+            logging.getLogger(self.__class__.__qualname__)
+        )
+        self._frame_pattern: str = SEQUENCE_FRAME_PATTERN
         self.assemble()
 
+    def __repr__(self) -> str:
+        return (f"<{self.__class__.__qualname__} "
+                f"object at {id(self)}> {{ {self.head}%0{self.padding}d{self.tail}, "
+                f"length: {self.length}, start: {self.frame_start}, "
+                f"digits: {self.frame_digits} }}")
+
+    def assemble(self, frames: 'Optional[list[str]]' = None) -> None:
+        if not frames:
+            frames = self.frames
+        if frames:
+            collections, _ = clique.assemble(frames,
+                                             patterns=[self._frame_pattern],
+                                             assume_padded_when_ambiguous=False)
+            self.root = os.path.dirname(frames[0]).replace("\\", "/")
+            self.frame_start = list(collections[0].indexes)[0]
+            self.frame_end = list(collections[0].indexes)[-1]
+            self.indexes = list(collections[0].indexes)
+            self.length = len(collections[0].indexes)
+            self.head = str(collections[0].head)
+            self.tail = str(collections[0].tail)
+            self.padding = len(str(self.frame_end))
+            self.frame_divider = str(self.head)[-1:]
+            self.frame_digits = (len(str(self.frame_start)), len(str(self.frame_end)))
+
+    def digits_check(self):
+        if self.frame_digits and (self.frame_digits[0] == self.frame_digits[1]):
+            return True
+        return False
+
     def resample(self,
-                 start_frame: int = 1001,
-                 length: int = 0,
-                 prefix: str = "",
-                 suffix: str = "",
-                 padding: int = 4) -> 'list[str]':
-        
-        frames = []
-
-        if length == 0:
+                 root: Optional[str] = None,
+                 head: Optional[str] = None,
+                 tail: Optional[str] = None,
+                 frame_start: Optional[int] = None,
+                 length: Optional[int] = None,
+                 padding: Optional[int] = None,
+                 suffix: Optional[str] = None,
+                 frame_divider: Optional[str] = None) -> 'list[str]':
+        frames: 'list[str]' = []
+        if not root:
+            root = self.root
+        if not head:
+            head = self.head
+        if not tail:
+            tail = self.tail
+        if not frame_start:
+            frame_start = self.frame_start
+        if not length:
             length = self.length
-
-        for f in range(length):
-            frames.append((
-                f"{self.head}{self.frame_divider}"
-                f"{str(f+start_frame).zfill(padding)}"
-                f"{self.tail_divider}{self.tail}" 
-            ))
-
+        if not padding:
+            padding = self.padding
+        if not frame_divider:
+            frame_divider = self.frame_divider
+        if frame_start and padding and length and self.head and self.tail:
+            for frame in range(length):
+                new_frame: str = root if root else ""
+                new_frame += self.head[:-2]
+                if suffix:
+                    new_frame = new_frame + '_' + suffix
+                new_frame += frame_divider
+                new_frame += str(frame + frame_start).zfill(padding)
+                new_frame += tail # type: ignore
+                frames.append(new_frame)
         return frames
-        
+
+
+def find_sequences(path: str) -> 'list[SequenceInfo]':
+    files: 'list[str]' = []
+    sequences: 'list[SequenceInfo]' = []
+    path_contents = os.scandir(path)
+    for entry in path_contents:
+        if entry.is_file():
+            files.append(entry.name)
+    collections, remainders = clique.assemble(files,
+                                              patterns=[SEQUENCE_FRAME_PATTERN],
+                                              assume_padded_when_ambiguous=True)
+    for collection in collections:
+        collected_files = [
+            (
+                f"{collection.head}"
+                f"{str(frame).zfill(collection.padding)}"
+                f"{collection.tail}".replace("\\", "/")
+            )
+            for frame in collection.indexes
+        ]
+        sequence = SequenceInfo(collected_files)
+        sequences.append(sequence)
+    return sequences
+
 
 def search_paths_recursive(path: str) -> 'list[str]':
     """
@@ -230,31 +295,6 @@ def get_profile(profiles: 'Union[list[dict[str, list[str]]], dict[str, dict[str,
     return selected_profile
 
 
-def assemble_file_sequence(files: 'list[str]') -> None:
-    """
-    Find file sequences
-    
-    Returns a settings dict or None if no settings are found.
-    """
-
-    frame_pattern = r'[._]{0}\.\D+\d?$'.format(clique.DIGITS_PATTERN)
-
-    sequence_data = {
-
-    }
-
-    collections, remainders = clique.assemble(files, patterns=[frame_pattern], assume_padded_when_ambiguous=True)
-
-    for coll in collections:
-        print(coll.format())
-        print(f"{coll.head} - {coll.padding} - {coll.tail}")
-        
-
-    print(remainders)
-    print("---")
-
-
-
 ##########################
 ##         TESTS        ##
 ##########################
@@ -263,27 +303,33 @@ if __name__ == "__main__":
 
     import json
 
-    profiles_path = "C:/Users/max.pareschi/Desktop/project_settings.json"
-    
-    with open(profiles_path) as f:
-        profiles = json.loads(f.read())["project_settings/ttd_addon"]["publish_plugins"]["extract_transcode"]["profiles"]
-    
-    test_data = {
-        "hosts": "Nuke",
-        "families": "rgsdfg",
-        "assets": "SHOT0010",
-        "task_names": "compositing",
-        "task_types": "Compositing",
-        "subsets": "renderCompositingMain"
-    }
+    TEST_PROFILES = False
+    TEST_SEQUENCES = True
 
-    profile_points = get_profile(profiles, test_data)
+    if TEST_PROFILES:
+        profiles_path = "C:/Users/max.pareschi/Desktop/project_settings.json"
+        with open(profiles_path) as f:
+            profiles = json.loads(f.read())["project_settings/ttd_addon"]["publish_plugins"]["extract_transcode"]["profiles"]
+        test_data = {
+            "hosts": "Nuke",
+            "families": "rgsdfg",
+            "assets": "SHOT0010",
+            "task_names": "compositing",
+            "task_types": "Compositing",
+            "subsets": "renderCompositingMain"
+        }
+        profile_points = get_profile(profiles, test_data)
 
-    dirs = [
-        "X:/prj/DEMETER/editorial/edit_resources/plates/20241024/PKG_DEMT401_20241023/PKG_DEMT401_20241023/DMR401_060_340",
-        "X:/prj/DEMETER/editorial/edit_resources/plates/20241007_2/PKG-DEMT402_VFX Pull_22Dogs_2024.10.04/DMR402_Sc006_FXPULL_241003-plates_22dogs/DMR402_006_060_FG1",
-        "X:/prj/OBX/editorial/plates/rain_elements_exr/Generic_Rain_Lens_01/RainOnLens",
-        "C:/Users/max.pareschi/Desktop/ihjsd"
-    ]
-    for d in dirs:
-        assemble_file_sequence(os.listdir(d))
+    if TEST_SEQUENCES:
+        dirs = [
+            "X:/prj/DEMETER/editorial/edit_resources/plates/20241024/PKG_DEMT401_20241023/PKG_DEMT401_20241023/DMR401_060_340",
+            "X:/prj/DEMETER/editorial/edit_resources/plates/20241007_2/PKG-DEMT402_VFX Pull_22Dogs_2024.10.04/DMR402_Sc006_FXPULL_241003-plates_22dogs/DMR402_006_060_FG1",
+            "X:/prj/OBX/editorial/plates/rain_elements_exr/Generic_Rain_Lens_01/RainOnLens",
+            "C:/Users/max.pareschi/Desktop/ihjsd"
+        ]
+        for dir in dirs:
+            sequences = find_sequences(dir)
+            for sequence in sequences:
+                print(sequence)
+                # new_files = sequence.resample(frame_start=0, padding=7)
+                # print(new_files)
