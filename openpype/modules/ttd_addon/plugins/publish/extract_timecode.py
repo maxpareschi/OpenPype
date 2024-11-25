@@ -35,7 +35,7 @@ class ExtractTimecode(publish.Extractor):
     active = True
 
 
-    def process(self, instance: pyblish.api.Instance) -> None:
+    def process(self, instance):
 
         default_tc = self.settings.get("default_timecode", "01:00:00:01")
         self.log.debug(f"Default tc is: {default_tc}") #type: ignore

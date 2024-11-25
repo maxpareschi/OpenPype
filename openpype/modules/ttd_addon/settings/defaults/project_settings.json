@@ -53,9 +53,8 @@
                         "fallback_preset": "",
                         "override_thumbnail": false,
                         "output_name": {
-                            "naming_mode": "use_prefix_suffix",
-                            "prefix": "",
-                            "suffix": "source"
+                            "naming_mode": "use_extension_plus_suffix",
+                            "name": "source"
                         },
                         "tags": [],
                         "custom_tags": []
@@ -80,9 +79,8 @@
                         "fallback_preset": "",
                         "override_thumbnail": false,
                         "output_name": {
-                            "naming_mode": "use_prefix_suffix",
-                            "prefix": "",
-                            "suffix": "main"
+                            "naming_mode": "use_extension_plus_suffix",
+                            "name": "main"
                         },
                         "tags": [],
                         "custom_tags": []
@@ -116,9 +114,8 @@
                         "fallback_preset": "",
                         "override_thumbnail": true,
                         "output_name": {
-                            "naming_mode": "use_prefix_suffix",
-                            "prefix": "",
-                            "suffix": "proxy"
+                            "naming_mode": "use_extension_plus_suffix",
+                            "name": "proxy"
                         },
                         "tags": [],
                         "custom_tags": []
@@ -159,9 +156,8 @@
                         "fallback_preset": "",
                         "override_thumbnail": true,
                         "output_name": {
-                            "naming_mode": "use_prefix_suffix",
-                            "prefix": "",
-                            "suffix": "preview"
+                            "naming_mode": "use_extension_plus_suffix",
+                            "name": "preview"
                         },
                         "tags": [
                             "review",
@@ -190,8 +186,7 @@
                         "fallback_preset": "",
                         "override_thumbnail": false,
                         "output_name": {
-                            "naming_mode": "use_prefix_suffix",
-                            "prefix": "",
+                            "naming_mode": "use_extension_plus_suffix",
                             "suffix": ""
                         },
                         "tags": [

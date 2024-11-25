@@ -20,4 +20,4 @@ class CollectFpsFix(pyblish.api.InstancePlugin):
         truncated_fps = truncate(float(instance.data.get("fps", 24.0)), 3)
         instance.data["fps"] = truncated_fps
         instance.context.data["fps"] = truncated_fps
-        self.log.info(f"FPS truncated to: {truncated_fps} in instances and context data.")
+        self.log.info(f"FPS truncated to: {truncated_fps} in instances and context data.") #type: ignore

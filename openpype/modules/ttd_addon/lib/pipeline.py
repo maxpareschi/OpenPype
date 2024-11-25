@@ -80,6 +80,12 @@ class SequenceInfo:
                  padding: Optional[int] = None,
                  suffix: Optional[str] = None,
                  frame_divider: Optional[str] = None) -> 'list[str]':
+        """
+        Resample a file list based on keywords provided.
+        This method will use class properties that
+        were assembled upon creation as fallback for
+        any not provided keyword.
+        """
         frames: 'list[str]' = []
         if not root:
             root = self.root
@@ -98,7 +104,7 @@ class SequenceInfo:
         if frame_start and padding and length and self.head and self.tail:
             for frame in range(length):
                 new_frame: str = root if root else ""
-                new_frame += self.head[:-2]
+                new_frame += self.head[:-1]
                 if suffix:
                     new_frame = new_frame + '_' + suffix
                 new_frame += frame_divider
@@ -258,7 +264,6 @@ def get_profile(profiles: 'Union[list[dict[str, list[str]]], dict[str, dict[str,
     logger.info(f"Matching profiles with data: {match}")
 
     for profile in profile_list:
-        logger.info(f"Scanning Profile: {profile}")
         
         points = 0
 

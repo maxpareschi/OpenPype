@@ -8,11 +8,16 @@ import copy
 import pyblish.api
 from openpype.pipeline import publish
 
-from ...lib.pipeline import (
+from openpype.modules.ttd_addon.lib.pipeline import (
     find_in_project_settings,
-    get_profile
+    get_profile,
+    find_sequences,
+    SequenceInfo
 )
-from ...lib.editorial import (
+
+from openpype.modules.ttd_addon.lib.editorial import (
+    shift_timecode,
+    timecode_to_frames,
     truncate
 )
 
@@ -26,7 +31,7 @@ class ExtractTranscode(publish.Extractor):
     """
 
     label = "Extract Transcodes - TTD"
-    order = pyblish.api.ExtractorOrder
+    order = pyblish.api.ExtractorOrder + 0.019
 
     optional = True
 
@@ -43,7 +48,7 @@ class ExtractTranscode(publish.Extractor):
     profiles = settings["profiles"]
 
 
-    def process(self, instance: pyblish.api.Instance) -> None:
+    def process(self, instance):
 
         # Welcome and settings logging.
         self.log.info(f"Welcome to '{self.label}' plugin!") #type: ignore
@@ -96,7 +101,7 @@ class ExtractTranscode(publish.Extractor):
 
             # Log current representation.
             self.log.debug(f"Processing representation ({_idx + 1}): " #type: ignore
-                           f"'{representation['name']}')")
+                           f"'{representation['name']}'")
 
             # Validate if the representation is valid for
             # transcoding purposes. If not valid append it
@@ -116,18 +121,28 @@ class ExtractTranscode(publish.Extractor):
             # Start processing presets for current repre
             for preset_name, preset in active_presets.items():
 
+                # add preset_name to preset dict so we can access it without
+                # passing extra parameters to functions.
+                preset.update({ "preset_name": preset_name })
+
                 # Log current processing preset.
                 self.log.debug(f"Processing preset '{preset_name}'") #type: ignore
 
                 # Optionally override repre data based on settings
                 self.override_representation_data(working_repre, preset)
 
-                
+                # set ext, name, outputName in repre
+                self.set_representation_ext(working_repre, preset)
+                self.set_representation_name(working_repre, preset)
+
+                # set expected files
+                self.set_representation_expected_files(instance,
+                                                       working_repre,
+                                                       preset)
 
         
         instance.data["representations"] = final_representations
 
-    
     def validate_instance(self,
                           instance: pyblish.api.Instance) -> bool:
         """
@@ -265,7 +280,7 @@ class ExtractTranscode(publish.Extractor):
 
     def process_representation_colorspace(self,
                                           instance: pyblish.api.Instance,
-                                          representation: dict,
+                                          representation: 'dict[str, Any]',
                                           default_linear: str = "scene_linear",
                                           default_gamma: str = "color_picking",
                                           default_log: str = "compositing_log") -> None:
@@ -306,8 +321,8 @@ class ExtractTranscode(publish.Extractor):
                        f"to representation '{representation['name']}'"))
 
     def override_representation_data(self,
-                                     representation: dict,
-                                     preset: dict) -> None:
+                                     representation: 'dict[str, Any]',
+                                     preset: 'dict[str, Any]') -> None:
         """
         Updates metadata per Representation using settings overrides.
 
@@ -339,6 +354,9 @@ class ExtractTranscode(publish.Extractor):
         if float(overrides["fps"]) > float(0):
             representation["fps"] = truncate(overrides["fps"], 3)
 
+        representation["tags"] = preset["tags"]
+        representation["custom_tags"] = preset["custom_tags"]
+
         # Store metadata overrides on representation
         representation["metadata"] = {}
         for key, value in overrides["metadata"]:
@@ -346,4 +364,110 @@ class ExtractTranscode(publish.Extractor):
                 key: value
             })
 
+    def set_representation_ext(self,
+                                representation: 'dict[str, Any]',
+                                preset: 'dict[str, Any]') -> None:
+        """
+        Updates Representation ext using preset data.
+
+        Args:
+            representation (dict): Representation to be overridden.
+            preset (dict): preset with overrides
+
+        Returns:
+            Nothing
+        """
+        ext = preset["extension"]
+        if ext == "passthrough":
+            ext = representation.get("ext", "")
+        if ext:
+            self.log.debug(f"Representation extension is set to {ext}") #type: ignore
+            representation["ext"] = ext
+        else:
+            raise ValueError("No extension present in representation!")
+
+    def set_representation_name(self,
+                                representation: 'dict[str, Any]',
+                                preset: 'dict[str, Any]'):
+        """
+        Updates Representation name using preset data.
+
+        Args:
+            representation (dict): Representation to be overridden.
+            preset (dict): preset with overrides
+
+        Returns:
+            Nothing
+        """
+
+        # Get naming settings
+        naming_mode = preset["output_name"].get("naming_mode", "")
+        name = preset["output_name"].get("name", "")
+        ext = representation["ext"]
+
+        computed_name = ""
+
+        # Compute name 
+        if naming_mode == "use_extension_plus_suffix":
+            computed_name = ext + "_" + name
+        elif naming_mode == "use_custom_name":
+            computed_name = name
+        elif naming_mode == "use_preset_name":
+            computed_name = preset.get("preset_name", "")
+        else:
+            raise ValueError("Representation name was not computed correctly!")
         
+        # Set Name and outputName
+        representation["name"] = computed_name
+        representation["outputName"] = name
+
+    def set_representation_expected_files(self,
+                           instance: pyblish.api.Instance,
+                           representation: 'dict[str, Any]',
+                           preset: 'dict[str, Any]'):
+        """
+        Updates Representation file list using preset data.
+
+        Args:
+            instance (pyblish.api.Instance): processed instance.
+            representation (dict): Representation to be overridden.
+            preset (dict): preset with overrides
+
+        Returns:
+            Nothing
+        """
+
+        # Get data from Instance and Representation
+        # instance_start_frame = (
+        #     int(instance.data.get("frameStart", 1001)) -
+        #     int(instance.data.get("handleStart", 0))
+        # )
+
+        instance_padding = (instance.data["projectEntity"]
+                                         ["config"]
+                                         ["templates"]
+                                         ["defaults"]
+                                         ["frame_padding"])
+                        
+        current_files = representation.get("files", [])
+        representation_suffix = representation.get("outputName", "")
+
+        new_file_list = []
+
+        if len(current_files) > 1:
+            sequence = SequenceInfo(current_files, self.log) #type: ignore
+            new_file_list = sequence.resample(
+                suffix = representation_suffix,
+                padding = instance_padding
+            )
+
+        representation["files"] = new_file_list
+
+
+
+
+
+
+
+
+

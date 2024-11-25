@@ -412,18 +412,12 @@
                                         ]
                                     },
                                     {
-                                        "key": "use_prefix_suffix",
-                                        "label": "Use Extension With Prefix/Suffix",
+                                        "key": "use_extension_plus_suffix",
+                                        "label": "Use Extension With Suffix",
                                         "children": [
                                             {
                                                 "type": "text",
-                                                "key": "prefix",
-                                                "label": "Prefix",
-                                                "default": ""
-                                            },
-                                            {
-                                                "type": "text",
-                                                "key": "suffix",
+                                                "key": "name",
                                                 "label": "Suffix",
                                                 "default": ""
                                             }

@@ -13,7 +13,7 @@ from openpype.modules import (
     ITrayAction
 )
 
-from .lib import pipeline
+from openpype.modules.ttd_addon.lib import pipeline
 
 
 class TTDAddonSettingsDef(JsonFilesSettingsDef):
