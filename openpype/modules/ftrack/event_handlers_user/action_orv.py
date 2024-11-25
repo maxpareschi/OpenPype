@@ -456,6 +456,8 @@ class ORVAction(BaseAction):
         ocio_files = [get_ocio_file_from_component(f[0]) for f in paths]
         ocio_files = list({f.as_posix() for f in ocio_files if f is not None})
 
+        if not user_values["load_ocio_files"]:
+            ocio_files = list()
 
         # START OF OPENRVPUSH PROC
         src = "from openrv_tools_22dogs import orvpush_inputs_callback\n"
