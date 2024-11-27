@@ -1,3 +1,5 @@
+from pprint import pformat
+
 import pyblish.api
 
 from openpype.client import (
@@ -45,6 +47,11 @@ class CollectSourceColorspace(pyblish.api.InstancePlugin):
                                                         fields=["_id", "data"])
         
         if version_doc:
-            instance.data["colorspace"] = version_doc["data"]["colorspace"]
+            try:
+                instance.data["colorspace"] = version_doc["data"]["colorspace"]
+            except Exception as e:
+                self.log.info(pformat(version_doc["data"]))
+                self.log.warning("Missing colorspace key in version doc. Setting colorspace to None")
+                instance.data["colorspace"] = None
         else:
             instance.data["colorspace"] = None
