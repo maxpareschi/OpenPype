@@ -52,6 +52,6 @@ class CollectSourceColorspace(pyblish.api.InstancePlugin):
             except Exception as e:
                 self.log.info(pformat(version_doc["data"]))
                 self.log.warning("Missing colorspace key in version doc. Setting colorspace to None")
-                instance.data["colorspace"] = None
+                instance.data["colorspace"] = "Output - Rec.709"
         else:
             instance.data["colorspace"] = None
