@@ -10,15 +10,12 @@ from openpype.pipeline import publish
 
 from openpype.modules.ttd_addon.lib.pipeline import (
     find_in_project_settings,
-    get_profile,
-    find_sequences,
-    SequenceInfo
+    get_profile
 )
 
 from openpype.modules.ttd_addon.lib.editorial import (
-    shift_timecode,
-    timecode_to_frames,
-    truncate
+    truncate,
+    get_sequence_data
 )
 
 class ExtractTranscode(publish.Extractor):
@@ -92,7 +89,7 @@ class ExtractTranscode(publish.Extractor):
             active_presets.update({key: self.presets[key]})
 
         # Log initial representation list.
-        self.log.info((f"Initial representation list for instance " #type: ignore
+        self.log.debug((f"Initial representation list for instance " #type: ignore
                        f"{instance.data['name']}': \n"
                        f"{json.dumps(original_representations, indent=4, default=str)}"))
 
@@ -100,7 +97,7 @@ class ExtractTranscode(publish.Extractor):
         for _idx, representation in enumerate(original_representations):
 
             # Log current representation.
-            self.log.debug(f"Processing representation ({_idx + 1}): " #type: ignore
+            self.log.info(f"Processing representation ({_idx + 1}): " #type: ignore
                            f"'{representation['name']}'")
 
             # Validate if the representation is valid for
@@ -110,38 +107,47 @@ class ExtractTranscode(publish.Extractor):
                 final_representations.append(representation)
                 continue
 
-            # Make an independent copy of current repesentation
-            # so we can change it without screwing up anything.
-            working_repre = copy.deepcopy(representation)
-
-            # Sanitize representation, refer to method docstring
-            # to understand which element gets removed/added/changed.
-            self.sanitize_representation(instance, working_repre, active_presets)
-
             # Start processing presets for current repre
             for preset_name, preset in active_presets.items():
 
-                # add preset_name to preset dict so we can access it without
+                # Add preset_name to preset dict so we can access it without
                 # passing extra parameters to functions.
                 preset.update({ "preset_name": preset_name })
 
-                # Log current processing preset.
-                self.log.debug(f"Processing preset '{preset_name}'") #type: ignore
+                self.log.info(f"Processing preset '{preset_name}'") #type: ignore
 
-                # Optionally override repre data based on settings
+                # Make an independent copy of current repesentation
+                # so we can change it without screwing up anything.
+                working_repre = copy.deepcopy(representation)
+
+                # Sanitize representation, refer to method docstring
+                # to understand which element gets removed/added/changed.
+                self.sanitize_representation(instance, working_repre, active_presets)
+
+                # Set correct values for current working representation
                 self.override_representation_data(working_repre, preset)
-
-                # set ext, name, outputName in repre
+                
                 self.set_representation_ext(working_repre, preset)
+                
                 self.set_representation_name(working_repre, preset)
 
-                # set expected files
+                # skip if passthrough after setting standard names
+                if preset_name == "passthrough":
+                    final_representations.append(working_repre)
+                    continue
+                
                 self.set_representation_expected_files(instance,
                                                        working_repre,
                                                        preset)
-
+                
+                final_representations.append(working_repre)
         
         instance.data["representations"] = final_representations
+
+        self.log.info(("Final representation list:\n" #type: ignore
+                       f"{json.dumps(instance.data['representations'], indent=4, default=str)}"))
+        
+        raise
 
     def validate_instance(self,
                           instance: pyblish.api.Instance) -> bool:
@@ -192,12 +198,12 @@ class ExtractTranscode(publish.Extractor):
             representation["name"] == "thumbnail" or
             "thumbnail" in representation.get("tags", [])
         ):
-            self.log.info(f"Representation '{representation['name']}' is a thumbnail, skipping...") #type: ignore
+            self.log.debug(f"Representation '{representation['name']}' is a thumbnail, skipping...") #type: ignore
             return False
         
         # If repre is not a supported image or movie format then skip
         if representation.get("ext") not in self.supported_exts:
-            self.log.info((f"Representation '{representation['name']}' has " #type: ignore
+            self.log.debug((f"Representation '{representation['name']}' has " #type: ignore
                            f"unsupported extension: '{representation.get('ext', None)}', "
                             "skipping..."))
             return False
@@ -205,7 +211,7 @@ class ExtractTranscode(publish.Extractor):
         # If repre does not have files then skip since
         # there's no transcoding to be done.
         if not representation.get("files", None):
-            self.log.info((f"Representation '{representation['name']}' does not " #type: ignore
+            self.log.debug((f"Representation '{representation['name']}' does not " #type: ignore
                             "have any file, skipping..."))
             return False
     
@@ -216,12 +222,10 @@ class ExtractTranscode(publish.Extractor):
             "review" in representation.get("tags", []) and
             representation["name"].find("otio") >= 0
         ):
-                self.log.info((f"Representation '{representation['name']}' is already " #type: ignore
+                self.log.debug((f"Representation '{representation['name']}' is already " #type: ignore
                                 "processed as review item possibly from hiero as an otio "
                                 "extracted sequence, skipping..."))
                 return False
-
-        self.log.info(f"Representation '{representation['name']}' is valid.") #type: ignore
 
         return True
 
@@ -265,15 +269,13 @@ class ExtractTranscode(publish.Extractor):
             presets_have_review_tags
         ):
             representation["tags"].remove("review")
-            self.log.info((f"Removed 'review' tag " #type: ignore
+            self.log.debug((f"Removed 'review' tag " #type: ignore
                            f"from representation '{representation['name']}' "
                            "to ensure no conflicts with extractors running afterwards."))
         
         # Add timecode to representation
         default_tc = instance.data.get("default_timecode", "01:00:00:01")
         representation["timecode"] = instance.data.get("timecode", default_tc)
-        self.log.info((f"Added timecode '{representation['timecode']}' " #type: ignore
-                      f"to representation '{representation['name']}'"))
 
         # Add colorspace to representation
         self.process_representation_colorspace(instance, representation)
@@ -317,8 +319,6 @@ class ExtractTranscode(publish.Extractor):
         
         # Assign colorspace to representation
         representation["colorspace"] = colorspace
-        self.log.info((f"Added colorspace '{representation['colorspace']}' " #type: ignore
-                       f"to representation '{representation['name']}'"))
 
     def override_representation_data(self,
                                      representation: 'dict[str, Any]',
@@ -339,7 +339,7 @@ class ExtractTranscode(publish.Extractor):
 
         # skip if override block is disabled
         if not overrides["enabled"]:
-            self.log.info("Input overrides are disabled for this preset. Moving on.") #type: ignore
+            self.log.debug("Input overrides are disabled for this preset. Moving on.") #type: ignore
             return
         
         # Override colorspace
@@ -381,7 +381,6 @@ class ExtractTranscode(publish.Extractor):
         if ext == "passthrough":
             ext = representation.get("ext", "")
         if ext:
-            self.log.debug(f"Representation extension is set to {ext}") #type: ignore
             representation["ext"] = ext
         else:
             raise ValueError("No extension present in representation!")
@@ -438,10 +437,10 @@ class ExtractTranscode(publish.Extractor):
         """
 
         # Get data from Instance and Representation
-        # instance_start_frame = (
-        #     int(instance.data.get("frameStart", 1001)) -
-        #     int(instance.data.get("handleStart", 0))
-        # )
+        instance_start_frame = (
+            int(instance.data.get("frameStart", 1001)) -
+            int(instance.data.get("handleStart", 0))
+        )
 
         instance_padding = (instance.data["projectEntity"]
                                          ["config"]
@@ -454,15 +453,35 @@ class ExtractTranscode(publish.Extractor):
 
         new_file_list = []
 
-        if len(current_files) > 1:
-            sequence = SequenceInfo(current_files, self.log) #type: ignore
-            new_file_list = sequence.resample(
-                suffix = representation_suffix,
-                padding = instance_padding
-            )
+        sequence = get_sequence_data(file_list=current_files,
+                                     root_path=representation.get("stagingDir", None))
+        
+        self.log.debug(sequence) #type: ignore
+        
+        # resampled_sequence = copy.deepcopy(sequence)
+        # 
+        # if sequence.length == 1:
+        #     pass
 
-        representation["files"] = new_file_list
-
+        #if isinstance(current_files, list):
+        #    sequence = SequenceInfo(current_files, logger = self.log) #type: ignore
+        #    new_file_list = sequence.resample(suffix = representation_suffix)
+        #
+        #elif os.path.splitext(current_files)[1][1:] in self.movie_exts:
+        #    file_path = os.path.join(representation["stagingDir"], current_files).replace("\\", "/")
+        #    movie_length = get_length_ffprobe(file_path)
+        #    sequence = SequenceInfo(logger = self.log) #type: ignore
+        #    new_file_list = sequence.resample(
+        #        head = os.path.splitext(current_files)[0] + ".",
+        #        tail = "." + representation.get("ext", os.path.splitext(current_files)[1][1:]),
+        #        suffix = representation_suffix,
+        #        frame_start = instance_start_frame,
+        #        length = movie_length,
+        #        padding = instance_padding
+        #    )
+        #
+        #representation["files"] = new_file_list
+        #
 
 
 

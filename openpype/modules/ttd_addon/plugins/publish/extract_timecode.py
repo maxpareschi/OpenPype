@@ -8,10 +8,8 @@ from openpype.modules.ttd_addon.lib.pipeline import (
 )
 from openpype.modules.ttd_addon.lib.editorial import (
     truncate,
-    get_timecode_oiio,
-    get_timecode_ffprobe
+    get_image_data
 )
-
 
 
 class ExtractTimecode(publish.Extractor):
@@ -28,7 +26,6 @@ class ExtractTimecode(publish.Extractor):
     order = order = pyblish.api.ExtractorOrder + 0.01899
 
     families = ["render", "review", "preview", "gather"]
-    supported_exts = ["mov", "mp4", "mxf", "dpx", "cin", "exr"]
     
     settings = find_in_project_settings("extract_timecode")
     optional = True
@@ -48,7 +45,7 @@ class ExtractTimecode(publish.Extractor):
 
         tc_list = []
         for repre in instance.data.get("representations", []):
-            if repre["name"] != "thumbnail" and repre["ext"] in self.supported_exts:
+            if repre["name"] != "thumbnail":
                 tc = default_tc
                 file = os.path.join(
                     repre["stagingDir"],
@@ -56,21 +53,28 @@ class ExtractTimecode(publish.Extractor):
                 )
                 self.log.debug("Extracting timecode on file: '{}'".format(file)) #type: ignore
                 try:
-                    tc = get_timecode_oiio(file)
-                except:
-                    self.log.debug("No timecode found using iinfo, trying ffprobe...") #type: ignore
-                    try:
-                        tc = get_timecode_ffprobe(file)
-                    except:
-                        self.log.debug("No timecode found using ffprobe...") #type: ignore
+                    image_data = get_image_data(file, backend="iinfo")
+                    self.log.debug(f"Image Data found: {image_data}") #type: ignore
+                    if image_data:
+                        tc = image_data.timecode
+                except Exception as e:
+                    self.log.warning(f"get_image_data on backend 'iinfo' failed: {e}") #type: ignore
+                tc_list.append(tc)
+                try:
+                    image_data = get_image_data(file, backend="ffprobe")
+                    self.log.debug(f"Image Data found: {image_data}") #type: ignore
+                    if image_data:
+                        tc = image_data.timecode
+                except Exception as e:
+                    self.log.warning(f"get_image_data on backend 'ffprobe' failed: {e}") #type: ignore
                 tc_list.append(tc)
 
         final_tc = None
         final_tc_list = list(set(tc_list))
-        self.log.debug("Timecodes found: '{}'".format(final_tc_list)) #type: ignore
+        self.log.debug(f"Timecodes found: '{final_tc_list}'") #type: ignore
         for tc in final_tc_list:
             if tc and tc != default_tc:
-                self.log.debug("New timecode found: '{}'".format(tc)) #type: ignore
+                self.log.debug(f"New timecode found: '{tc}'") #type: ignore
                 final_tc = tc
         if not final_tc:
             final_tc = default_tc
