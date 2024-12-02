@@ -2,14 +2,62 @@ import os
 import subprocess
 import re
 import traceback
-from typing import Callable, List, Tuple, Optional
+from typing import Callable, List, Tuple, Optional, Iterator
 from pathlib import Path
+from re import sub
 
 import ftrack_api
 from ftrack_api import Session
 from ftrack_api.entity.asset_version import AssetVersion
 from openpype_modules.ftrack.lib import BaseAction, statics_icon # type: ignore
 
+def yield_ocio_files_from_component(comp_path: str) -> Iterator[Path]:
+    """Yields OCIO files from a given component path.
+
+    The reason why `comp_path` is not just a common path, is because a `comp_path`
+    is understood as a published file which is located within a "publish" structure
+    and thus it has a "publish" folder at some point in its hierarchy.
+
+
+    Parameters
+    ----------
+    comp_path : str
+        The path to the component.
+
+    Yields
+    ------
+    Path
+        Paths to OCIO files.
+    """
+
+    if "publish" not in Path(comp_path).parts:
+        return
+    path = next(p for p in Path(comp_path).parents if str(p).endswith("publish"))
+    yield from path.rglob("*.ocio")
+
+
+def get_ocio_file_from_component(comp_path: str) -> Path:
+    """Returns the latest OCIO file from a given component path.
+
+    The reason why `comp_path` is not just a common path, is because a `comp_path`
+    is understood as a published file which is located within a "publish" structure
+    and thus it has a "publish" folder at some point in its hierarchy.
+
+    Parameters
+    ----------
+    comp_path : str
+        The path to the component.
+
+    Returns
+    -------
+    Path
+        Path to the latest OCIO file.
+    """
+
+    candidates = list(yield_ocio_files_from_component(comp_path))
+    if not candidates:
+        return
+    return max(*candidates, key=lambda x: x.stat().st_mtime)
 
 
 class ORVAction(BaseAction):
@@ -188,7 +236,16 @@ class ORVAction(BaseAction):
         seen = list()
         for i, cpath in enumerate(comp_locations):
             path = Path(cpath.get("resource_identifier"))
-            if path is None or not path.exists():
+            if path is None:
+                self.log.warning(f"File {path} from {cpath['component']['name']} failed to be found. Ignoring it.")
+                continue
+            path_2 = Path(sub("(?<=[\.])\d{4,}(?=[\.]|$)", "1001", path.as_posix()))
+            if not path.exists() and path_2.exists():
+                # path may be with frame 1000 in Ftrack and that frame may not exist
+                # in the file system we need to check for frame 1001 instead
+                self.log.info(f"{path} failed to be found, using {path_2} instead.")
+                path = path_2
+            elif not path.exists():
                 self.log.warning(f"File {path} from {cpath['component']['name']} failed to be found. Ignoring it.")
                 continue
             if cpath['component']["version_id"] not in seen:
@@ -263,6 +320,12 @@ class ORVAction(BaseAction):
                     "label": "<div><b>Load previous version</b></div><div style=\"font-size: 8pt;\">(All components)</div>",
                     "type": "boolean",
                     "name": "load_previous_version",
+                    "value": False
+                },
+                {
+                    "label": "<div><b>Load OCIO Files (experimental)</b></div><div style=\"font-size: 8pt;\">(All components)</div>",
+                    "type": "boolean",
+                    "name": "load_ocio_files",
                     "value": False
                 },
             ],
@@ -357,7 +420,7 @@ class ORVAction(BaseAction):
                 "TTD_STUDIO_LOCAL_SOFTWARE":'"C:/Program Files"',
                 "TTD_STUDIO_COMMON_SOFTWARE":"R:/shared_software/common",
                 "TTD_STUDIO_SHARED_SOFTWARE":"R:/shared_software/windows",
-                "OCIO":"R:/ocioconfigs/aces_1.2/config.ocio",
+                # "OCIO":"R:/ocioconfigs/aces_1.2/config.ocio",
                 "solidangle_LICENSE":"5053@appserver",
                 "peregrinel_LICENSE":"5080@appserver",
                 "MAYA_VERSION":"2022",
@@ -384,13 +447,22 @@ class ORVAction(BaseAction):
             
         comp_locations.sort(key = order_lambda)
 
+
+
         paths: List[Tuple[str]] = list(self.get_paths_list( comp_locations))
         if not paths:
             return {"success": True, "message": "No valid components where found in the server."}
 
+        ocio_files = [get_ocio_file_from_component(f[0]) for f in paths]
+        ocio_files = list({f.as_posix() for f in ocio_files if f is not None})
+
+        if not user_values["load_ocio_files"]:
+            ocio_files = list()
+
         # START OF OPENRVPUSH PROC
         src = "from openrv_tools_22dogs import orvpush_inputs_callback\n"
-        signature = f"({', '.join([str(i) for i in [paths, no_slate, fps]])})"
+        src += "from pathlib import Path\n"
+        signature = f"({', '.join([str(i) for i in [paths, no_slate, fps, ocio_files]])})"
         src += "orvpush_inputs_callback" + signature
 
         if entities[0].entity_type == "FileComponent":
@@ -398,9 +470,24 @@ class ORVAction(BaseAction):
         else:
             prj = entities[0]["project"]["full_name"]
 
+
+        if Path("C:/Program Files/OpenRV/bin/rvpush.exe").exists():
+            self.orvpush_path = "C:/Program Files/OpenRV/bin/rvpush.exe"
+
+
         cmd = [self.orvpush_path, "-tag", prj, "py-exec", src]
         self.log.debug(f"Running ORVPUSH: {cmd}")
-        rv_push_process = subprocess.Popen(cmd, env=return_ttd_envs())
+
+        env = return_ttd_envs()
+        if not user_values["load_ocio_files"]:
+            ocio_files = list()
+            env["OCIO"] = "R:/ocioconfigs/aces_1.2/config.ocio"
+        # if ocio_files:
+        #     env["OCIO"] = ocio_files[0]
+        
+        #     self.log.info(f"OCIO config set to {ocio_files[0]}")
+
+        rv_push_process = subprocess.Popen(cmd, env=env)
         msg = f"ORV Launching: {fps} FPS with {'no' if no_slate else ''} slate."
         return {"success": True, "message": msg}
 
