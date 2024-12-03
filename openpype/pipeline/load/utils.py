@@ -763,8 +763,13 @@ def is_compatible_loader(Loader, context):
         )
     )
     representations = Loader.get_representations()
+    found_repre = False
+    for allowed_repre in representations:
+        if allowed_repre in representation["name"]:
+            found_repre = True
+            break
     has_representation = (
-        "*" in representations or representation["name"] in representations
+        "*" in representations or representation["name"] in representations or found_repre
     )
     return has_family and has_representation
 
