@@ -293,252 +293,471 @@
                     "label": "Enabled"
                 },
                 {
-                    "type": "list",
-                    "key": "profiles",
-                    "label": "Profiles",
+                    "type": "collapsible-wrap",
+                    "label": "Colorspace Rules",
+                    "collapsible": true,
+                    "highlight_content": true,
+                    "children": [
+                        {
+                            "type": "label",
+                            "label": "Specify Extension -> Colorspace key value pairs.\nAny Extension will be read using these rules."
+                        },
+                        {
+                            "type": "splitter"
+                        },
+                        {
+                            "type": "dict-modifiable",
+                            "key": "colorspace_rules",
+                            "collapsible": false,
+                            "highlight_content": true,
+                            "object_type": {
+                                "type": "text",
+                                "key": "value"
+                            }
+                        }
+                    ]
+                },
+                {
+                    "type": "dict-modifiable",
+                    "collapsible": true,
+                    "key": "fallback_output",
+                    "label": "Fallback",
+                    "highlight_content": true,
                     "object_type": {
                         "type": "dict",
                         "children": [
                             {
-                                "key": "families",
-                                "label": "Families",
-                                "type": "list",
-                                "object_type": "text"
-                            },
-                            {
-                                "key": "hosts",
-                                "label": "Host names",
-                                "type": "hosts-enum",
-                                "multiselection": true
-                            },
-                            {
-                                "key": "assets",
-                                "label": "Asset Names",
-                                "type": "list",
-                                "object_type": "text"
-                            },
-                            {
-                                "key": "task_types",
-                                "label": "Task types",
-                                "type": "task-types-enum"
-                            },
-                            {
-                                "key": "task_names",
-                                "label": "Task names",
-                                "type": "list",
-                                "object_type": "text"
-                            },
-                            {
-                                "key": "subsets",
-                                "label": "Subset names",
-                                "type": "list",
-                                "object_type": "text"
-                            },
-                            {
-                                "key": "extensions",
-                                "label": "Extensions",
-                                "type": "list",
-                                "object_type": "text"
-                            },
-                            {
                                 "type": "boolean",
-                                "key": "delete_original",
-                                "label": "Delete Original Representation"
+                                "key": "use_colorspace_rules",
+                                "label": "Read input using Colorspace Rules",
+                                "default": true
                             },
                             {
-                                "type": "splitter"
+                                "key": "extension",
+                                "label": "Extension",
+                                "type": "text"
                             },
                             {
-                                "type": "number",
-                                "key": "force_fps",
-                                "label": "Force FPS in instance",
-                                "decimal": 3,
-                                "minimum": 0
+                                "type": "enum",
+                                "key": "transcoding_type",
+                                "label": "Transcoding type",
+                                "enum_items": [
+                                    { "template": "Template" },
+                                    { "chain_subsets": "Subset Chain" },
+                                    { "color_conversion": "Color Conversion" }
+                                ]
                             },
                             {
-                                "type": "text",
-                                "key": "force_tc",
-                                "label": "Force TIMECODE in instance"
+                                "type": "dict",
+                                "collapsible": true,
+                                "key": "template_path",
+                                "label": "Template path",
+                                "children": [
+                                    {
+                                        "key": "template",
+                                        "label": "Template Path",
+                                        "type": "text"
+                                    }
+                                ]
                             },
                             {
-                                "type": "splitter"
-                            },
-                            {
-                                "key": "outputs",
-                                "label": "Output Definitions",
-                                "type": "dict-modifiable",
+                                "key": "subset_chain",
+                                "label": "Subset chain",
+                                "type": "list",
                                 "highlight_content": true,
+                                "use_label_wrap": true,
                                 "object_type": {
                                     "type": "dict",
                                     "children": [
                                         {
-                                            "key": "extension",
-                                            "label": "Extension",
+                                            "key": "loader",
+                                            "label": "Loader plugin",
                                             "type": "text"
                                         },
                                         {
-                                            "type": "enum",
-                                            "key": "transcoding_type",
-                                            "label": "Transcoding type",
-                                            "enum_items": [
-                                                { "template": "Template" },
-                                                { "chain_subsets": "Subset Chain" },
-                                                { "color_conversion": "Color Conversion" }
-                                            ]
-                                        },
-                                        {
-                                            "type": "dict",
-                                            "collapsible": true,
-                                            "key": "template_path",
-                                            "label": "Template path",
-                                            "children": [
-                                                {
-                                                    "key": "template",
-                                                    "label": "Template Path",
-                                                    "type": "text"
-                                                }
-                                            ]
-                                        },
-                                        {
-                                            "key": "subset_chain",
-                                            "label": "Subset chain",
-                                            "type": "list",
-                                            "highlight_content": true,
-                                            "use_label_wrap": true,
-                                            "object_type": {
-                                                "type": "dict",
-                                                "children": [
-                                                    {
-                                                        "key": "loader",
-                                                        "label": "Loader plugin",
-                                                        "type": "text"
-                                                    },
-                                                    {
-                                                        "key": "subset",
-                                                        "label": "Subset name",
-                                                        "type": "text"
-                                                    },
-                                                    {
-                                                        "key": "representation",
-                                                        "label": "Repre name",
-                                                        "type": "text"
-                                                    }
-                                                ]
-                                            }
-                                        },
-                                        {
-                                            "type": "dict",
-                                            "collapsible": true,
-                                            "key": "color_conversion",
-                                            "label": "Color conversion",
-                                            "children": [
-                                                {
-                                                    "key": "input_colorspace",
-                                                    "label": "Input colorspace",
-                                                    "type": "text"
-                                                },
-                                                {
-                                                    "key": "output_colorspace",
-                                                    "label": "Output colorspace",
-                                                    "type": "text"
-                                                }
-                                            ]
-                                        },
-                                        {
-                                            "type": "splitter"
-                                        },
-                                        {
-                                            "type": "dict",
-                                            "collapsible": true,
-                                            "key": "write_options",
-                                            "label": "Write options",
-                                            "children": [
-                                                {
-                                                    "type": "schema_template",
-                                                    "name": "template_nuke_knob_inputs",
-                                                    "template_data": [
-                                                        {
-                                                            "label": "Knobs",
-                                                            "key": "knobs"
-                                                        }
-                                                    ]
-                                                }
-                                            ]
-                                        },
-                                        {
-                                            "type": "dict",
-                                            "collapsible": true,
-                                            "key": "reformat_options",
-                                            "label": "Reformat options",
-                                            "checkbox_key": "enabled",
-                                            "children": [
-                                                {
-                                                    "type": "boolean",
-                                                    "key": "enabled",
-                                                    "label": "Enabled",
-                                                    "default": false
-                                                },
-                                                {
-                                                    "key": "reformat_width",
-                                                    "label": "Width",
-                                                    "type": "number",
-                                                    "default": 1920
-                                                },
-                                                {
-                                                    "key": "reformat_height",
-                                                    "label": "height",
-                                                    "type": "number",
-                                                    "default": 1980
-                                                },
-                                                {
-                                                    "key": "reformat_black_outside",
-                                                    "label": "black outside",
-                                                    "type": "boolean",
-                                                    "default": false
-                                                },
-                                                {
-                                                    "type": "enum",
-                                                    "key": "reformat_type",
-                                                    "label": "Reformat type",
-                                                    "enum_items": [
-                                                        { "width": "width" },
-                                                        { "height": "height" },
-                                                        { "fit": "fit" },
-                                                        { "fill": "fill" },
-                                                        { "distort": "distort" },
-                                                        { "none": "none" }
-                                                    ]
-                                                }
-                                            ]
-                                        },
-                                        {
-                                            "type": "splitter"
-                                        },
-                                        {
-                                            "type": "boolean",
-                                            "key": "override_thumbnail",
-                                            "label": "Override/Create thumbnail"
-                                        },
-                                        {
-                                            "type": "schema",
-                                            "name": "schema_representation_tags"
-                                        },
-                                        {
-                                            "key": "representation_name_override",
-                                            "label": "Representation name override",
+                                            "key": "subset",
+                                            "label": "Subset name",
                                             "type": "text"
                                         },
                                         {
-                                            "key": "custom_tags",
-                                            "label": "Custom Tags",
-                                            "type": "list",
-                                            "object_type": "text"
+                                            "key": "representation",
+                                            "label": "Repre name",
+                                            "type": "text"
                                         }
                                     ]
                                 }
+                            },
+                            {
+                                "type": "dict",
+                                "collapsible": true,
+                                "key": "color_conversion",
+                                "label": "Color conversion",
+                                "children": [
+                                    {
+                                        "key": "input_colorspace",
+                                        "label": "Input colorspace",
+                                        "type": "text"
+                                    },
+                                    {
+                                        "key": "output_colorspace",
+                                        "label": "Output colorspace",
+                                        "type": "text"
+                                    }
+                                ]
+                            },
+                            {
+                                "type": "splitter"
+                            },
+                            {
+                                "type": "dict",
+                                "collapsible": true,
+                                "key": "write_options",
+                                "label": "Write options",
+                                "children": [
+                                    {
+                                        "type": "schema_template",
+                                        "name": "template_nuke_knob_inputs",
+                                        "template_data": [
+                                            {
+                                                "label": "Knobs",
+                                                "key": "knobs"
+                                            }
+                                        ]
+                                    }
+                                ]
+                            },
+                            {
+                                "type": "dict",
+                                "collapsible": true,
+                                "key": "reformat_options",
+                                "label": "Reformat options",
+                                "checkbox_key": "enabled",
+                                "children": [
+                                    {
+                                        "type": "boolean",
+                                        "key": "enabled",
+                                        "label": "Enabled",
+                                        "default": false
+                                    },
+                                    {
+                                        "key": "reformat_width",
+                                        "label": "Width",
+                                        "type": "number",
+                                        "default": 1920
+                                    },
+                                    {
+                                        "key": "reformat_height",
+                                        "label": "height",
+                                        "type": "number",
+                                        "default": 1080
+                                    },
+                                    {
+                                        "key": "reformat_black_outside",
+                                        "label": "black outside",
+                                        "type": "boolean",
+                                        "default": false
+                                    },
+                                    {
+                                        "type": "enum",
+                                        "key": "reformat_type",
+                                        "label": "Reformat type",
+                                        "enum_items": [
+                                            { "width": "width" },
+                                            { "height": "height" },
+                                            { "fit": "fit" },
+                                            { "fill": "fill" },
+                                            { "distort": "distort" },
+                                            { "none": "none" }
+                                        ]
+                                    }
+                                ]
+                            },
+                            {
+                                "type": "splitter"
+                            },
+                            {
+                                "type": "boolean",
+                                "key": "override_thumbnail",
+                                "label": "Override/Create thumbnail"
+                            },
+                            {
+                                "type": "schema",
+                                "name": "schema_representation_tags"
+                            },
+                            {
+                                "key": "representation_name_override",
+                                "label": "Representation name override",
+                                "type": "text"
+                            },
+                            {
+                                "key": "custom_tags",
+                                "label": "Custom Tags",
+                                "type": "list",
+                                "object_type": "text"
                             }
                         ]
                     }
+                },
+                {
+                    "type": "collapsible-wrap",
+                    "label": "Profiles",
+                    "collapsible": true,
+                    "children":[ 
+                        {
+                            "type": "list",
+                            "key": "profiles",
+                            "label": "Profiles",
+                            "object_type": {
+                                "type": "dict",
+                                "children": [
+                                    {
+                                        "key": "families",
+                                        "label": "Families",
+                                        "type": "list",
+                                        "object_type": "text"
+                                    },
+                                    {
+                                        "key": "hosts",
+                                        "label": "Host names",
+                                        "type": "hosts-enum",
+                                        "multiselection": true
+                                    },
+                                    {
+                                        "key": "assets",
+                                        "label": "Asset Names",
+                                        "type": "list",
+                                        "object_type": "text"
+                                    },
+                                    {
+                                        "key": "task_types",
+                                        "label": "Task types",
+                                        "type": "task-types-enum"
+                                    },
+                                    {
+                                        "key": "task_names",
+                                        "label": "Task names",
+                                        "type": "list",
+                                        "object_type": "text"
+                                    },
+                                    {
+                                        "key": "subsets",
+                                        "label": "Subset names",
+                                        "type": "list",
+                                        "object_type": "text"
+                                    },
+                                    {
+                                        "key": "extensions",
+                                        "label": "Extensions",
+                                        "type": "list",
+                                        "object_type": "text"
+                                    },
+                                    {
+                                        "type": "boolean",
+                                        "key": "delete_original",
+                                        "label": "Delete Original Representation"
+                                    },
+                                    {
+                                        "type": "splitter"
+                                    },
+                                    {
+                                        "type": "number",
+                                        "key": "force_fps",
+                                        "label": "Force FPS in instance",
+                                        "decimal": 3,
+                                        "minimum": 0
+                                    },
+                                    {
+                                        "type": "text",
+                                        "key": "force_tc",
+                                        "label": "Force TIMECODE in instance"
+                                    },
+                                    {
+                                        "type": "splitter"
+                                    },
+                                    {
+                                        "key": "outputs",
+                                        "label": "Output Definitions",
+                                        "type": "dict-modifiable",
+                                        "highlight_content": true,
+                                        "object_type": {
+                                            "type": "dict",
+                                            "children": [
+                                                {
+                                                    "type": "boolean",
+                                                    "key": "use_colorspace_rules",
+                                                    "label": "Read input using Colorspace Rules",
+                                                    "default": false
+                                                },
+                                                {
+                                                    "key": "extension",
+                                                    "label": "Extension",
+                                                    "type": "text"
+                                                },
+                                                {
+                                                    "type": "enum",
+                                                    "key": "transcoding_type",
+                                                    "label": "Transcoding type",
+                                                    "enum_items": [
+                                                        { "template": "Template" },
+                                                        { "chain_subsets": "Subset Chain" },
+                                                        { "color_conversion": "Color Conversion" }
+                                                    ]
+                                                },
+                                                {
+                                                    "type": "dict",
+                                                    "collapsible": true,
+                                                    "key": "template_path",
+                                                    "label": "Template path",
+                                                    "children": [
+                                                        {
+                                                            "key": "template",
+                                                            "label": "Template Path",
+                                                            "type": "text"
+                                                        }
+                                                    ]
+                                                },
+                                                {
+                                                    "key": "subset_chain",
+                                                    "label": "Subset chain",
+                                                    "type": "list",
+                                                    "highlight_content": true,
+                                                    "use_label_wrap": true,
+                                                    "object_type": {
+                                                        "type": "dict",
+                                                        "children": [
+                                                            {
+                                                                "key": "loader",
+                                                                "label": "Loader plugin",
+                                                                "type": "text"
+                                                            },
+                                                            {
+                                                                "key": "subset",
+                                                                "label": "Subset name",
+                                                                "type": "text"
+                                                            },
+                                                            {
+                                                                "key": "representation",
+                                                                "label": "Repre name",
+                                                                "type": "text"
+                                                            }
+                                                        ]
+                                                    }
+                                                },
+                                                {
+                                                    "type": "dict",
+                                                    "collapsible": true,
+                                                    "key": "color_conversion",
+                                                    "label": "Color conversion",
+                                                    "children": [
+                                                        {
+                                                            "key": "input_colorspace",
+                                                            "label": "Input colorspace",
+                                                            "type": "text"
+                                                        },
+                                                        {
+                                                            "key": "output_colorspace",
+                                                            "label": "Output colorspace",
+                                                            "type": "text"
+                                                        }
+                                                    ]
+                                                },
+                                                {
+                                                    "type": "splitter"
+                                                },
+                                                {
+                                                    "type": "dict",
+                                                    "collapsible": true,
+                                                    "key": "write_options",
+                                                    "label": "Write options",
+                                                    "children": [
+                                                        {
+                                                            "type": "schema_template",
+                                                            "name": "template_nuke_knob_inputs",
+                                                            "template_data": [
+                                                                {
+                                                                    "label": "Knobs",
+                                                                    "key": "knobs"
+                                                                }
+                                                            ]
+                                                        }
+                                                    ]
+                                                },
+                                                {
+                                                    "type": "dict",
+                                                    "collapsible": true,
+                                                    "key": "reformat_options",
+                                                    "label": "Reformat options",
+                                                    "checkbox_key": "enabled",
+                                                    "children": [
+                                                        {
+                                                            "type": "boolean",
+                                                            "key": "enabled",
+                                                            "label": "Enabled",
+                                                            "default": false
+                                                        },
+                                                        {
+                                                            "key": "reformat_width",
+                                                            "label": "Width",
+                                                            "type": "number",
+                                                            "default": 1920
+                                                        },
+                                                        {
+                                                            "key": "reformat_height",
+                                                            "label": "height",
+                                                            "type": "number",
+                                                            "default": 1980
+                                                        },
+                                                        {
+                                                            "key": "reformat_black_outside",
+                                                            "label": "black outside",
+                                                            "type": "boolean",
+                                                            "default": false
+                                                        },
+                                                        {
+                                                            "type": "enum",
+                                                            "key": "reformat_type",
+                                                            "label": "Reformat type",
+                                                            "enum_items": [
+                                                                { "width": "width" },
+                                                                { "height": "height" },
+                                                                { "fit": "fit" },
+                                                                { "fill": "fill" },
+                                                                { "distort": "distort" },
+                                                                { "none": "none" }
+                                                            ]
+                                                        }
+                                                    ]
+                                                },
+                                                {
+                                                    "type": "splitter"
+                                                },
+                                                {
+                                                    "type": "boolean",
+                                                    "key": "override_thumbnail",
+                                                    "label": "Override/Create thumbnail"
+                                                },
+                                                {
+                                                    "type": "schema",
+                                                    "name": "schema_representation_tags"
+                                                },
+                                                {
+                                                    "key": "representation_name_override",
+                                                    "label": "Representation name override",
+                                                    "type": "text"
+                                                },
+                                                {
+                                                    "key": "custom_tags",
+                                                    "label": "Custom Tags",
+                                                    "type": "list",
+                                                    "object_type": "text"
+                                                }
+                                            ]
+                                        }
+                                    }
+                                ]
+                            }
+                        }
+                    ]
                 }
             ]
         },

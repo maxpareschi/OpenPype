@@ -1,3 +1,4 @@
+import logging
 import os
 import sys
 import copy
@@ -8,6 +9,7 @@ import clique
 import subprocess
 import uuid
 import platform
+
 if platform.system().lower() == "windows":
     from ctypes import create_unicode_buffer, windll
 
@@ -19,9 +21,17 @@ from openpype.pipeline import (
 )
 
 from openpype.pipeline.template_data import get_template_data_with_names
+from openpype.settings import get_current_project_settings
 from openpype.lib.applications import ApplicationManager
 from openpype.lib.profiles_filtering import filter_profiles
 from openpype.pipeline.editorial import shift_timecode, timecode_to_frames, truncate
+
+from openpype.client import (
+    get_asset_by_name,
+    get_subset_by_name,
+    get_representation_by_name,
+    get_last_version_by_subset_id,
+)
 
 
 class ExtractTemplatedTranscode(publish.Extractor):
@@ -44,12 +54,19 @@ class ExtractTemplatedTranscode(publish.Extractor):
 
     def process(self, instance):
 
+        self.log: logging.Logger = self.log
+
+        self.settings = get_current_project_settings()["global"]["publish"]["ExtractTemplatedTranscode"]
+        self.profiles = self.settings["profiles"]
+        self.fallback_output_definitions = self.settings["fallback_output"]
+        self.colorspace_rules = self.settings["colorspace_rules"]
+
         if instance.data.get("farm", None):
-            self.log.debug("Farm mode enabled, skipping")
+            self.log.debug("Farm mode enabled, skipping.")
             return
 
         if not self.profiles:
-            self.log.debug("No profiles present for color transcode")
+            self.log.debug("No profiles present for transcode, skipping.")
             return
 
         if "representations" not in instance.data:
@@ -68,9 +85,8 @@ class ExtractTemplatedTranscode(publish.Extractor):
             if not instance.data.get("gather_representation_ext"):
                 instance.data["gather_representation_ext"] = extensions[-1]
         
-        self.log.debug("Computed extension for profile matching: '{}'".format(
-            instance.data.get("gather_representation_ext"))
-        )
+        self.log.debug("Computed extension for profile matching: "
+                       f"'{instance.data.get('gather_representation_ext')}'")
 
         profile = self._get_profile(instance)
         if not profile:
@@ -114,25 +130,25 @@ class ExtractTemplatedTranscode(publish.Extractor):
                 if repre["name"] != "thumbnail" and repre["ext"] in ["mov", "mp4", "dpx", "cin", "exr"]:
                     repre.update(tc_data)
             instance.data.update(tc_data)
-            self.log.debug(f"Overridden timecode data: {json.dumps(tc_data, indent=4, default=str)}")
+            self.log.debug(f"Overridden timecode data: {json.dumps(tc_data, default=str)}")
 
         new_representations = []
         repres = instance.data["representations"]
 
-        self.log.debug("Initial representation list: {}".format(
-            json.dumps(repres, indent=4, default=str)
-        ))
+        self.log.info(f"Initial representation list: \n{json.dumps(repres, indent=4, default=str)}")
 
         for idx, repre in enumerate(list(repres)):
 
-            self.log.debug("repre ({}): '{}':\n{}".format(
-                idx + 1, repre["name"], json.dumps(repre, indent=4, default=str)))
+            self.log.info(f"Processing repre ({idx}): '{repre['name']}':\n"
+                          f"{json.dumps(repre, default=str)}")
 
             if not self._repre_is_valid(repre, instance):
                 continue
 
+            self.validate_profile_defs(profile)
+
             for profile_name, profile_def in profile.get("outputs", {}).items():
-                self.log.debug("Processing profile '{}'".format(profile_name))
+                self.log.info("Processing profile '{}'...".format(profile_name))
 
                 new_repre = copy.deepcopy(repre)
 
@@ -154,23 +170,24 @@ class ExtractTemplatedTranscode(publish.Extractor):
                     if not new_repre.get("frameEnd", None):
                         new_repre["frameEnd"] = new_repre_files[4][-1]
                     instance.data["representations"].append(new_repre)
-                    self.log.debug("profile is in passthrough mode, skipping transcode, adding tags and and pushing as representation: {}".format(
-                        json.dumps(new_repre, indent=4, default=str)))
+                    self.log.info("Profile is in passthrough mode: skipping transcode, adding tags and "
+                                  f"pushing as representation: {json.dumps(new_repre, default=str)}")
                     continue
-
+                
+                old_ext = new_repre["ext"].replace('.', '')
                 new_ext = profile_def["extension"].strip()
                 if new_ext == "":
-                    new_ext = new_repre["ext"].replace('.', '')
+                    new_ext = old_ext
                 new_repre["ext"] = new_ext
 
                 repre_name_suffix = ""
                 if repre_name_override != "":
                     repre_name_suffix = "_" + repre_name_override
                     new_repre["outputName"] = repre_name_override
-                    self.log.debug("Representation outputName is set as '{}'".format(new_repre["outputName"]))
+                    self.log.debug(f"Representation outputName is set as '{new_repre['outputName']}'")
 
                 new_repre["name"] = new_repre["ext"] + repre_name_suffix
-                self.log.debug("Representation name is set as '{}'".format(new_repre["name"]))
+                self.log.debug(f"Representation name is set as '{new_repre['name']}'")
 
                 transcoding_type = profile_def["transcoding_type"]
                 template_original_path = profile_def["template_path"]["template"].strip()
@@ -179,6 +196,13 @@ class ExtractTemplatedTranscode(publish.Extractor):
                 if input_colorspace == "":
                     input_colorspace = new_repre["colorspaceData"]["colorspace"]
                     profile_def["color_conversion"]["input_colorspace"] = input_colorspace
+                if profile_def["use_colorspace_rules"]:
+                    if self.colorspace_rules.get(old_ext, None):
+                        self.log.debug(f"Colorspace Rules for output definition '{profile_name}' "
+                                       f"are active: using colorspace '{self.colorspace_rules.get(old_ext, None)}' "
+                                       f"for input file type '{old_ext}'.")
+                        input_colorspace = self.colorspace_rules[old_ext]
+                        profile_def["color_conversion"]["input_colorspace"] = input_colorspace
                 output_colorspace = profile_def["color_conversion"]["output_colorspace"].strip()
                 if output_colorspace == "":
                     output_colorspace = new_repre["colorspaceData"]["colorspace"]
@@ -195,17 +219,17 @@ class ExtractTemplatedTranscode(publish.Extractor):
                     if output_colorspace == "":
                         raise ValueError("Error on Representation: missing output color profile!")
                     
-                self.log.debug("Source staging dir is set as '{}'".format(repre["stagingDir"]))
+                self.log.debug(f"Source staging dir is set as '{repre['stagingDir']}'")
 
                 temp_staging_dir = self._get_temp_staging_dir()
-                self.log.debug("Temporary staging is set as '{}'".format(temp_staging_dir))
+                self.log.debug(f"Temporary staging is set as '{temp_staging_dir}'")
 
                 new_staging_dir = self._get_transcode_temp_dir(
                     temp_staging_dir,
                     profile_name)
                 new_repre["stagingDir"] = self._sanitize_path(new_staging_dir)
 
-                self.log.debug("Destination staging dir is set as '{}'".format(new_repre["stagingDir"]))
+                self.log.debug(f"Destination staging dir is set as '{new_repre['stagingDir']}'")
 
                 orig_file_list = sorted(list(set(copy.deepcopy(new_repre["files"]))))
 
@@ -298,31 +322,27 @@ class ExtractTemplatedTranscode(publish.Extractor):
                 if transcoding_type == "template":
                     processed_data["profile_data"]["template_path"]["template"] = template_original_path.format(**template_format_data)
                     new_repre["data"]["colorspace"] = "data"
-                    self.log.debug("will process template '{}' for rendering in context '{}'".format(
-                        processed_data["profile_data"]["template_path"]["template"],
-                        instance.data["asset"]
-                    ))
+                    self.log.debug(f"Template, path: '{processed_data['profile_data']['template_path']['template']}', "
+                                   f"in context '{instance.data['asset']}'")
 
                 elif transcoding_type == "chain_subsets":
                     new_repre["data"]["colorspace"] = "data"
-                    self.log.debug("Will chain subsets {} for rendering in context '{}'".format(
-                        subset_chain,
-                        instance.data["asset"]
-                    ))
+                    self.log.debug(f"Will chain subsets {subset_chain} for "
+                                   f"rendering in context '{instance.data['asset']}'")
 
                 elif transcoding_type == "color_conversion":
                     new_repre["colorspaceData"]["colorspace"] = output_colorspace
                     new_repre["data"]["colorspace"] = output_colorspace
-                    self.log.debug("Will convert representation from '{}' to '{}' for rendering in context '{}'".format(
-                        input_colorspace,
-                        output_colorspace,
-                        instance.data["asset"]
-                    ))
+                    self.log.debug(f"Colorspace, from: '{input_colorspace}', "
+                                   f"to: '{output_colorspace}', in context: '{instance.data['asset']}'")
+
+                self.log.info("Will convert representation against collected "
+                              f"data: {json.dumps(processed_data, default=str)}")
 
                 nuke_process = self.run_transcode_script(processed_data)
 
                 if int(nuke_process) != 0:
-                    raise RuntimeError("Error in Transcode process!! (return code != 0)")
+                    raise RuntimeError("Error in Transcode process!! (return code NOT 0)")
 
                 # cleanup temporary transcoded files
                 instance.context.data["cleanupFullPaths"].append(
@@ -345,8 +365,7 @@ class ExtractTemplatedTranscode(publish.Extractor):
                     new_repre["frameStart"] = int(repre_out[4][0])
                     new_repre["frameEnd"] = int(repre_out[4][-1])
 
-                self.log.debug("Adding new representation: {}".format(
-                    json.dumps(new_repre, indent=4, default=str)))
+                self.log.info(f"Adding new representation: {json.dumps(new_repre, default=str)}")
 
                 new_representations.append(new_repre)
 
@@ -382,8 +401,7 @@ class ExtractTemplatedTranscode(publish.Extractor):
                         if thumb_missing:
                             instance.data["representations"].append(thumb_repre)
                         
-                        self.log.debug("Thumbnail set as representation: {}".format(
-                            json.dumps(thumb_repre, indent=4, default=str)))
+                        self.log.info(f"Adding thumbnail override: {json.dumps(thumb_repre, default=str)}")
 
             self._mark_original_repre_for_deletion(repre, profile)
 
@@ -393,15 +411,17 @@ class ExtractTemplatedTranscode(publish.Extractor):
                 instance.data["representations"].remove(repre)
         
         instance.data["representations"].extend(new_representations)
-        self.log.debug("Final Representations list: \n{}\nFull Representations dump: {}\n".format(
-            "\n".join([
-                "name: '{}' | ext: '{}' | tags: '{}' | outputName: '{}' | colorspace: '{}'".format(
-                    repre["name"], repre["ext"], repre.get("tags", None),
-                    repre.get("outputName", None), repre.get("colorspaceData",{}).get("colorspace", None)
-                ) for repre in instance.data["representations"]
-            ]),
-            json.dumps(instance.data["representations"], indent=4, default=str)
-        ))
+        self.log.info("Final Representations list: \n{}".format(
+            "\n".join(
+                [(f"name: '{repre['name']}' | ext: '{repre['ext']}' | "
+                  f"tags: '{repre.get('tags', None)}' | "
+                  f"outputName: '{repre.get('outputName', None)}' | "
+                  f"colorspace: '{repre.get('colorspaceData',{}).get('colorspace', None)}'")
+                  for repre in instance.data["representations"]])))
+        
+        self.log.info(f"Full Representations dump:\n"
+                       f"{json.dumps(instance.data['representations'], indent=4, default=str)}")
+        
                     
     def _translate_to_sequence(self, repre, staging_dir=None):
         if not staging_dir:
@@ -431,7 +451,7 @@ class ExtractTemplatedTranscode(publish.Extractor):
                 )
             ).replace("\\", "/")
         else:
-            self.log.debug("Repre is not a sequence, single name output: '{}'".format(repre["files"]))
+            self.log.debug(f"Repre is not a sequence, single name output: '{repre['files']}'")
             if isinstance(repre["files"], list):
                 repre["files"] = repre["files"][-1]
             head, tail = os.path.splitext(repre["files"])
@@ -471,15 +491,11 @@ class ExtractTemplatedTranscode(publish.Extractor):
 
         profile = filter_profiles(self.profiles, filtering_criteria,
                                   filtering_order, logger=log)
-        
-        self.log.debug(profile)
 
         if not profile:
-            self.log.debug((
-              "Skipped instance. None of profiles in presets are for"
-              " Host: \"{}\" | Families: \"{}\" | Task \"{}\""
-              " | Task type \"{}\" | Subset \"{}\" "
-            ).format(host_name, family, task_name, task_type, subset))
+            self.log.debug("Skipped instance. None of profiles in presets are for "
+                           f"Host: '{host_name}' | Families: '{family}' | Task '{task_name}' | "
+                           f"Task type '{task_type}' | Subset '{subset}'")
 
         return profile
 
@@ -494,27 +510,20 @@ class ExtractTemplatedTranscode(publish.Extractor):
         """
 
         if repre.get("thumbnail", False) or repre["name"] == "thumbnail" or "thumbnail" in repre.get("tags", []):
-            self.log.debug((
-                "Representation '{}' is a thumbnail. Skipped."
-            ).format(repre["name"], repre.get("ext")))
+            self.log.info(f"Representation '{repre['name']}' is a thumbnail. Skipped.")
             return False
 
         if "review" in repre.get("tags", []) and repre["name"].find("otio") >= 0:
-            self.log.debug((
-                "Representation '{}' is already processed as review item and comes from hiero as an otio extracted sequence, skipping"
-            ).format(repre["name"], repre.get("ext")))
+            self.log.info(f"Representation '{repre['name']}' is already processed as review "
+                           "item and comes from hiero as an otio extracted sequence. Skipped.")
             return False
 
         if repre.get("ext") not in self.supported_exts:
-            self.log.debug((
-                "Representation '{}' has unsupported extension: '{}'. Skipped."
-            ).format(repre["name"], repre.get("ext")))
+            self.log.info(f"Representation '{repre['name']}' has unsupported extension: '{repre.get('ext')}'. Skipped.")
             return False
 
         if not repre.get("files"):
-            self.log.debug((
-                "Representation '{}' has empty files. Skipped."
-            ).format(repre["name"]))
+            self.log.info(f"Representation '{repre['name']}' has empty files. Skipped.")
             return False
 
         if not repre.get("colorspaceData"):
@@ -531,8 +540,7 @@ class ExtractTemplatedTranscode(publish.Extractor):
             repre["colorspace"] = cdata["colorspace"]
 
         if not repre.get("colorspaceData"):
-            self.log.debug("Representation '{}' has no colorspace data. "
-                           "Skipped.".format(repre["name"]))
+            self.log.info(f"Representation '{repre['name']}' has no colorspace data. Skipped.")
             return False
 
         return True
@@ -654,13 +662,13 @@ class ExtractTemplatedTranscode(publish.Extractor):
             os.path.abspath(script_path),
             os.path.abspath(json_args)
         ]
-        self.log.debug("Launcing build suprocess: {}".format(" ".join(build_cmd)))
+        self.log.debug(f"Launcing build suprocess: {' '.join(build_cmd)}")
         build_process = subprocess.Popen(build_cmd, **process_kwargs)
         while build_process.poll() is None:
             line = build_process.stdout.readline().strip("\n").strip()
             if line and line[0] != ".":
                 self.log.debug(line)
-        self.log.debug("TRANSCODE >>> BUILD: {})\n".format(build_process.returncode))
+        self.log.debug(f"TRANSCODE >>> BUILD: {build_process.returncode})\n")
 
         main_cmd = [
             os.path.abspath(nukeexe),
@@ -668,13 +676,13 @@ class ExtractTemplatedTranscode(publish.Extractor):
             "--sro",
             os.path.abspath(data["save_path"])
         ]
-        self.log.debug("Launcing main suprocess: {}".format(" ".join(main_cmd)))
+        self.log.debug(f"Launcing main suprocess: {' '.join(main_cmd)}")
         main_process = subprocess.Popen(main_cmd, **process_kwargs)
         while main_process.poll() is None:
             line = main_process.stdout.readline().strip("\n").strip()
             if line and line[0] != ".":
                 self.log.debug(line)
-        self.log.debug("TRANSCODE >>> END: {})\n".format(main_process.returncode))
+        self.log.debug(f"TRANSCODE >>> END: {main_process.returncode})\n")
 
         return main_process.returncode
 
@@ -687,3 +695,70 @@ class ExtractTemplatedTranscode(publish.Extractor):
 
         if delete_original:
             repre["tags"].append("delete_original")
+
+    def validate_profile_defs(self, profile):
+        project_name = os.environ["AVALON_PROJECT"]
+        asset_name = os.environ["AVALON_ASSET"]
+        asset = get_asset_by_name(
+            project_name=project_name,
+            asset_name=asset_name,
+            fields=["_id", "name"]
+        )
+        valid_profile = True
+        for name, output in profile.get("outputs", {}).items():
+            if output["transcoding_type"] == "color_conversion":
+                continue
+            if output["transcoding_type"] == "chain_subsets":
+                for item in output["subset_chain"]:
+                    subset = get_subset_by_name(
+                        project_name=project_name,
+                        subset_name=item["subset"],
+                        asset_id=asset["_id"],
+                        fields=["_id", "name"]
+                    )
+                    if not subset:
+                        valid_profile = False
+                        self.log.warning(f"Did not find subset '{item['subset']}' "
+                                         f"while validating output definition '{name}'!")
+                        break
+                    self.log.debug(f"Subset '{item['subset']}' found, searching for latest version.")
+                    version = get_last_version_by_subset_id(
+                        project_name=project_name,
+                        subset_id=subset["_id"],
+                        fields=["_id", "name"]
+                    )
+                    if not version:
+                        valid_profile = False
+                        self.log.warning(f"Did not find latest version while "
+                                         f"validating output definition '{name}'!")
+                        break
+                    self.log.debug(f"version '{version['name']}' found, searching for "
+                                   f"representation '{item['representation']}'.")
+                    repre = get_representation_by_name(
+                        project_name=project_name,
+                        representation_name=item["representation"],
+                        version_id=version["_id"],
+                        fields=["_id", "name"]
+                    )
+                    if not repre:
+                        valid_profile = False
+                        self.log.warning(f"Did not find subset '{item['representation']}' "
+                                         f"while validating output definition '{name}'!")
+                        break
+                    self.log.debug(f"Representation '{repre['name']}' found, moving on.")
+
+            elif output["transcoding_type"] == "template":
+                if not os.path.isfile(output["template_path"]["template"]):
+                    self.log.warning(f"Template path '{output['template_path']['template']}' does not exist!")
+                    valid_profile = False
+
+            if not valid_profile:
+                self.log.warning(f"Output definition '{name}' is not valid, Profile Fallback activated!")
+                break
+        
+        if not valid_profile:
+            profile["outputs"] = self.fallback_output_definitions
+            self.log.debug(f"Fallback output definitions {[pname for pname in profile['outputs'].keys()]} "
+                           f"added to active profile.")
+        else:
+            self.log.debug("Active profile was validated successfully.")
