@@ -30,23 +30,18 @@ class ExtractLogs(pyblish.api.InstancePlugin):
         # 
         # self.log.info(f"Written '{os.path.basename(log_file)}' log file at {log_file}")
 
-        log_file = f"{os.environ.get('TEMP', os.environ.get('TMP'))}/{uuid.uuid4()}.json"
-
-        contents = []
-
-        for result in instance.context.data["results"]:
-            contents.append(f">>> --- {result['plugin'].label} ---")
-            for record in result["records"]:
-                msg = record['msg'].replace('\n', '\n\t')
-                contents.append(f"\t{record['name']} - {record['levelname']} - {msg}")
-            if result["success"]:
-                contents.append(f"<<< --- Plugin completed in: {result['duration']} ms. ---\n")
-            elif result["error"]:
-                contents.append(f"<<< --- Plugin error! : {result['error']} ms\n")
-            
+        log_file = f"{os.environ.get('TEMP', os.environ.get('TMP'))}/{uuid.uuid4()}.log"
 
         with open(log_file, "w") as f:
-            f.write("\n".join(contents))
+            for result in instance.context.data["results"]:
+                f.write(f">>> --- {result['plugin'].label} ---\n")
+                for record in result["records"]:
+                    msg = record.get('msg', '!!').replace('\n', '\n\t')
+                    f.write(f"\t{record.get('name', '!!')} - {record.get('levelname', '!!')} - {msg}\n")
+                if result["success"]:
+                    f.write(f"<<< --- Plugin completed in: {result['duration']} ms. ---\n\n")
+                elif result["error"]:
+                    f.write(f"<<< --- Plugin error! : {result['error']} ms\n\n")
 
         instance.data["representations"].append({
             "name": "log",
