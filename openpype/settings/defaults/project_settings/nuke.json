@@ -431,7 +431,7 @@
             "nodes": {
                 "nodes": [
                     {
-                        "class": "OCIOColorSPace",
+                        "class": "OCIOColorSpace",
                         "in_colorspace": "scene_linear",
                         "out_colorspace": "color_picking"
                     },
