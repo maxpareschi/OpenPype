@@ -145,7 +145,7 @@ class ExtractTemplatedTranscode(publish.Extractor):
             if not self._repre_is_valid(repre, instance):
                 continue
 
-            self.validate_profile_defs(profile)
+            self.validate_profile_defs(instance, profile)
 
             for profile_name, profile_def in profile.get("outputs", {}).items():
                 self.log.info("Processing profile '{}'...".format(profile_name))
@@ -196,13 +196,17 @@ class ExtractTemplatedTranscode(publish.Extractor):
                 if input_colorspace == "":
                     input_colorspace = new_repre["colorspaceData"]["colorspace"]
                     profile_def["color_conversion"]["input_colorspace"] = input_colorspace
-                if profile_def["use_colorspace_rules"]:
+                if profile_def.get("use_colorspace_rules", False):
                     if self.colorspace_rules.get(old_ext, None):
                         self.log.debug(f"Colorspace Rules for output definition '{profile_name}' "
                                        f"are active: using colorspace '{self.colorspace_rules.get(old_ext, None)}' "
                                        f"for input file type '{old_ext}'.")
                         input_colorspace = self.colorspace_rules[old_ext]
                         profile_def["color_conversion"]["input_colorspace"] = input_colorspace
+                    else:
+                        self.log.warning(f"No Colospace rule set for file type '{old_ext}'. Check your settings!")
+                else:
+                    self.log.debug("Colorspace rules are not active for this output definition.")
                 output_colorspace = profile_def["color_conversion"]["output_colorspace"].strip()
                 if output_colorspace == "":
                     output_colorspace = new_repre["colorspaceData"]["colorspace"]
@@ -704,9 +708,19 @@ class ExtractTemplatedTranscode(publish.Extractor):
         if delete_original:
             repre["tags"].append("delete_original")
 
-    def validate_profile_defs(self, profile):
-        project_name = os.environ["AVALON_PROJECT"]
-        asset_name = os.environ["AVALON_ASSET"]
+    def validate_profile_defs(self, instance, profile):
+        project_name = instance.data.get("projectEntity", {}).get("name", None)
+        if not project_name:
+            project_name = os.environ["AVALON_PROJECT"]
+        if not project_name:
+            raise ValueError("invalid Project Name!")
+
+        asset_name = instance.data.get("assetEntity", {}).get("name", None)
+        if not asset_name:
+            asset_name = os.environ["AVALON_ASSET"]
+        if not asset_name:
+            raise ValueError("invalid Asset Name!")
+
         asset = get_asset_by_name(
             project_name=project_name,
             asset_name=asset_name,
