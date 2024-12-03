@@ -680,6 +680,33 @@
                             "label": "List of regexes used to find the submission type from the notes written by the Supervisors"
                         },
                         {
+                            "key": "csv_filename_regex_sub_pairs",
+                            "type": "dict",
+                            "label": "CSV Filename Substitution Regex",
+                            "collapsible": true,
+                            "children": [
+                                {
+                                    "type": "list",
+                                    "key": "inputs",
+                                    "object_type": {
+                                        "type": "dict",
+                                        "children": [
+                                            {
+                                                "type": "text",
+                                                "key": "regex",
+                                                "label": "Regex"
+                                            },
+                                            {
+                                                "type": "text",
+                                                "key": "substitution",
+                                                "label": "Substitution String"
+                                            }
+                                        ]
+                                    }
+                                }
+                            ]
+                        },
+                        {
                             "type": "list",
                             "key": "csv_intent_regex",
                             "label": "CSV Intent Regex",
