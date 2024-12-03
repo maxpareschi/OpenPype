@@ -77,76 +77,79 @@
                 "tiff": "ACES - ACEScct",
                 "sgi": "Utility - Raw"
             },
-            "fallback_output": {
-                "preview": {
-                    "use_colorspace_rules": true,
-                    "extension": "jpg",
-                    "transcoding_type": "color_conversion",
-                    "template_path": {
-                        "template": ""
+            "fallback": {
+                "enabled": false,
+                "outputs": {
+                    "preview": {
+                        "use_colorspace_rules": true,
+                        "extension": "jpg",
+                        "transcoding_type": "color_conversion",
+                        "template_path": {
+                            "template": ""
+                        },
+                        "subset_chain": [],
+                        "color_conversion": {
+                            "input_colorspace": "",
+                            "output_colorspace": "color_picking"
+                        },
+                        "write_options": {
+                            "knobs": [
+                                {
+                                    "type": "text",
+                                    "name": "channels",
+                                    "value": "rgb"
+                                },
+                                {
+                                    "type": "decimal_number",
+                                    "name": "_jpeg_quality",
+                                    "value": 0.85
+                                }
+                            ]
+                        },
+                        "reformat_options": {
+                            "enabled": true,
+                            "reformat_width": 1920,
+                            "reformat_height": 1080,
+                            "reformat_black_outside": false,
+                            "reformat_type": "width"
+                        },
+                        "override_thumbnail": true,
+                        "tags": [
+                            "review",
+                            "delete"
+                        ],
+                        "representation_name_override": "preview",
+                        "custom_tags": []
                     },
-                    "subset_chain": [],
-                    "color_conversion": {
-                        "input_colorspace": "",
-                        "output_colorspace": "color_picking"
-                    },
-                    "write_options": {
-                        "knobs": [
-                            {
-                                "type": "text",
-                                "name": "channels",
-                                "value": "rgb"
-                            },
-                            {
-                                "type": "decimal_number",
-                                "name": "_jpeg_quality",
-                                "value": 0.85
-                            }
-                        ]
-                    },
-                    "reformat_options": {
-                        "enabled": true,
-                        "reformat_width": 1920,
-                        "reformat_height": 1080,
-                        "reformat_black_outside": false,
-                        "reformat_type": "width"
-                    },
-                    "override_thumbnail": true,
-                    "tags": [
-                        "review",
-                        "delete"
-                    ],
-                    "representation_name_override": "preview",
-                    "custom_tags": []
-                },
-                "passthrough": {
-                    "use_colorspace_rules": false,
-                    "extension": "",
-                    "transcoding_type": "color_conversion",
-                    "template_path": {
-                        "template": ""
-                    },
-                    "subset_chain": [],
-                    "color_conversion": {
-                        "input_colorspace": "ACES - ACEScg",
-                        "output_colorspace": "ACES - ACEScg"
-                    },
-                    "write_options": {
-                        "knobs": []
-                    },
-                    "reformat_options": {
-                        "enabled": false,
-                        "reformat_width": 1920,
-                        "reformat_height": 1080,
-                        "reformat_black_outside": false,
-                        "reformat_type": "width"
-                    },
-                    "override_thumbnail": false,
-                    "tags": [
-                        "slate-frame"
-                    ],
-                    "representation_name_override": "",
-                    "custom_tags": []
+                    "passthrough": {
+                        "use_colorspace_rules": false,
+                        "extension": "",
+                        "transcoding_type": "color_conversion",
+                        "template_path": {
+                            "template": ""
+                        },
+                        "subset_chain": [],
+                        "color_conversion": {
+                            "input_colorspace": "ACES - ACEScg",
+                            "output_colorspace": "ACES - ACEScg"
+                        },
+                        "write_options": {
+                            "knobs": []
+                        },
+                        "reformat_options": {
+                            "enabled": false,
+                            "reformat_width": 1920,
+                            "reformat_height": 1080,
+                            "reformat_black_outside": false,
+                            "reformat_type": "width"
+                        },
+                        "override_thumbnail": false,
+                        "tags": [
+                            "slate-frame"
+                        ],
+                        "representation_name_override": "",
+                        "custom_tags": []
+                    }
                 }
             },
             "profiles": [

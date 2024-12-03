@@ -58,8 +58,8 @@ class ExtractTemplatedTranscode(publish.Extractor):
 
         self.settings = get_current_project_settings()["global"]["publish"]["ExtractTemplatedTranscode"]
         self.profiles = self.settings["profiles"]
-        self.fallback_output_definitions = self.settings["fallback_output"]
-        self.colorspace_rules = self.settings["colorspace_rules"]
+        self.fallback = self.settings.get("fallback", {})
+        self.colorspace_rules = self.settings.get("colorspace_rules", {})
 
         if instance.data.get("farm", None):
             self.log.debug("Farm mode enabled, skipping.")
@@ -603,7 +603,7 @@ class ExtractTemplatedTranscode(publish.Extractor):
         return template_data
 
     def run_transcode_script(self, data):
-        self.log.debug("TRANSCODE >>> START (Nuke terminal)\n")
+        self.log.info(">>> Transcode START\n")
         return_code = 1
 
         app_manager = ApplicationManager()
@@ -662,13 +662,16 @@ class ExtractTemplatedTranscode(publish.Extractor):
             os.path.abspath(script_path),
             os.path.abspath(json_args)
         ]
-        self.log.debug(f"Launcing build suprocess: {' '.join(build_cmd)}")
+        self.log.info(f">>> Transcode BUILD: launching process '{' '.join(build_cmd)}'")
         build_process = subprocess.Popen(build_cmd, **process_kwargs)
         while build_process.poll() is None:
             line = build_process.stdout.readline().strip("\n").strip()
             if line and line[0] != ".":
                 self.log.debug(line)
-        self.log.debug(f"TRANSCODE >>> BUILD: {build_process.returncode})\n")
+        if build_process.returncode:
+            self.log.error(f">>> Transcode BUILD: Fail!\n")
+        else:
+            self.log.info(f">>> Transcode BUILD: Success!\n")
 
         main_cmd = [
             os.path.abspath(nukeexe),
@@ -676,13 +679,18 @@ class ExtractTemplatedTranscode(publish.Extractor):
             "--sro",
             os.path.abspath(data["save_path"])
         ]
-        self.log.debug(f"Launcing main suprocess: {' '.join(main_cmd)}")
+        self.log.info(f">>> Transcode RENDER: launching process '{' '.join(main_cmd)}'")
         main_process = subprocess.Popen(main_cmd, **process_kwargs)
         while main_process.poll() is None:
             line = main_process.stdout.readline().strip("\n").strip()
             if line and line[0] != ".":
                 self.log.debug(line)
-        self.log.debug(f"TRANSCODE >>> END: {main_process.returncode})\n")
+        if main_process.returncode:
+            self.log.error(f">>> Transcode RENDER: Fail!\n")
+        else:
+            self.log.info(f">>> Transcode RENDER: Success!\n")
+
+        self.log.info(">>> Transcode END\n")
 
         return main_process.returncode
 
@@ -704,6 +712,8 @@ class ExtractTemplatedTranscode(publish.Extractor):
             asset_name=asset_name,
             fields=["_id", "name"]
         )
+        if not asset:
+            raise ValueError("Asset was not found, submission is not valid!")
         valid_profile = True
         for name, output in profile.get("outputs", {}).items():
             if output["transcoding_type"] == "color_conversion":
@@ -753,12 +763,18 @@ class ExtractTemplatedTranscode(publish.Extractor):
                     valid_profile = False
 
             if not valid_profile:
-                self.log.warning(f"Output definition '{name}' is not valid, Profile Fallback activated!")
+                self.log.warning(f"Output definition '{name}' is not valid, activating Fallback Definitions!")
                 break
         
         if not valid_profile:
-            profile["outputs"] = self.fallback_output_definitions
-            self.log.debug(f"Fallback output definitions {[pname for pname in profile['outputs'].keys()]} "
-                           f"added to active profile.")
+            if self.fallback.get("enabled", False):
+                if self.fallback.get("outputs", {}):
+                    profile["outputs"] = self.fallback["outputs"]
+                    self.log.debug(f"Fallback output definitions {[pname for pname in profile['outputs'].keys()]} "
+                                   f"added to active profile.")
+                else:
+                    raise KeyError("KeyError: No output definitions in fallback profile!")
+            else:
+                raise ValueError("ValueError: Profile is not valid and no fallback specified!")
         else:
             self.log.debug("Active profile was validated successfully.")

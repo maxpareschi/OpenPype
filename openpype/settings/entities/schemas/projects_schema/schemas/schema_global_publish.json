@@ -318,185 +318,197 @@
                     ]
                 },
                 {
-                    "type": "dict-modifiable",
+                    "type": "dict",
                     "collapsible": true,
-                    "key": "fallback_output",
+                    "key": "fallback",
                     "label": "Fallback",
-                    "highlight_content": true,
-                    "object_type": {
-                        "type": "dict",
-                        "children": [
-                            {
-                                "type": "boolean",
-                                "key": "use_colorspace_rules",
-                                "label": "Read input using Colorspace Rules",
-                                "default": true
-                            },
-                            {
-                                "key": "extension",
-                                "label": "Extension",
-                                "type": "text"
-                            },
-                            {
-                                "type": "enum",
-                                "key": "transcoding_type",
-                                "label": "Transcoding type",
-                                "enum_items": [
-                                    { "template": "Template" },
-                                    { "chain_subsets": "Subset Chain" },
-                                    { "color_conversion": "Color Conversion" }
-                                ]
-                            },
-                            {
+                    "checkbox_key": "enabled",
+                    "children": [
+                        {
+                            "type": "boolean",
+                            "key": "enabled",
+                            "label": "Enabled"
+                        },
+                        {
+                            "type": "dict-modifiable",
+                            "key": "outputs",
+                            "highlight_content": true,
+                            "object_type": {
                                 "type": "dict",
-                                "collapsible": true,
-                                "key": "template_path",
-                                "label": "Template path",
-                                "children": [
-                                    {
-                                        "key": "template",
-                                        "label": "Template Path",
-                                        "type": "text"
-                                    }
-                                ]
-                            },
-                            {
-                                "key": "subset_chain",
-                                "label": "Subset chain",
-                                "type": "list",
-                                "highlight_content": true,
-                                "use_label_wrap": true,
-                                "object_type": {
-                                    "type": "dict",
-                                    "children": [
-                                        {
-                                            "key": "loader",
-                                            "label": "Loader plugin",
-                                            "type": "text"
-                                        },
-                                        {
-                                            "key": "subset",
-                                            "label": "Subset name",
-                                            "type": "text"
-                                        },
-                                        {
-                                            "key": "representation",
-                                            "label": "Repre name",
-                                            "type": "text"
-                                        }
-                                    ]
-                                }
-                            },
-                            {
-                                "type": "dict",
-                                "collapsible": true,
-                                "key": "color_conversion",
-                                "label": "Color conversion",
-                                "children": [
-                                    {
-                                        "key": "input_colorspace",
-                                        "label": "Input colorspace",
-                                        "type": "text"
-                                    },
-                                    {
-                                        "key": "output_colorspace",
-                                        "label": "Output colorspace",
-                                        "type": "text"
-                                    }
-                                ]
-                            },
-                            {
-                                "type": "splitter"
-                            },
-                            {
-                                "type": "dict",
-                                "collapsible": true,
-                                "key": "write_options",
-                                "label": "Write options",
-                                "children": [
-                                    {
-                                        "type": "schema_template",
-                                        "name": "template_nuke_knob_inputs",
-                                        "template_data": [
-                                            {
-                                                "label": "Knobs",
-                                                "key": "knobs"
-                                            }
-                                        ]
-                                    }
-                                ]
-                            },
-                            {
-                                "type": "dict",
-                                "collapsible": true,
-                                "key": "reformat_options",
-                                "label": "Reformat options",
-                                "checkbox_key": "enabled",
                                 "children": [
                                     {
                                         "type": "boolean",
-                                        "key": "enabled",
-                                        "label": "Enabled",
-                                        "default": false
+                                        "key": "use_colorspace_rules",
+                                        "label": "Read input using Colorspace Rules",
+                                        "default": true
                                     },
                                     {
-                                        "key": "reformat_width",
-                                        "label": "Width",
-                                        "type": "number",
-                                        "default": 1920
-                                    },
-                                    {
-                                        "key": "reformat_height",
-                                        "label": "height",
-                                        "type": "number",
-                                        "default": 1080
-                                    },
-                                    {
-                                        "key": "reformat_black_outside",
-                                        "label": "black outside",
-                                        "type": "boolean",
-                                        "default": false
+                                        "key": "extension",
+                                        "label": "Extension",
+                                        "type": "text"
                                     },
                                     {
                                         "type": "enum",
-                                        "key": "reformat_type",
-                                        "label": "Reformat type",
+                                        "key": "transcoding_type",
+                                        "label": "Transcoding type",
                                         "enum_items": [
-                                            { "width": "width" },
-                                            { "height": "height" },
-                                            { "fit": "fit" },
-                                            { "fill": "fill" },
-                                            { "distort": "distort" },
-                                            { "none": "none" }
+                                            { "template": "Template" },
+                                            { "chain_subsets": "Subset Chain" },
+                                            { "color_conversion": "Color Conversion" }
                                         ]
+                                    },
+                                    {
+                                        "type": "dict",
+                                        "collapsible": true,
+                                        "key": "template_path",
+                                        "label": "Template path",
+                                        "children": [
+                                            {
+                                                "key": "template",
+                                                "label": "Template Path",
+                                                "type": "text"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "key": "subset_chain",
+                                        "label": "Subset chain",
+                                        "type": "list",
+                                        "highlight_content": true,
+                                        "use_label_wrap": true,
+                                        "object_type": {
+                                            "type": "dict",
+                                            "children": [
+                                                {
+                                                    "key": "loader",
+                                                    "label": "Loader plugin",
+                                                    "type": "text"
+                                                },
+                                                {
+                                                    "key": "subset",
+                                                    "label": "Subset name",
+                                                    "type": "text"
+                                                },
+                                                {
+                                                    "key": "representation",
+                                                    "label": "Repre name",
+                                                    "type": "text"
+                                                }
+                                            ]
+                                        }
+                                    },
+                                    {
+                                        "type": "dict",
+                                        "collapsible": true,
+                                        "key": "color_conversion",
+                                        "label": "Color conversion",
+                                        "children": [
+                                            {
+                                                "key": "input_colorspace",
+                                                "label": "Input colorspace",
+                                                "type": "text"
+                                            },
+                                            {
+                                                "key": "output_colorspace",
+                                                "label": "Output colorspace",
+                                                "type": "text"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "type": "splitter"
+                                    },
+                                    {
+                                        "type": "dict",
+                                        "collapsible": true,
+                                        "key": "write_options",
+                                        "label": "Write options",
+                                        "children": [
+                                            {
+                                                "type": "schema_template",
+                                                "name": "template_nuke_knob_inputs",
+                                                "template_data": [
+                                                    {
+                                                        "label": "Knobs",
+                                                        "key": "knobs"
+                                                    }
+                                                ]
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "type": "dict",
+                                        "collapsible": true,
+                                        "key": "reformat_options",
+                                        "label": "Reformat options",
+                                        "checkbox_key": "enabled",
+                                        "children": [
+                                            {
+                                                "type": "boolean",
+                                                "key": "enabled",
+                                                "label": "Enabled",
+                                                "default": false
+                                            },
+                                            {
+                                                "key": "reformat_width",
+                                                "label": "Width",
+                                                "type": "number",
+                                                "default": 1920
+                                            },
+                                            {
+                                                "key": "reformat_height",
+                                                "label": "height",
+                                                "type": "number",
+                                                "default": 1080
+                                            },
+                                            {
+                                                "key": "reformat_black_outside",
+                                                "label": "black outside",
+                                                "type": "boolean",
+                                                "default": false
+                                            },
+                                            {
+                                                "type": "enum",
+                                                "key": "reformat_type",
+                                                "label": "Reformat type",
+                                                "enum_items": [
+                                                    { "width": "width" },
+                                                    { "height": "height" },
+                                                    { "fit": "fit" },
+                                                    { "fill": "fill" },
+                                                    { "distort": "distort" },
+                                                    { "none": "none" }
+                                                ]
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "type": "splitter"
+                                    },
+                                    {
+                                        "type": "boolean",
+                                        "key": "override_thumbnail",
+                                        "label": "Override/Create thumbnail"
+                                    },
+                                    {
+                                        "type": "schema",
+                                        "name": "schema_representation_tags"
+                                    },
+                                    {
+                                        "key": "representation_name_override",
+                                        "label": "Representation name override",
+                                        "type": "text"
+                                    },
+                                    {
+                                        "key": "custom_tags",
+                                        "label": "Custom Tags",
+                                        "type": "list",
+                                        "object_type": "text"
                                     }
                                 ]
-                            },
-                            {
-                                "type": "splitter"
-                            },
-                            {
-                                "type": "boolean",
-                                "key": "override_thumbnail",
-                                "label": "Override/Create thumbnail"
-                            },
-                            {
-                                "type": "schema",
-                                "name": "schema_representation_tags"
-                            },
-                            {
-                                "key": "representation_name_override",
-                                "label": "Representation name override",
-                                "type": "text"
-                            },
-                            {
-                                "key": "custom_tags",
-                                "label": "Custom Tags",
-                                "type": "list",
-                                "object_type": "text"
                             }
-                        ]
-                    }
+                        }
+                    ]
                 },
                 {
                     "type": "collapsible-wrap",
