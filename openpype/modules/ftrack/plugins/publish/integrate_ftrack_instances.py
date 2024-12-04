@@ -426,13 +426,15 @@ class IntegrateFtrackInstance(pyblish.api.InstancePlugin):
         anatomy_data = instance.data["anatomyData"]
         task_type = anatomy_data.get("task", {}).get("type")
         filtering_criteria = {
-            "families": instance.data["family"],
+            "family": instance.data["family"],
             "hosts": instance.context.data["hostName"],
             "task_types": task_type
         }
         matching_profile = filter_profiles(
-            self.asset_versions_status_profiles,
-            filtering_criteria
+            profiles_data=self.asset_versions_status_profiles,
+            key_values=filtering_criteria,
+            keys_order=("family", "hosts", "task_types"),
+            logger=self.log
         )
         if not matching_profile:
             return None
