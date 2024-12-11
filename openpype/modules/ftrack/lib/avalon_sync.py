@@ -1102,7 +1102,6 @@ class SyncEntitiesFactory:
             if key in FPS_KEYS:
                 try:
                     value = truncate(convert_to_fps(value), 3)
-                    print(value)
                 except InvalidFpsValue:
                     invalid_fps_items.append((entity_id, value))
             self.entities_dict[entity_id][store_key][key] = value
@@ -1153,7 +1152,6 @@ class SyncEntitiesFactory:
             if key in FPS_KEYS:
                 try:
                     default_value = truncate(convert_to_fps(default_value), 3)
-                    print(default_value)
                 except InvalidFpsValue:
                     pass
 
@@ -1223,7 +1221,6 @@ class SyncEntitiesFactory:
             if key in FPS_KEYS:
                 try:
                     value = truncate(convert_to_fps(value), 3)
-                    print(value)
                 except InvalidFpsValue:
                     invalid_fps_items.append((entity_id, value))
                     continue
