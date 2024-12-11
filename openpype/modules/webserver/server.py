@@ -118,7 +118,7 @@ class WebServerThread(threading.Thread):
             self.loop.run_until_complete(self.start_server())
 
             self.log.debug(
-                "Running Web server on URL: \"localhost:{}\"".format(self.port)
+                "Running Web server on URL: \"{}:{}\"".format(self.host, self.port)
             )
 
             asyncio.ensure_future(self.check_shutdown(), loop=self.loop)
