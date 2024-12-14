@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>CSV Ingest + File Upload</title>
+        <link rel="stylesheet" type="text/css" href="../static/base_widget.css">
+    </head>
+    <body>
+        <h2>CSV Ingest + Files Upload</h2>
+        <div class="container" id="mainContainer">
+            <div class="drop-zone" id="dropZone">
+                Drag and drop files here or click to select files.
+            </div>
+            <input type="file" id="fileInput" multiple>
+            <div>Selected Files:</div>
+            <div class="list-box" id="fileList"></div>
+            <div class="button-bar">
+                <button class="warning" id="cancelButton">Reset</button>
+                <button class="success" id="submitButton">Submit</button>
+            </div>
+        </div>
+        <div class="progress-bar hidden" id="progressBar">
+            <div class="progress-bar-value"></div>
+        </div>
+        <!--<script type="text/javascript" src="../static/ftrackWidget.umd.js"></script>-->
+        <script type="text/javascript" src="../upload_csv/upload_csv.js"></script>
+    </body>
+</html>
