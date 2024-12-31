@@ -591,6 +591,11 @@ def eventserver(
     if debug:
         os.environ["OPENPYPE_DEBUG"] = "3"
 
+    from .ftrack_webserver import FtrackWebserver
+
+    if os.environ.get("OPENPYPE_FTRACK_WEBSERVER_URL", None):
+        webserver = FtrackWebserver()
+
     from .ftrack_server.event_server_cli import run_event_server
 
     return run_event_server(

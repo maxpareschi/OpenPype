@@ -140,6 +140,7 @@ class BaseAction(BaseHandler):
             if (
                 "items" in interface
                 or ("success" in interface and "message" in interface)
+                or ("type" in interface and interface["type"] == "widget")
             ):
                 return interface
 
