@@ -642,6 +642,36 @@ class SlateCreator:
         
         return resolution
 
+
+    def get_resolution_oiio(self, input, env=dict()):
+        name = os.path.basename(input.replace("\\", "/"))
+        env = self.env if not env else env
+        cmd = []
+        cmd.append(get_oiio_tools_path(tool="iinfo"))
+        cmd.append(input)
+        self.log.debug("IINFO RESOLUTION CHECK: cmd>{}".format(" ".join(cmd)))
+        res = run_subprocess(cmd, creationflags=subprocess.CREATE_NO_WINDOW)
+        # resolution = json.loads(res)["streams"][0]
+
+        width = re.findall("(?<=\:\ )\d{3,5}(?=\ x)", res)[0]
+        height = re.findall("(?<=\d x )\d{3,5}(?=\,)", res)[0]
+
+        resolution = dict()
+        resolution["width"] = width
+        resolution["height"] = height
+
+        self.log.debug("{}: File resolution from ffprobe scan is: {}x{}".format(
+            name,
+            width,
+            height))
+        
+        self.data["resolution_width"] = width
+        self.data["resolution_height"] = height
+        
+        return resolution
+
+
+
     def timecode_to_frames(self, timecode, framerate):
         rt = otio.opentime.from_timecode(timecode, framerate)
         return int(otio.opentime.to_frames(rt))
@@ -904,7 +934,11 @@ class ExtractSlateGlobal(publish.Extractor):
                 frame_start += instance.data.get("handleStart", 0)
                 frame_end -= instance.data.get("handleEnd", 0)
 
-            resolution = slate.get_resolution_ffprobe(file_path)
+            try:
+                resolution = slate.get_resolution_ffprobe(file_path)
+            except Exception as e:
+                self.log.warning(e)
+                resolution = slate.get_resolution_oiio(file_path)
 
             for profile in slate_data["slate_profiles"]:
                 if repre_match in profile["families"]:
