@@ -1,4 +1,3 @@
-import os
 import re
 import threading
 import asyncio
@@ -42,7 +41,7 @@ class WebServerManager:
 
     @property
     def url(self):
-        return "{}:{}".format(self.host, self.port)
+        return "http://{}:{}".format(self.host, self.port)
 
     def add_route(self, *args, **kwargs):
         self.app.router.add_route(*args, **kwargs)
@@ -119,7 +118,7 @@ class WebServerThread(threading.Thread):
             self.loop.run_until_complete(self.start_server())
 
             self.log.debug(
-                "Running Web server on URL: \"{}:{}\"".format(self.host, self.port)
+                "Running Web server on URL: \"localhost:{}\"".format(self.port)
             )
 
             asyncio.ensure_future(self.check_shutdown(), loop=self.loop)
@@ -140,25 +139,8 @@ class WebServerThread(threading.Thread):
         """ Starts runner and TCPsite """
         self.runner = web.AppRunner(self.manager.app)
         await self.runner.setup()
-
-        ssl_cert = os.environ.get("OPENPYPE_WEBSERVER_SSL_CERT", None)
-        ssl_key = os.environ.get("OPENPYPE_WEBSERVER_SSL_KEY", None)
-
-        print((f"  - {{ FtrackWebServer }}: [  Detected host: '{self.host}', "
-               f"Detected port: '{self.port}'  ]"))
-
-        if not (ssl_cert and ssl_key):
-            self.site = web.TCPSite(self.runner, self.host, self.port)
-            await self.site.start()
-        else:
-            import ssl
-            print("  - { FtrackWebServer }: [  SSL enabled.  ]")
-            ssl_context = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
-            ssl_context.load_cert_chain(certfile=ssl_cert, keyfile=ssl_key)
-            # ssl_context.load_verify_locations(Path(cert_dir, "22dogsCA.crt").as_posix())
-            # ssl_context.verify_mode = ssl.CERT_REQUIRED
-            self.site = web.TCPSite(self.runner, self.host, self.port, ssl_context=ssl_context)
-            await self.site.start()
+        self.site = web.TCPSite(self.runner, self.host, self.port)
+        await self.site.start()
 
     def stop(self):
         """Sets is_running flag to false, 'check_shutdown' shuts server down"""

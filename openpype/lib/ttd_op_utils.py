@@ -306,9 +306,9 @@ def modify_csv_file_name(prj: str, csv_file: str):
     for item in inputs:
         regex = item["regex"]
         subs = item["substitution"]
-        logger.info(f"CSV substitution regex is: {regex}")
-        logger.info(f"CSV substitution string is: {subs}")
-        logger.info(f"CSV filename is: {csv_file}")
+        logger.debug(f"CSV substitution regex is: {regex}")
+        logger.debug(f"CSV substitution string is: {subs}")
+        logger.debug(f"CSV filename is: {csv_file}")
         csv_file = sub(regex, subs, csv_file)
     
     return csv_file
@@ -411,8 +411,7 @@ def handle_csv(
         generate_csv_from_representations(prj, repres, csv_file, cfg)
         logger.info(f"CSV saved in {csv_file}")
     else:
-        if name is not None:
-            name = modify_csv_file_name(prj, name)
+        name = modify_csv_file_name(prj, name)
         try:
             create_csv_in_download_folder(prj, name, repres, cfg)
         except:

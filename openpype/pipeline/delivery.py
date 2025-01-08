@@ -4,7 +4,6 @@ import shutil
 import glob
 import clique
 import collections
-from pathlib import Path
 
 from openpype.lib import create_hard_link
 
@@ -265,10 +264,6 @@ def deliver_sequence(
     src_collection = None
     for col in src_collections:
         if col.tail != ext:
-            continue
-
-        # if "DMR404_006_020_plateMain_v000_source." not in "DMR404_006_020_plateMain_v000_main"
-        if col.head not in Path(src_path).stem:
             continue
 
         src_collection = col
