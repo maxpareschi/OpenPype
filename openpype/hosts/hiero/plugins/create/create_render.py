@@ -7,7 +7,7 @@ import openpype.hosts.hiero.api as phiero
 from openpype.hosts.hiero.api.lib import imprint
 from openpype.settings.lib import get_anatomy_settings
 from openpype.client.entities import get_asset_by_name
-
+from openpype.client import get_last_version_by_subset_name
 
 class CreateRender(phiero.Creator):
 
@@ -149,8 +149,13 @@ class CreateRender(phiero.Creator):
         if not widget.result:
             print("Operation aborted")
             return
+        
+        errored_items = []
 
         for track_item in self.selected:
+
+            project_name = os.environ["AVALON_PROJECT"]
+
             item_name = track_item.currentVersion().name()
 
             name_splits = item_name.split("_")
@@ -164,8 +169,8 @@ class CreateRender(phiero.Creator):
             version = incoming_version
             task = incoming_task.replace(variant, "").replace(family, "")
 
-            anatomy_tasks = get_anatomy_settings(os.environ["AVALON_PROJECT"]).get("tasks", {})
-            asset_doc = get_asset_by_name(os.environ["AVALON_PROJECT"], asset)
+            anatomy_tasks = get_anatomy_settings(project_name).get("tasks", {})
+            asset_doc = get_asset_by_name(project_name, asset)
             asset_tasks = asset_doc["data"].get("tasks", {}) #type: ignore
             
             if not asset_tasks:
@@ -186,10 +191,26 @@ class CreateRender(phiero.Creator):
                     task_found = True
                     break
             
-            if not task_found:
-                raise ValueError("Could not find suitable task, please check input filename!")
-            
             subset = f"render{task.capitalize()}{variant.capitalize()}"
+
+            latest_version_doc = get_last_version_by_subset_name(
+                project_name,
+                subset,
+                asset_id = asset_doc["_id"], #type: ignore
+                asset_name = asset
+            )
+
+            accepted_version = latest_version_doc.get("name", 0) + 1 #type: ignore
+
+            if not task_found:
+                errored_items.append(f"{item_name} - No suitable tasks found, please check input filename!")
+                track_item.source().binItem().setColor("#CC5555")
+                continue
+
+            if not (accepted_version == version):
+                errored_items.append(f"{item_name} - Version is not valid! Scanned version is {version} != {accepted_version}")
+                track_item.source().binItem().setColor("#CC5555")
+                continue
 
             folder = widget.result.get("baseFolder", {}).get("value", "")
             episode = widget.result.get("baseEpisode", {}).get("value", "")
@@ -241,3 +262,6 @@ class CreateRender(phiero.Creator):
             }
 
             imprint(track_item, item_data)
+
+        if errored_items:
+            raise ValueError("\n".join(errored_items))
