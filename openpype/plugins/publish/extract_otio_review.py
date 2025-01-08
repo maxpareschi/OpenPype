@@ -68,7 +68,7 @@ class ExtractOTIOReview(publish.Extractor):
         # TODO: what if handles are different in `versionData`?
         handle_start = instance.data["handleStart"]
         handle_end = instance.data["handleEnd"]
-        otio_review_clips = instance.data["otioReviewClips"]
+        otio_review_clips = instance.data.get("otioReviewClips", None)
 
         # add plugin wide attributes
         self.representation_files = list()
@@ -83,11 +83,17 @@ class ExtractOTIOReview(publish.Extractor):
             "resolutionHeight") or self.to_height
 
         # skip instance if no reviewable data available
-        if (not isinstance(otio_review_clips[0], otio.schema.Clip)) \
-                and (len(otio_review_clips) == 1):
-            self.log.warning(
-                "Instance `{}` has nothing to process".format(instance))
+        if not otio_review_clips:
+            message = "Instance `{}` has nothing to process".format(instance)
+            self.log.warning(message)
             return
+            
+        elif (not isinstance(otio_review_clips[0], otio.schema.Clip)) \
+                and (len(otio_review_clips) == 1):
+            message = "Instance `{}` has nothing to process".format(instance)
+            self.log.warning(message)
+            return
+        
         else:
             self.staging_dir = self.staging_dir(instance)
             if not instance.data.get("representations"):

@@ -146,6 +146,14 @@ class PrecollectInstances(pyblish.api.ContextPlugin):
                 data["ingestGroup"] = tag_data.get("ingestGroup", "")
                 data["priority"] = tag_data.get("ingestPriority", 50)
             
+            if data.get("family") == "render" and tag_data.get("ingestOnFarm"):
+                data["families"].append("render.farm")
+                data["farm"] = True
+                data["primaryPool"] = tag_data.get("ingestPool", "")
+                data["secondaryPool"] = tag_data.get("ingestPool", "")
+                data["ingestGroup"] = tag_data.get("ingestGroup", "")
+                data["priority"] = tag_data.get("ingestPriority", 50)
+            
             # create instance
             instance = context.create_instance(**data)
 
@@ -157,7 +165,8 @@ class PrecollectInstances(pyblish.api.ContextPlugin):
             })
 
             # create shot instance for shot attributes create/update
-            self.create_shot_instance(context, **data)
+            if not data.get("family") == "render":
+                self.create_shot_instance(context, **data)
 
             self.log.info("Creating instance: {}".format(instance))
             self.log.info(
