@@ -166,7 +166,7 @@ class CreatorWidget(QtWidgets.QDialog):
             attr(parent=self))
 
         # assign the created attribute to variable
-        item = getattr(self, attr_name)
+        item = getattr(self, attr_name)        
         for func, val in kwargs.items():
             if getattr(item, func):
                 func_attr = getattr(item, func)
@@ -274,10 +274,11 @@ class CreatorWidget(QtWidgets.QDialog):
                     content_layout, "QCheckBox", v["label"],
                     setChecked=v["value"], setToolTip=tool_tip)
             elif v["type"] == "QSpinBox":
+                input_value = v["value"]
                 data[k]["value"] = self.create_row(
                     content_layout, "QSpinBox", v["label"],
-                    setValue=v["value"], setMinimum=0,
-                    setMaximum=100000, setToolTip=tool_tip)
+                    setMinimum=0, setMaximum=100000, setToolTip=tool_tip)
+                data[k]["value"].setValue(input_value)
         return data
 
 

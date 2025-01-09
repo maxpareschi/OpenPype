@@ -1,6 +1,11 @@
+from multiprocessing import Value
 import os
+import json
+import inspect
 
 from copy import deepcopy
+
+from qtpy import QtWidgets
 
 import openpype.hosts.hiero.api as phiero
 
@@ -9,6 +14,21 @@ from openpype.settings.lib import get_anatomy_settings
 from openpype.client.entities import get_asset_by_name
 from openpype.client import get_last_version_by_subset_name
 
+
+def show_message(window_title, title, message, icon=None):
+    if isinstance(message, list):
+        message = ''.join([f"<li style='margin-bottom: 10px;'>{item}</li>" for item in message])
+        message = f"<ul style='color: #FFFFFF;'>{message}</ul>"
+    
+    msg_box = QtWidgets.QMessageBox()
+    if icon:
+        msg_box.setIcon(icon)
+    msg_box.setWindowTitle(window_title)
+    msg_box.setText(f"<b style='color: #FFCC99;'>{title}</b>")
+    msg_box.setInformativeText(message)
+    msg_box.exec()
+
+
 class CreateRender(phiero.Creator):
 
     label = "Create Publishable Render"
@@ -16,12 +36,10 @@ class CreateRender(phiero.Creator):
     icon = "film"
     defaults = ["Main"]
 
-    gui_tracks = [track.name()
-                  for track in phiero.get_current_sequence().videoTracks()]
     gui_name = "Render attributes creator"
     gui_info = "Define attributes for 'Render' family publishing"
     gui_inputs = {
-        "farmHierarchy": {
+        "farmData": {
             "type": "section",
             "label": "<span style=\"color: #FFAA22\"><b>FARM SETTINGS</b></span>",
             "target": "ui",
@@ -63,7 +81,7 @@ class CreateRender(phiero.Creator):
         },
         "hierarchyData": {
             "type": "section",
-            "label": "<span style=\"color: #22AAFF\"><b>Hierarchy Names</b></span>",
+            "label": "<span style=\"color: #22AAFF\"><b>Hierarchy Settings</b></span>",
             "target": "ui",
             "order": 1,
             "value": {
@@ -90,53 +108,46 @@ class CreateRender(phiero.Creator):
                     "target": "tag",
                     "toolTip": "Name of sequence of shots.\nUsable tokens:\n\t{_clip_}: name of used clip\n\t{_track_}: name of parent track layer\n\t{_sequence_}: name of parent sequence (timeline)",  # noqa
                     "order": 2
-                },
+                }
             }
         },
-        "frameRangeAttr": {
+        "settingsData": {
             "type": "section",
-            "label": "<span style=\"color: #66FF99\"><b>Frame Attributes</b></span>",
+            "label": "<span style=\"color: #99FF66\"><b>Publish Settings</b></span>",
             "target": "ui",
             "order": 2,
             "value": {
+                "ingestFrameStart": {
+                    "value": 1001,
+                    "type": "QSpinBox",
+                    "label": "Start Frame",
+                    "target": "tag",
+                    "toolTip": "Set starting frame number",  # noqa
+                    "order": 0
+                },
                 "generateReview": {
                     "value": True,
                     "type": "QCheckBox",
                     "label": "<b>Generate Review</b>",
                     "target": "tag",
                     "toolTip": "Generate Review",  # noqa
-                    "order": 0
-                },
-                "workfileFrameStart": {
-                    "value": 1009,
-                    "type": "QSpinBox",
-                    "label": "Start Frame",
-                    "target": "tag",
-                    "toolTip": "Set starting frame number",  # noqa
                     "order": 1
                 },
-                "handleStart": {
-                    "value": 8,
-                    "type": "QSpinBox",
-                    "label": "Handle Start",
+                "versionZero": {
+                    "value": False,
+                    "type": "QCheckBox",
+                    "label": "<b>Publish as v0</b>",
                     "target": "tag",
-                    "toolTip": "Handle at start of clip",  # noqa
+                    "toolTip": "Check if render is a v0",  # noqa
                     "order": 2
                 },
-                "handleEnd": {
-                    "value": 8,
-                    "type": "QSpinBox",
-                    "label": "Handle End",
-                    "target": "tag",
-                    "toolTip": "Handle at end of clip",  # noqa
-                    "order": 3
-                }
             }
         }
     }
 
 
     def process(self):
+        
         gui_inputs = deepcopy(self.gui_inputs)
 
         # open widget for plugins inputs
@@ -144,13 +155,24 @@ class CreateRender(phiero.Creator):
         widget.exec_()
 
         if len(self.selected) < 1:
+            show_message(
+                "Render Ingest - Warnings",
+                "No selection to work on!",
+                "Please select at least one clip to proceed. Skipping.",
+                icon = QtWidgets.QMessageBox.Warning
+            )
             return
 
         if not widget.result:
             print("Operation aborted")
             return
         
+        if not isinstance(widget.result, dict):
+            print("Operation aborted")
+            return
+        
         errored_items = []
+        warning_items = []
 
         for track_item in self.selected:
 
@@ -171,10 +193,25 @@ class CreateRender(phiero.Creator):
 
             anatomy_tasks = get_anatomy_settings(project_name).get("tasks", {})
             asset_doc = get_asset_by_name(project_name, asset)
+
+            asset_frame_start = asset_doc["data"]["frameStart"] - asset_doc["data"]["handleStart"] #type: ignore
+            asset_frame_end = asset_doc["data"]["frameEnd"] + asset_doc["data"]["handleEnd"] #type: ignore
+            asset_duration = asset_frame_end - asset_frame_start + 1
+
+            clip_frame_start = track_item.source().sourceIn()
+            clip_frame_end = track_item.source().sourceOut()
+            clip_duration = clip_frame_end - clip_frame_start + 1
+
+            if clip_duration != asset_duration:
+                warning_items.append(f"{item_name} - Duration of clip is '{clip_duration}', duration of asset is '{asset_duration}'. <b>Please Doublecheck your plates!</b> ")
+                track_item.source().binItem().setColor("#FFAA44")
+
             asset_tasks = asset_doc["data"].get("tasks", {}) #type: ignore
-            
+
             if not asset_tasks:
-                raise ValueError("Found asset has no tasks available!")
+                errored_items.append(f"{asset} - No tasks assigned to asset!")
+                track_item.source().binItem().setColor("#CC55CC")
+                continue
 
             for k, v in deepcopy(asset_tasks).items():
                 asset_tasks[k].update({"short_name": anatomy_tasks[v["type"]]["short_name"]})
@@ -191,26 +228,38 @@ class CreateRender(phiero.Creator):
                     task_found = True
                     break
             
-            subset = f"render{task.capitalize()}{variant.capitalize()}"
-
-            latest_version_doc = get_last_version_by_subset_name(
-                project_name,
-                subset,
-                asset_id = asset_doc["_id"], #type: ignore
-                asset_name = asset
-            )
-
-            accepted_version = latest_version_doc.get("name", 0) + 1 #type: ignore
-
             if not task_found:
                 errored_items.append(f"{item_name} - No suitable tasks found, please check input filename!")
                 track_item.source().binItem().setColor("#CC5555")
                 continue
 
-            if not (accepted_version == version):
-                errored_items.append(f"{item_name} - Version is not valid! Scanned version is {version} != {accepted_version}")
-                track_item.source().binItem().setColor("#CC5555")
-                continue
+            subset = f"render{task.capitalize()}{variant.capitalize()}"
+
+            latest_version_doc = get_last_version_by_subset_name(
+                project_name,
+                subset,
+                asset_id = asset_doc["_id"] #type: ignore
+            )
+
+            accepted_version = 1
+
+            if widget.result.get("versionZero", {}).get("value", False):
+                accepted_version = 0
+
+            if latest_version_doc:
+                accepted_version = latest_version_doc.get("name", accepted_version) + 1 #type: ignore
+                if not (accepted_version == version):
+                    errored_items.append(f"{item_name} - Version is not valid! Scanned version is '{version}', <b>Should be '{accepted_version}'!</b>")
+                    track_item.source().binItem().setColor("#CC5555")
+                    continue
+            else:
+                show_message(
+                    "Render Ingest - Warning",
+                    f"Couldn't find latest version for '{asset}'!",
+                    f"Please check your track name, <b>subset is set at '{subset}' and track is '{variant}'!</b><br>Defaulting at version '{accepted_version}'.",
+                    icon = QtWidgets.QMessageBox.Warning
+                )
+                version = accepted_version
 
             folder = widget.result.get("baseFolder", {}).get("value", "")
             episode = widget.result.get("baseEpisode", {}).get("value", "")
@@ -252,9 +301,10 @@ class CreateRender(phiero.Creator):
                 "hierarchy": "/".join([entity["entity_name"] for entity in hierarchy]),
                 "audio": False,
                 "sourceResolution": True,
-                "workfileFrameStart": widget.result.get("workfileFrameStart", {}).get("value", 1009),
-                "handleStart": widget.result.get("handleStart", {}).get("value", 8),
-                "handleEnd": widget.result.get("handleEnd", {}).get("value", 8),
+                "frameStart": widget.result.get("ingestFrameStart", {}).get("value", 1001),
+                "workfileFrameStart": widget.result.get("ingestFrameStart", {}).get("value", 1001),
+                "handleStart": 0,
+                "handleEnd": 0,
                 "parents": hierarchy,
                 "families": families,
                 "heroTrack": True,
@@ -263,5 +313,18 @@ class CreateRender(phiero.Creator):
 
             imprint(track_item, item_data)
 
+        if warning_items:
+            show_message(
+                "Render Ingest - Warnings",
+                "Found mismatches while creating ingest elements",
+                warning_items,
+                icon = QtWidgets.QMessageBox.Warning
+            )
+
         if errored_items:
-            raise ValueError("\n".join(errored_items))
+            show_message(
+                "Render Ingest - Errors",
+                "Found errors while creating ingest elements",
+                errored_items,
+                icon = QtWidgets.QMessageBox.Critical
+            )
