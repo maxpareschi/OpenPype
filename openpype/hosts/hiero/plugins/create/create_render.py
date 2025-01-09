@@ -85,13 +85,21 @@ class CreateRender(phiero.Creator):
             "target": "ui",
             "order": 1,
             "value": {
+                "baseSuffix": {
+                    "value": "",
+                    "type": "QLineEdit",
+                    "label": "<b>Prefix</b>",
+                    "target": "tag",
+                    "toolTip": "Name of sequence of shots.\nUsable tokens:\n\t{_clip_}: name of used clip\n\t{_track_}: name of parent track layer\n\t{_sequence_}: name of parent sequence (timeline)",  # noqa
+                    "order": 0
+                },
                 "baseFolder": {
                     "value": "shots",
                     "type": "QLineEdit",
                     "label": "Folder",
                     "target": "tag",
                     "toolTip": "Name of folder used for root of generated shots.\nUsable tokens:\n\t{_clip_}: name of used clip\n\t{_track_}: name of parent track layer\n\t{_sequence_}: name of parent sequence (timeline)",  # noqa
-                    "order": 0
+                    "order": 1
                 },
                 "baseEpisode": {
                     "value": "",
@@ -99,7 +107,7 @@ class CreateRender(phiero.Creator):
                     "label": "Episode",
                     "target": "tag",
                     "toolTip": "Name of episode.\nUsable tokens:\n\t{_clip_}: name of used clip\n\t{_track_}: name of parent track layer\n\t{_sequence_}: name of parent sequence (timeline)",  # noqa
-                    "order": 1
+                    "order": 2
                 },
                 "baseSequence": {
                     "value": "",
@@ -107,7 +115,7 @@ class CreateRender(phiero.Creator):
                     "label": "Sequence",
                     "target": "tag",
                     "toolTip": "Name of sequence of shots.\nUsable tokens:\n\t{_clip_}: name of used clip\n\t{_track_}: name of parent track layer\n\t{_sequence_}: name of parent sequence (timeline)",  # noqa
-                    "order": 2
+                    "order": 3
                 }
             }
         },
@@ -187,12 +195,17 @@ class CreateRender(phiero.Creator):
 
             family = "render"
             variant = str(track_item.parent().name())
-            asset = incoming_asset
+            asset = widget.result.get("baseSuffix", {}).get("value", "") + incoming_asset
             version = incoming_version
             task = incoming_task.replace(variant, "").replace(family, "")
 
             anatomy_tasks = get_anatomy_settings(project_name).get("tasks", {})
             asset_doc = get_asset_by_name(project_name, asset)
+
+            if not asset_doc:
+                errored_items.append(f"{asset} - No asset found in DB. please check your namings!")
+                track_item.source().binItem().setColor("#CC5555")
+                continue
 
             asset_frame_start = asset_doc["data"]["frameStart"] - asset_doc["data"]["handleStart"] #type: ignore
             asset_frame_end = asset_doc["data"]["frameEnd"] + asset_doc["data"]["handleEnd"] #type: ignore
@@ -212,6 +225,7 @@ class CreateRender(phiero.Creator):
                 errored_items.append(f"{asset} - No tasks assigned to asset!")
                 track_item.source().binItem().setColor("#CC55CC")
                 continue
+            track_item.setName(asset)
 
             for k, v in deepcopy(asset_tasks).items():
                 asset_tasks[k].update({"short_name": anatomy_tasks[v["type"]]["short_name"]})
@@ -252,6 +266,7 @@ class CreateRender(phiero.Creator):
                     errored_items.append(f"{item_name} - Version is not valid! Scanned version is '{version}', <b>Should be '{accepted_version}'!</b>")
                     track_item.source().binItem().setColor("#CC5555")
                     continue
+
             else:
                 show_message(
                     "Render Ingest - Warning",
