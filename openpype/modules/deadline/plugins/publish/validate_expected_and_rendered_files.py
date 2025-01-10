@@ -22,7 +22,7 @@ class ValidateExpectedFiles(pyblish.api.InstancePlugin):
     def process(self, instance):
         self.instance = instance
 
-        if "gather" in instance.data["name"] or instance.data.get("renderIngestDeadline", False):
+        if "gather" in instance.data["name"] or instance.data.get("renderIngestDeadline", False) or ("hiero" in os.environ["AVALON_APP_NAME"] and "render" in instance.data["name"]):
             start = int(instance.data.get("frameStart"))
             end = int(instance.data.get("frameEnd"))
             handle_start = int(instance.data.get("handleStart"))

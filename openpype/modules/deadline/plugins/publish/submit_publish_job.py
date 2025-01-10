@@ -279,6 +279,11 @@ class ProcessSubmittedJobOnFarm(pyblish.api.InstancePlugin):
             asset = instance.data.get("asset", asset)
             task = ""
             family = "plate"
+        if "render.farm" in instance.data.get("families",[]) and "hiero" in os.environ.get("AVALON_APP_NAME", ""):
+            project = instance.data.get("project", project)
+            asset = instance.data.get("asset", asset)
+            task = instance.data.get("task", task)
+            family = "render"
 
         output_dir = self._get_publish_folder(
             instance.context.data['anatomy'],
@@ -842,6 +847,8 @@ class ProcessSubmittedJobOnFarm(pyblish.api.InstancePlugin):
             family = "gather"
         if "ingest.farm" in instance.data["families"]:
             family = "plate"
+        if "render.farm" in instance.data["families"]:
+            family = "render"
         families = [family]
 
         # pass review to families if marked as review
