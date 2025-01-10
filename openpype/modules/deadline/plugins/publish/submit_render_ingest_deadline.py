@@ -53,11 +53,6 @@ class RenderIngestSubmitDeadline(pyblish.api.InstancePlugin):
         self.log.info(f">>>> Render path is {render_path}")
         if not os.path.isdir(render_path):
             raise OSError("Ingest path does not exist or it's not a directory!")
-        
-        context.data["currentFile"] = ""
-
-        legacy_io.Session["AVALON_TASK"] = instance.data['task']
-        legacy_io.Session["AVALON_ASSET"] = instance.data['asset']
 
         batch = f"{instance.data['projectEntity']['name']} - {instance.data['asset']} - "
         batch += f"{instance.data['task']} - {instance.data['subset']} - "
