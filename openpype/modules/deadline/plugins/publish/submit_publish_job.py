@@ -198,7 +198,13 @@ class ProcessSubmittedJobOnFarm(pyblish.api.InstancePlugin):
             "ingestGroup",
             "versionData",
             "timecode",
-            "tail_timecode"
+            "tail_timecode",
+            "renderIngestDeadline",
+            "task",
+        ],
+        "render.farm": [
+            "renderIngestDeadline",
+            "task"
         ],
         "slate": ["slateFrames", "slate"],
         "review": ["lutPath"],

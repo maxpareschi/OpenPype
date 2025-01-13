@@ -78,6 +78,14 @@ class IntegrateFtrackApi(pyblish.api.InstancePlugin):
                 self.log.info("Created new container Asset with data: {}.".format(asset_data))
                 instance.data["asset"] = asset_data["name"]
                 instance.data["task"] = None
+            elif instance.data.get("renderIngestDeadline", False):
+                task_name = instance.data.get("task", {})
+                if isinstance(task_name, dict):
+                    task_name = task_name.get("name", "")
+                asset_name = instance.data.get("asset", "")
+                self.log.debug(f"Will try to match task: '{task_name}' with asset name {asset_name}")
+                task_entity = session.query(f"Task where name is '{task_name}' and parent.name is '{asset_name}'").one()
+                parent_entity = task_entity["parent"]
 
             self.integrate_to_ftrack(
                 session,
