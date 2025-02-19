@@ -54,22 +54,26 @@ class IntegrateFtrackApi(pyblish.api.InstancePlugin):
 
         try:
             source = None
+            current_project_name = instance.context.data.get(
+                "projectEntity", {}).get("name", os.getenv("AVALON_PROJECT")
+            )
+            
             if instance.data["family"] == "gather" and "gather.farm" not in instance.data["families"]:
-                root = session.query("TypedContext where name is '{}' and project_id is '{}'".format(
+                root = session.query("TypedContext where name is '{}' and project.full_name is '{}'".format(
                     instance.data["gather_root_name"],
-                    instance.data["gather_project_id"])
+                    current_project_name)
                     ).one()
-                source = session.query("AssetVersion where id is '{}'".format(
-                    instance.data["gather_ftrack_source_id"])).one()
+                source = session.query(
+                    f"AssetVersion where id is '{instance.data['gather_ftrack_source_id']}' "
+                    f"and project.full_name is '{current_project_name}'").one()
                 asset_data = {
                     "name": instance.data["gather_asset_name"],
                     "parent_id": root["id"],
                 }
 
-                asset_entity = session.query("Shot where name is '{}' and parent.name is '{}'".format(
-                    asset_data["name"],
-                    root["name"]
-                )).first()
+                asset_entity = session.query(
+                    f"Shot where name is '{asset_data['name']}' and parent.name is "
+                    f"'{root['name']}' and project.full_name is '{current_project_name}'").first()
                 if asset_entity is not None:
                     parent_entity = asset_entity
                 else:
@@ -78,13 +82,16 @@ class IntegrateFtrackApi(pyblish.api.InstancePlugin):
                 self.log.info("Created new container Asset with data: {}.".format(asset_data))
                 instance.data["asset"] = asset_data["name"]
                 instance.data["task"] = None
+
             elif instance.data.get("renderIngestDeadline", False):
                 task_name = instance.data.get("task", {})
                 if isinstance(task_name, dict):
                     task_name = task_name.get("name", "")
                 asset_name = instance.data.get("asset", "")
                 self.log.debug(f"Will try to match task: '{task_name}' with asset name {asset_name}")
-                task_entity = session.query(f"Task where name is '{task_name}' and parent.name is '{asset_name}'").one()
+                task_entity = session.query(
+                    f"Task where name is '{task_name}' and parent.name is '{asset_name}' "
+                    f"and project.full_name is '{current_project_name}'").first()
                 parent_entity = task_entity["parent"]
 
             self.integrate_to_ftrack(
