@@ -6,8 +6,59 @@ import pyblish.api
 
 from openpype.client import (
     get_asset_by_name,
-    get_last_version_by_subset_name
+    get_last_version_by_subset_name,
+    get_representations,
+    get_subsets
 )
+
+
+def yield_elegible_gather_subset_names(prj: str, gather_asset_name: str, target_task: str):
+    """Yield eligible subset names based on project, asset names and task.
+
+    This function identifies subsets starting with 'gather' that have
+    representations matching the target task. It yields each valid subset name
+    as it finds them.
+
+    Parameters
+    ----------
+    prj : str
+        The name of the project.
+    gather_asset_name : str
+        The name of the asset to gather data from.
+    target_task : str
+        The name of the task to filter representations by.
+
+    Yields
+    ------
+    subset_name : str
+        Names of eligible subsets that meet the criteria.
+
+    Notes
+    -----
+    - The function stops checking further representations once a match is found,
+      improving efficiency.
+    """
+    asset = get_asset_by_name(prj, gather_asset_name)
+
+    gather_subsets = [
+        s
+        for s in get_subsets(prj, asset_ids=[asset["_id"]])
+        if s["name"].startswith("gather")
+    ]
+
+    for subset in gather_subsets:
+        latest_version = get_last_version_by_subset_name(
+            prj, subset["name"], asset_name=gather_asset_name
+        )
+        repres = get_representations(
+            prj, version_ids=[latest_version["_id"]], fields=["context"]
+        )
+        for repre in repres:
+            if repre["context"]["task"]["name"] == target_task:
+                print(f"Found elegible subset name: {subset['name']}")
+                yield subset["name"]
+                break
+
 
 class CollectGatherData(pyblish.api.InstancePlugin):
     """
@@ -40,23 +91,48 @@ class CollectGatherData(pyblish.api.InstancePlugin):
             "short": task_short
         }
 
-    def get_last_version(self, instance):
-        self.log.debug("Querying latest versions for instances.")
-        project_name = instance.data["project"]
-        asset_name = instance.data["asset"]
-        subset_name = instance.data["subset"]
-        asset_doc = get_asset_by_name(project_name, asset_name, fields=["_id"])
+    def get_last_version(self, instance: pyblish.api.Instance):
+        """Get the latest version number from eligible gather subsets.
 
-        last_version = get_last_version_by_subset_name(
-            project_name,
-            subset_name,
-            asset_doc["_id"],
-            asset_name,
-            fields=["name"]
-        )
+        This function retrieves the highest version number by querying
+        eligible gather subsets based on project, asset, and task. It
+        iterates through each subset to find the latest candidate version.
+
+        Parameters
+        ----------
+        instance : pyblish.api.Instance
+            An instance containing metadata about the current operation,
+            including 'project', 'asset', and 'task'.
+
+        Returns
+        -------
+        int or None
+            The highest version number found, or None if no valid versions
+            are available.
+        """
+        self.log.debug("Querying latest versions for instances.")
+        prj = instance.data["project"]
+        asset_name = instance.data["asset"]
+        self.log.info(instance.data)
+        task = instance.data["task"]
+        # subset_name = instance.data["subset"]
+        asset_doc = get_asset_by_name(prj, asset_name, fields=["_id"])
+
+        last_version = 0
+        for subset in yield_elegible_gather_subset_names(prj, asset_name, task):
+            candidate_version = get_last_version_by_subset_name(
+                prj,
+                subset,
+                asset_doc["_id"],
+                asset_name,
+                fields=["name"]
+            )
+            if not candidate_version:
+                continue
+            last_version = max(last_version, int(candidate_version["name"]))
 
         if last_version:
-            return last_version["name"]
+            return last_version
         else:
             return None
 
