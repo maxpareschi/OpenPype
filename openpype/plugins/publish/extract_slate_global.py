@@ -618,6 +618,7 @@ class SlateCreator:
         self.data["timecode"] = tc
         return tc
 
+
     def get_resolution_ffprobe(self, input, env=dict()):
         """
         Find input resolution using ffprobe.
@@ -626,12 +627,19 @@ class SlateCreator:
         env = self.env if not env else env
         cmd = []
         cmd.append(get_ffmpeg_tool_path(tool="ffprobe"))
-        cmd.extend(["-v", "error", "-select_streams", "v:0",
-            "-show_entries", "stream=width,height", "-of", "json"])
+        cmd.extend(["-v", "fatal", "-show_format", "-show_streams"])
         cmd.append(input)
         self.log.debug("FFPROBE RESOLUTION CHECK: cmd>{}".format(" ".join(cmd)))
         res = run_subprocess(cmd, creationflags=subprocess.CREATE_NO_WINDOW)
-        resolution = json.loads(res)["streams"][0]
+
+        
+        width = re.findall("(?<=width=)\d{1,5}", res)[0]
+        height = re.findall("(?<=height=)\d{1,5}", res)[0]
+
+        resolution = dict()
+        resolution["width"] = int(width)
+        resolution["height"] = int(height)
+
         self.log.debug("{}: File resolution from ffprobe scan is: {}x{}".format(
             name,
             resolution["width"],
@@ -657,8 +665,8 @@ class SlateCreator:
         height = re.findall("(?<=\d x )\d{3,5}(?=\,)", res)[0]
 
         resolution = dict()
-        resolution["width"] = width
-        resolution["height"] = height
+        resolution["width"] = int(width)
+        resolution["height"] = int(height)
 
         self.log.debug("{}: File resolution from ffprobe scan is: {}x{}".format(
             name,
@@ -936,6 +944,8 @@ class ExtractSlateGlobal(publish.Extractor):
 
             try:
                 resolution = slate.get_resolution_ffprobe(file_path)
+                if resolution["width"] == 0 or resolution["height"] == 0:
+                    resolution = slate.get_resolution_oiio(file_path)
             except Exception as e:
                 self.log.warning(e)
                 resolution = slate.get_resolution_oiio(file_path)
