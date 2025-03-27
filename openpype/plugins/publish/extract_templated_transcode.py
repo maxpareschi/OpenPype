@@ -314,7 +314,7 @@ class ExtractTemplatedTranscode(publish.Extractor):
                     "fps": instance.data["fps"],
                     "project": instance.data["anatomyData"]["project"],
                     "asset": instance.data["asset"],
-                    "task": instance.data.get("task", ""),
+                    "task": instance.data.get("task") or "",
                     "color_config": color_config,
                     "profile_data": profile_def
                 }
