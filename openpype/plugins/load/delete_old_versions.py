@@ -39,6 +39,9 @@ class DeleteOldVersions(load.SubsetLoaderPlugin):
         ),
         qargparse.Boolean(
             "remove_publish_folder", help="Remove publish folder:"
+        ),
+        qargparse.Boolean(
+            "keep_ftrack", help="Keep ftrack entry:"
         )
     ]
 
@@ -319,7 +322,7 @@ class DeleteOldVersions(load.SubsetLoaderPlugin):
 
         return data
 
-    def main(self, project_name, data, remove_publish_folder):
+    def main(self, project_name, data, remove_publish_folder, keep_ftrack):
         # Size of files.
         size = 0
         if not data:
@@ -362,7 +365,9 @@ class DeleteOldVersions(load.SubsetLoaderPlugin):
             dbcon.bulk_write(mongo_changes_bulk)
             dbcon.uninstall()
 
-        self._ftrack_delete_versions(data)
+
+        if not keep_ftrack:
+            self._ftrack_delete_versions(data)
 
         return size
 
@@ -438,6 +443,7 @@ class DeleteOldVersions(load.SubsetLoaderPlugin):
             for count, context in enumerate(contexts):
                 versions_to_keep = 2
                 remove_publish_folder = False
+                keep_ftrack = False
                 if options:
                     versions_to_keep = options.get(
                         "versions_to_keep", versions_to_keep
@@ -445,13 +451,16 @@ class DeleteOldVersions(load.SubsetLoaderPlugin):
                     remove_publish_folder = options.get(
                         "remove_publish_folder", remove_publish_folder
                     )
+                    keep_ftrack = options.get(
+                        "keep_ftrack", keep_ftrack
+                    )
 
                 data = self.get_data(context, versions_to_keep)
                 if not data:
                     continue
 
                 project_name = context["project"]["name"]
-                size += self.main(project_name, data, remove_publish_folder)
+                size += self.main(project_name, data, remove_publish_folder, keep_ftrack)
                 print("Progressing {}/{}".format(count + 1, len(contexts)))
 
             msg = "Total size of files: {}".format(format_file_size(size))
