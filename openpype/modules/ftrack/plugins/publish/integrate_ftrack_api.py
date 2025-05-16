@@ -17,8 +17,72 @@ import collections
 import six
 import pyblish.api
 import clique
+from ftrack_api import Session
+from ftrack_api.exception import NoResultFoundError
+from logging import getLogger
+
+logger = getLogger(__name__)
 
 
+def create_custom_attribute_link(
+    session: Session, to_id: str, src_id: str, key: str = "client_version_link"
+):
+    """Create or update a custom attribute link in Ftrack.
+
+    This function ensures that a custom attribute link exists between two entities
+    in Ftrack. If an existing link is found, it will be removed before creating
+    a new one. The function uses the provided key to determine the configuration
+    for the link.
+
+    Parameters
+    ----------
+    session : Session
+        An authenticated Ftrack session object.
+    to_id : str
+        The ID of the target entity to which the link will point.
+        This is the entity that has the attribute.
+    src_id : str
+        The ID of the source entity from which the link originates.
+        This is the value of the attribute link.
+    key : str, optional
+        The key used to identify the custom attribute link configuration.
+        Defaults to "client_version_link".
+
+    Returns
+    -------
+    None
+        This function does not return any value.
+
+    Notes
+    -----
+    - If an existing custom attribute link is found, it will be removed before
+      creating the new one.
+    - The function uses the configuration specified by the key parameter to determine
+      how the link should be created.
+
+    """
+    custom_attr_link_config = session.query(
+        f"select id from CustomAttributeLinkConfiguration where key is {key}"
+    ).one()
+    where = f"where configuration_id is {custom_attr_link_config['id']} and from_id is {to_id}"
+    try:
+        attr_link = session.query(f"CustomAttributeLink {where}").one()
+    except NoResultFoundError as e:
+        logger.info(f"No custom attr link found.")
+    else:
+        logger.info(f"Custom attr link found, removing it.")
+        session.delete(attr_link)
+
+    logger.info(f"Creating new custom attribute link.")
+    session.create(
+        "CustomAttributeLink",
+        {
+            "from_id": to_id,
+            "to_id": src_id,
+            "configuration_id": custom_attr_link_config["id"],
+        },
+    )
+    session.commit()
 
 class IntegrateFtrackApi(pyblish.api.InstancePlugin):
     """ Commit components to server. """
@@ -54,22 +118,26 @@ class IntegrateFtrackApi(pyblish.api.InstancePlugin):
 
         try:
             source = None
+            current_project_name = instance.context.data.get(
+                "projectEntity", {}).get("name", os.getenv("AVALON_PROJECT")
+            )
+            
             if instance.data["family"] == "gather" and "gather.farm" not in instance.data["families"]:
-                root = session.query("TypedContext where name is '{}' and project_id is '{}'".format(
+                root = session.query("TypedContext where name is '{}' and project.full_name is '{}'".format(
                     instance.data["gather_root_name"],
-                    instance.data["gather_project_id"])
+                    current_project_name)
                     ).one()
-                source = session.query("AssetVersion where id is '{}'".format(
-                    instance.data["gather_ftrack_source_id"])).one()
+                source = session.query(
+                    f"AssetVersion where id is '{instance.data['gather_ftrack_source_id']}' "
+                    f"and project.full_name is '{current_project_name}'").one()
                 asset_data = {
                     "name": instance.data["gather_asset_name"],
                     "parent_id": root["id"],
                 }
 
-                asset_entity = session.query("Shot where name is '{}' and parent.name is '{}'".format(
-                    asset_data["name"],
-                    root["name"]
-                )).first()
+                asset_entity = session.query(
+                    f"Shot where name is '{asset_data['name']}' and parent.name is "
+                    f"'{root['name']}' and project.full_name is '{current_project_name}'").first()
                 if asset_entity is not None:
                     parent_entity = asset_entity
                 else:
@@ -78,13 +146,16 @@ class IntegrateFtrackApi(pyblish.api.InstancePlugin):
                 self.log.info("Created new container Asset with data: {}.".format(asset_data))
                 instance.data["asset"] = asset_data["name"]
                 instance.data["task"] = None
+
             elif instance.data.get("renderIngestDeadline", False):
                 task_name = instance.data.get("task", {})
                 if isinstance(task_name, dict):
                     task_name = task_name.get("name", "")
                 asset_name = instance.data.get("asset", "")
                 self.log.debug(f"Will try to match task: '{task_name}' with asset name {asset_name}")
-                task_entity = session.query(f"Task where name is '{task_name}' and parent.name is '{asset_name}'").one()
+                task_entity = session.query(
+                    f"Task where name is '{task_name}' and parent.name is '{asset_name}' "
+                    f"and project.full_name is '{current_project_name}'").first()
                 parent_entity = task_entity["parent"]
 
             self.integrate_to_ftrack(
@@ -210,15 +281,8 @@ class IntegrateFtrackApi(pyblish.api.InstancePlugin):
         self._create_components(session, asset_versions_data_by_id)
 
         if instance.data["family"] == "gather" and "gather.farm" not in instance.data["families"]:
-            custom_attr_link_config = session.query(
-                "select id from CustomAttributeLinkConfiguration where key is 'client_version_link'"
-            ).first()
-            if custom_attr_link_config:
-                session.create("CustomAttributeLink", {
-                    "from_id": source_version["id"],
-                    "to_id": asset_version_entity["id"],
-                    "configuration_id": custom_attr_link_config["id"]
-                })
+            source_version["custom_attributes"]["client_version_string"] = str(asset_version_entity["version"]).zfill(3)
+            create_custom_attribute_link(session, source_version["id"], asset_version_entity["id"])
             session.create("AssetVersionLink", {
                 "from": source_version,
                 "to": asset_version_entity
@@ -235,7 +299,6 @@ class IntegrateFtrackApi(pyblish.api.InstancePlugin):
             #         "to": asset_version_entity["asset"]["parent"]
             #     })
             
-            source_version["custom_attributes"]["client_version_string"] = str(asset_version_entity["version"]).zfill(3)
             session.commit()
 
         instance.data["ftrackIntegratedAssetVersionsData"] = (
