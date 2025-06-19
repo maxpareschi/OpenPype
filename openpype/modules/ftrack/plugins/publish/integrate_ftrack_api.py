@@ -146,6 +146,11 @@ class IntegrateFtrackApi(pyblish.api.InstancePlugin):
                 self.log.info("Created new container Asset with data: {}.".format(asset_data))
                 instance.data["asset"] = asset_data["name"]
                 instance.data["task"] = None
+                # CLEAR TASK NOT TO BE LINKED WITH SOURCE TASK. THIS SHOULD PREVENT
+                # GATHERS TO SHARE TASKS WITH THE SOURCE VERSIONS, FIXING A BUG ON
+                # THE STATUS INHERITANCE.
+                self.log.debug("Removing task from ftrack gather...")
+                task_entity = None
 
             elif instance.data.get("renderIngestDeadline", False):
                 task_name = instance.data.get("task", {})
@@ -173,6 +178,7 @@ class IntegrateFtrackApi(pyblish.api.InstancePlugin):
 
     def get_instance_entities(self, instance, context):
         parent_entity = None
+        task_entity = None
         # If instance has set "ftrackEntity" or "ftrackTask" then use them from
         #   instance. Even if they are set to None. If they are set to None it
         #   has a reason. (like has different context)

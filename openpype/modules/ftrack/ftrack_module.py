@@ -514,7 +514,7 @@ def _check_ftrack_url(url):
     import requests
 
     try:
-        result = requests.get(url, allow_redirects=False, verify=False)
+        result = requests.get(url, allow_redirects=False)
     except requests.exceptions.RequestException:
         return False
 
