@@ -14,15 +14,20 @@ class AddPythonOptionals(PreLaunchHook):
 
         env = copy.deepcopy(self.launch_context.env)
 
-        if self.application.name.find("19") == 0:
-            python_env_folder = "python_39"
-        elif self.application.name.find("20") == 0:
-            python_env_folder = "python_310"
-        else:
-            python_env_folder = "python_3"
-
+        python_env_bin_folder = None
         pythonpath = env.get("PYTHONPATH", [])
         openpype_root = os.getenv("OPENPYPE_REPOS_ROOT")
+
+        if self.application.name.find("20.5") == 0 or self.application.name.find("20-5") == 0:
+            python_env_folder = "python_311"
+            python_env_bin_folder = os.path.join(openpype_root, "openpype", "vendor", "bin", "otio_311")
+        elif self.application.name.find("20") == 0:
+            python_env_folder = "python_310"
+        elif self.application.name.find("19") == 0:
+            python_env_folder = "python_39"
+        else:
+            python_env_folder = "python_3"
+        
         python_optional_dir = os.path.normpath(
             os.path.join(
                 openpype_root,
@@ -35,7 +40,10 @@ class AddPythonOptionals(PreLaunchHook):
         if pythonpath:
             pythonpath = [path for path in pythonpath.split(os.pathsep) if path]
         pythonpath = list(set(pythonpath))
+        if python_env_bin_folder is not None:
+            pythonpath.insert(0, python_env_bin_folder)
         pythonpath.insert(0, python_optional_dir)
+
         env["PYTHONPATH"] = os.pathsep.join(pythonpath)
         self.launch_context.env = env
         self.log.debug("Added '{}' to launch context PYTHONPATH".format(python_optional_dir))

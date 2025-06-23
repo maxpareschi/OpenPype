@@ -987,7 +987,10 @@ class ApplicationLaunchContext:
                 sig = inspect.signature(func)
                 expect_args = len(sig.parameters) > 0
             else:
-                expect_args = len(inspect.getargspec(func)[0]) > 0
+                if sys.version.find("3.") >= 0:
+                    expect_args = len(inspect.getfullargspec(func)[0]) > 0
+                else:
+                    expect_args = len(inspect.getargspec(func)[0]) > 0
 
             # Pass application argument if method expect it.
             try:
