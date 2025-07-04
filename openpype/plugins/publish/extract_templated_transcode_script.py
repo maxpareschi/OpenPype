@@ -156,9 +156,12 @@ def transcode_template(data):
     if data["profile_data"]["reformat_options"]["enabled"]:
         reformat = nuke.nodes.Reformat()
         reformat["type"].setValue("to box")
-        reformat["box_fixed"].setValue(True)
         reformat["box_width"].setValue(data["profile_data"]["reformat_options"]["reformat_width"])
-        reformat["box_height"].setValue(data["profile_data"]["reformat_options"]["reformat_height"])
+        if int(data["profile_data"]["reformat_options"]["reformat_height"]) == 0:
+            reformat["box_fixed"].setValue(False)
+        else:
+            reformat["box_fixed"].setValue(True)
+            reformat["box_height"].setValue(data["profile_data"]["reformat_options"]["reformat_height"])
         reformat["black_outside"].setValue(data["profile_data"]["reformat_options"]["reformat_black_outside"])
         reformat["resize"].setValue(data["profile_data"]["reformat_options"]["reformat_type"])
         reformat["filter"].setValue("Lanczos6")
@@ -238,9 +241,12 @@ def transcode_subsetchain(data):
     if data["profile_data"]["reformat_options"]["enabled"]:
         reformat = nuke.nodes.Reformat()
         reformat["type"].setValue("to box")
-        reformat["box_fixed"].setValue(True)
         reformat["box_width"].setValue(data["profile_data"]["reformat_options"]["reformat_width"])
-        reformat["box_height"].setValue(data["profile_data"]["reformat_options"]["reformat_height"])
+        if int(data["profile_data"]["reformat_options"]["reformat_height"]) == 0:
+            reformat["box_fixed"].setValue(False)
+        else:
+            reformat["box_fixed"].setValue(True)
+            reformat["box_height"].setValue(data["profile_data"]["reformat_options"]["reformat_height"])
         reformat["black_outside"].setValue(data["profile_data"]["reformat_options"]["reformat_black_outside"])
         reformat["resize"].setValue(data["profile_data"]["reformat_options"]["reformat_type"])
         reformat["filter"].setValue("Lanczos6")
@@ -319,9 +325,12 @@ def transcode_color_conversion(data):
     if data["profile_data"]["reformat_options"]["enabled"]:
         reformat = nuke.nodes.Reformat()
         reformat["type"].setValue("to box")
-        reformat["box_fixed"].setValue(True)
         reformat["box_width"].setValue(data["profile_data"]["reformat_options"]["reformat_width"])
-        reformat["box_height"].setValue(data["profile_data"]["reformat_options"]["reformat_height"])
+        if int(data["profile_data"]["reformat_options"]["reformat_height"]) == 0:
+            reformat["box_fixed"].setValue(False)
+        else:
+            reformat["box_fixed"].setValue(True)
+            reformat["box_height"].setValue(data["profile_data"]["reformat_options"]["reformat_height"])
         reformat["black_outside"].setValue(data["profile_data"]["reformat_options"]["reformat_black_outside"])
         reformat["resize"].setValue(data["profile_data"]["reformat_options"]["reformat_type"])
         reformat["filter"].setValue("Lanczos6")
