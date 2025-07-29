@@ -314,7 +314,7 @@ class ExtractTemplatedTranscode(publish.Extractor):
                     "fps": instance.data["fps"],
                     "project": instance.data["anatomyData"]["project"],
                     "asset": instance.data["asset"],
-                    "task": instance.data.get("task") or "",
+                    "task": instance.data["anatomyData"].get("task", {}).get("name", ""),
                     "color_config": color_config,
                     "profile_data": profile_def
                 }
@@ -341,7 +341,7 @@ class ExtractTemplatedTranscode(publish.Extractor):
                                    f"to: '{output_colorspace}', in context: '{instance.data['asset']}'")
 
                 self.log.info("Will convert representation against collected "
-                              f"data: {json.dumps(processed_data, default=str)}")
+                              f"data: {json.dumps(processed_data, indent=4, default=str)}")
 
                 nuke_process = self.run_transcode_script(processed_data)
 
