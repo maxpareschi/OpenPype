@@ -31,7 +31,7 @@ def create_intermediate_usd(ropnode, file_abs_path, fileperframe=False):
         rend.render(verbose=verbose, output_progress=verbose)
     except hou.Error as exc:
         traceback.print_exc()
-        raise RuntimeError("Render failed: {0}".format(exc))
+        # raise RuntimeError("Render failed: {0}".format(exc))
     assert os.path.exists(file_abs_path), f"Output does not exist: {file_abs_path}"
 
     rend.destroy() # delete the render intermediate node
